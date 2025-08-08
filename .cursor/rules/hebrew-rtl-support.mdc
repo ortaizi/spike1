@@ -1,0 +1,257 @@
+# Hebrew RTL Support & Israeli Academic Context
+
+## 🏗️ Technology Stack
+- **Next.js 14+** - React framework with App Router
+- **Supabase** - Database and authentication backend
+- **NextAuth v5** - Authentication framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+
+## 🌍 Hebrew Language Support
+- Always support RTL (Right-to-Left) text direction
+- Use proper Hebrew fonts (system fonts or Noto Sans Hebrew)
+- Ensure proper text alignment for Hebrew content
+- Support Hebrew date formatting (Hebrew calendar)
+
+## 📚 Academic Terminology
+Use Israeli academic terms consistently:
+- **Course**: קורס (kurs)
+- **Assignment**: מטלה (metala)
+- **Exam**: בחינה (bchina)
+- **Grade**: ציון (tzion)
+- **Semester**: סמסטר (semester)
+- **Faculty**: פקולטה (fakulta)
+- **Department**: מחלקה (machlaka)
+
+## 🎓 Ben Gurion University Specific
+- Support BGU course codes (e.g., 201-1-1234)
+- Handle Hebrew course names properly
+- Support Hebrew student names and IDs
+- Integrate with BGU academic calendar
+- Support Hebrew email domains (@bgu.ac.il)
+
+## 🎨 RTL Styling Guidelines
+```css
+/* RTL Support */
+[dir="rtl"] {
+  text-align: right;
+}
+
+/* Hebrew text styling */
+.hebrew-text {
+  font-family: 'Noto Sans Hebrew', 'Segoe UI', sans-serif;
+  direction: rtl;
+  text-align: right;
+}
+
+/* Mixed content (Hebrew + English) */
+.mixed-content {
+  direction: ltr;
+  text-align: left;
+}
+```
+
+## 📅 Date & Time Handling
+```typescript
+// Hebrew date formatting
+const formatHebrewDate = (date: Date): string => {
+  return new Intl.DateTimeFormat('he-IL', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }).format(date);
+};
+
+// Academic year handling (October-September)
+const getAcademicYear = (date: Date): number => {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  return month >= 10 ? year : year - 1;
+};
+```
+
+## 🔤 Text Direction Logic
+```typescript
+// Determine text direction based on content
+const getTextDirection = (text: string): 'ltr' | 'rtl' => {
+  const hebrewRegex = /[\u0590-\u05FF]/;
+  return hebrewRegex.test(text) ? 'rtl' : 'ltr';
+};
+
+// Component with dynamic direction
+function DynamicText({ text }: { text: string }) {
+  const direction = getTextDirection(text);
+  
+  return (
+    <div dir={direction} className="text-content">
+      {text}
+    </div>
+  );
+}
+```
+
+## 🎯 UI/UX Considerations
+- Ensure proper spacing for Hebrew text
+- Use appropriate icons for Hebrew context
+- Support Hebrew keyboard input
+- Handle Hebrew form validation messages
+- Consider Hebrew text length in layouts
+
+## 📝 Form Validation Messages
+```typescript
+// Hebrew validation messages
+export const hebrewValidationMessages = {
+  required: 'שדה זה הוא חובה',
+  email: 'כתובת אימייל לא תקינה',
+  minLength: (min: number) => `מינימום ${min} תווים נדרשים`,
+  maxLength: (max: number) => `מקסימום ${max} תווים מותרים`,
+  invalidCourseCode: 'קוד קורס לא תקין (פורמט: XXX-X-XXXX)',
+  invalidStudentId: 'מספר סטודנט לא תקין',
+  invalidPhone: 'מספר טלפון לא תקין',
+  passwordMismatch: 'סיסמאות אינן תואמות',
+  weakPassword: 'סיסמה חייבת להכיל לפחות 8 תווים',
+};
+
+// Use in Zod schemas
+export const courseCodeSchema = z
+  .string()
+  .regex(/^\d{3}-\d-\d{4}$/, hebrewValidationMessages.invalidCourseCode);
+```
+
+## 🎨 Tailwind CSS RTL Support
+```css
+/* tailwind.config.js */
+module.exports = {
+  theme: {
+    extend: {
+      fontFamily: {
+        hebrew: ['Noto Sans Hebrew', 'Segoe UI', 'sans-serif'],
+      },
+    },
+  },
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
+};
+
+/* Custom RTL utilities */
+.rtl-text {
+  @apply text-right font-hebrew;
+}
+
+.rtl-input {
+  @apply text-right placeholder:text-right;
+}
+
+.rtl-button {
+  @apply flex-row-reverse;
+}
+```
+
+## 📱 Mobile RTL Support
+```typescript
+// Mobile-specific RTL considerations
+const MobileRTLContainer = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="
+      rtl:text-right 
+      ltr:text-left
+      rtl:pr-4 
+      ltr:pl-4
+      rtl:mr-auto 
+      ltr:ml-auto
+      font-hebrew
+    ">
+      {children}
+    </div>
+  );
+};
+```
+
+## 🔧 Next.js RTL Configuration
+```typescript
+// next.config.js
+const nextConfig = {
+  i18n: {
+    locales: ['he', 'en'],
+    defaultLocale: 'he',
+    localeDetection: true,
+  },
+  experimental: {
+    forceSwcTransforms: true,
+  },
+};
+
+// _app.tsx or layout.tsx
+import { useRouter } from 'next/router';
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  const { locale } = useRouter();
+  
+  return (
+    <html lang={locale} dir={locale === 'he' ? 'rtl' : 'ltr'}>
+      <body className={locale === 'he' ? 'font-hebrew' : 'font-sans'}>
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+## 📊 Data Display Patterns
+```typescript
+// Hebrew number formatting
+export const formatHebrewNumber = (num: number): string => {
+  return new Intl.NumberFormat('he-IL').format(num);
+};
+
+// Hebrew currency formatting
+export const formatHebrewCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('he-IL', {
+    style: 'currency',
+    currency: 'ILS',
+  }).format(amount);
+};
+
+// Hebrew percentage formatting
+export const formatHebrewPercentage = (value: number): string => {
+  return new Intl.NumberFormat('he-IL', {
+    style: 'percent',
+    minimumFractionDigits: 1,
+  }).format(value / 100);
+};
+```
+
+## 🎓 Academic Calendar Integration
+```typescript
+// Hebrew academic calendar
+export const hebrewAcademicMonths = {
+  'אוקטובר': 10,
+  'נובמבר': 11,
+  'דצמבר': 12,
+  'ינואר': 1,
+  'פברואר': 2,
+  'מרץ': 3,
+  'אפריל': 4,
+  'מאי': 5,
+  'יוני': 6,
+  'יולי': 7,
+  'אוגוסט': 8,
+  'ספטמבר': 9,
+};
+
+// BGU semester mapping
+export const bguSemesters = {
+  'א': 'Fall',
+  'ב': 'Spring', 
+  'קיץ': 'Summer',
+} as const;
+
+export const getHebrewSemester = (semester: string): string => {
+  return Object.entries(bguSemesters).find(([_, value]) => value === semester)?.[0] || semester;
+};
+```
+
+---
+globs: *.tsx,*.ts,*.css,*.scss
+---

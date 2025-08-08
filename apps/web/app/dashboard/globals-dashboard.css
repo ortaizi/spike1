@@ -1,0 +1,613 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 240 5.9% 10%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-heebo), "Assistant", "Inter", system-ui, sans-serif;
+    line-height: 1.6;
+  }
+}
+
+/* Dipy-inspired gradient background */
+.dipy-gradient-bg {
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    rgba(248, 250, 252, 0.8) 25%,
+    rgba(241, 245, 249, 0.6) 50%,
+    rgba(248, 250, 252, 0.8) 75%,
+    #ffffff 100%
+  );
+  min-height: 100vh;
+}
+
+/* Dipy-style Navigation Tabs */
+.dipy-nav-container {
+  background: white;
+  border-radius: 24px;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.dipy-tab {
+  font-family: var(--font-heebo), "Assistant", "Inter", system-ui, sans-serif;
+  position: relative;
+  padding: 12px 24px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 16px;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: -0.025em;
+  line-height: 1.4;
+}
+
+.dipy-tab.active {
+  background-color: #387adf;
+  color: white;
+  box-shadow: 0 2px 8px rgba(56, 122, 223, 0.25);
+  transform: translateY(-1px);
+}
+
+.dipy-tab:not(.active) {
+  background-color: #f8fafc;
+  color: #475569;
+}
+
+.dipy-tab:not(.active):hover {
+  background-color: #f1f5f9;
+  color: #387adf;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Dipy-style Professional Cards */
+.dipy-card {
+  background: white;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dipy-card:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Dipy Color System - Accent Borders */
+.dipy-accent-orange {
+  border-right: 4px solid #f97316;
+}
+.dipy-accent-sky {
+  border-right: 4px solid #0ea5e9;
+}
+.dipy-accent-blue {
+  border-right: 4px solid #387adf;
+}
+.dipy-accent-purple {
+  border-right: 4px solid #a855f7;
+}
+.dipy-accent-emerald {
+  border-right: 4px solid #10b981;
+}
+.dipy-accent-indigo {
+  border-right: 4px solid #6366f1;
+}
+.dipy-accent-rose {
+  border-right: 4px solid #f43f5e;
+}
+.dipy-accent-amber {
+  border-right: 4px solid #f59e0b;
+}
+.dipy-accent-slate {
+  border-right: 4px solid #64748b;
+}
+
+/* Dipy Typography System */
+.dipy-title {
+  font-family: var(--font-heebo), "Assistant", "Inter", system-ui, sans-serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: -0.025em;
+  line-height: 1.6;
+}
+
+.dipy-large-number {
+  font-family: var(--font-heebo), "Assistant", "Inter", system-ui, sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.05em;
+  line-height: 1.2;
+}
+
+.dipy-description {
+  font-family: var(--font-heebo), "Assistant", "Inter", system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.dipy-button-text {
+  font-family: var(--font-heebo), "Assistant", "Inter", system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+/* Dipy Icon System */
+.dipy-icon {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2px;
+}
+
+.dipy-icon-orange {
+  color: #f97316;
+}
+.dipy-icon-sky {
+  color: #0ea5e9;
+}
+.dipy-icon-blue {
+  color: #387adf;
+}
+.dipy-icon-purple {
+  color: #a855f7;
+}
+.dipy-icon-emerald {
+  color: #10b981;
+}
+.dipy-icon-indigo {
+  color: #6366f1;
+}
+.dipy-icon-rose {
+  color: #f43f5e;
+}
+.dipy-icon-amber {
+  color: #f59e0b;
+}
+.dipy-icon-slate {
+  color: #64748b;
+}
+
+/* Dipy Button System */
+.dipy-button {
+  font-family: var(--font-heebo), "Assistant", "Inter", system-ui, sans-serif;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  letter-spacing: -0.025em;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+}
+
+.dipy-button-primary {
+  background: linear-gradient(135deg, #387adf 0%, #4f46e5 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(56, 122, 223, 0.2);
+}
+
+.dipy-button-primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #4338ca 100%);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 8px rgba(56, 122, 223, 0.3);
+}
+
+.dipy-button-secondary {
+  background: #f8fafc;
+  color: #387adf;
+  border: 1px solid #e2e8f0;
+}
+
+.dipy-button-secondary:hover {
+  background: #f1f5f9;
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Dipy Status Circles */
+.dipy-status-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.dipy-status-circle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-radius: 50%;
+}
+
+.dipy-status-circle:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.dipy-status-circle-orange {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+}
+
+.dipy-status-circle-sky {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+}
+
+/* Dipy Notification Panel */
+.dipy-notification-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dipy-notification-item:hover {
+  background-color: #f8fafc;
+}
+
+/* Remove the blue background and border for unread notifications */
+.dipy-notification-item.unread {
+  background-color: transparent;
+  border-left: none;
+}
+
+.dipy-notification-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+/* Dipy Loading States */
+.dipy-skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: dipy-shimmer 2s infinite;
+  border-radius: 4px;
+}
+
+@keyframes dipy-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Dipy Grid System */
+.dipy-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.dipy-grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+.dipy-grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.dipy-grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.dipy-grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Dipy Responsive Behavior */
+@media (max-width: 768px) {
+  .dipy-tab {
+    padding: 10px 16px;
+    font-size: 0.8rem;
+  }
+
+  .dipy-card {
+    padding: 1rem;
+  }
+
+  .dipy-status-circle {
+    width: 100px;
+    height: 100px;
+  }
+
+  .dipy-large-number {
+    font-size: 1.875rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .dipy-nav-container {
+    padding: 6px;
+  }
+
+  .dipy-tab {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Dipy Micro-interactions */
+.dipy-interactive {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dipy-interactive:hover {
+  transform: translateY(-1px);
+}
+
+.dipy-interactive:active {
+  transform: translateY(0);
+}
+
+/* Hide scrollbar but keep functionality */
+.dipy-scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.dipy-scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Dipy Focus States */
+.dipy-focusable:focus {
+  outline: 2px solid #387adf;
+  outline-offset: 2px;
+}
+
+/* Animation utilities */
+.dipy-fade-in {
+  animation: dipyFadeIn 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dipyFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dipy Badge System */
+.dipy-badge {
+  font-family: var(--font-heebo), "Assistant", "Inter", system-ui, sans-serif;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.dipy-badge-orange {
+  background-color: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fdba74;
+}
+
+.dipy-badge-blue {
+  background-color: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.dipy-badge-emerald {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.dipy-badge-red {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.dipy-badge-amber {
+  background-color: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+
+.dipy-badge-indigo {
+  background-color: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+/* Dipy Table System */
+.dipy-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.dipy-table th {
+  font-family: var(--font-heebo), "Assistant", "Inter", system-ui, sans-serif;
+  text-align: right;
+  padding: 1rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #0f172a;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dipy-table td {
+  font-family: var(--font-heebo), "Assistant", "Inter", system-ui, sans-serif;
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.875rem;
+}
+
+.dipy-table tr:hover td {
+  background-color: #f8fafc;
+}
+
+.dipy-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Dipy Form Elements */
+.dipy-input {
+  font-family: var(--font-heebo), "Assistant", "Inter", system-ui, sans-serif;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background-color: white;
+  font-size: 0.875rem;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dipy-input:focus {
+  outline: none;
+  border-color: #387adf;
+  box-shadow: 0 0 0 2px rgba(56, 122, 223, 0.2);
+}
+
+.dipy-input::placeholder {
+  color: #94a3b8;
+}
+
+.dipy-label {
+  font-family: var(--font-heebo), "Assistant", "Inter", system-ui, sans-serif;
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+}
+
+/* Dipy Empty States */
+.dipy-empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+}
+
+.dipy-empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #e2e8f0;
+}
+
+.dipy-empty-state-title {
+  font-family: var(--font-heebo), "Assistant", "Inter", system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+}
+
+.dipy-empty-state-description {
+  font-family: var(--font-heebo), "Assistant", "Inter", system-ui, sans-serif;
+  font-size: 0.875rem;
+  color: #64748b;
+  max-width: 24rem;
+  margin: 0 auto;
+}

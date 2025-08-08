@@ -1,0 +1,220 @@
+# Interactive Scraping Development Workflow - AI Rules
+
+## 🎯 Interactive Development Philosophy
+
+### **Real-Time Validation Approach**
+- **NEVER** assume selectors work without testing
+- **ALWAYS** show extracted data to developer for confirmation
+- **ALWAYS** ask for feedback before proceeding to next step
+- **ALWAYS** use real credentials for testing (not mock data)
+- **ALWAYS** show console logs during development for transparency
+
+### **Step-by-Step Mapping Process**
+1. **Developer provides real credentials** for testing
+2. **Cursor connects to BGU Moodle** with provided credentials
+3. **Shows extracted data** in console/simple UI for verification
+4. **Developer confirms** if data is correct before proceeding
+5. **Build selectors incrementally** with real-time validation
+
+## 🔧 Interactive Development Workflow
+
+### **Phase 1: Interactive Testing**
+```javascript
+// Example workflow
+console.log('🔐 Starting BGU Moodle login test...');
+const username = await prompt('Enter BGU username: ');
+const password = await prompt('Enter BGU password: ');
+
+console.log('🌐 Navigating to Moodle...');
+// ... login code ...
+
+console.log('📚 Found the following courses:');
+courses.forEach(course => {
+  console.log(`- ${course.name} (ID: ${course.id})`);
+});
+
+const confirm = await prompt('Are these your courses? (y/n): ');
+if (confirm === 'y') {
+  console.log('✅ Great! Saving selectors...');
+} else {
+  console.log('❌ What\'s wrong? Please describe the issue...');
+  const issue = await prompt('Issue description: ');
+  // Adjust selectors based on feedback
+}
+```
+
+### **Phase 2: Step-by-Step Mapping**
+- **Developer guides**: "Now click on 'ציונים' (grades)"
+- **Cursor extracts and shows**: "Found table with 5 grades: [shows data]"
+- **Developer confirms**: "Correct! Save this selector"
+- **Build selectors incrementally** with real-time validation
+
+### **Phase 3: Gradual Implementation**
+- Start with login and course list only
+- Add each feature after confirming previous works
+- Test with real data at each step
+- Only save to database after developer approval
+
+## 🛠️ Development Guidelines
+
+### **Console Output Standards**
+```javascript
+// Use these emoji prefixes for clear console output
+console.log('🔐 Authentication phase...');
+console.log('🌐 Navigation phase...');
+console.log('📚 Data extraction phase...');
+console.log('✅ Success confirmation...');
+console.log('❌ Error or issue...');
+console.log('⚠️  Warning or adjustment needed...');
+console.log('💾 Saving data...');
+console.log('🔄 Retrying...');
+```
+
+### **Hebrew-Friendly Output**
+```javascript
+// Always show Hebrew text properly
+console.log('📚 נמצאו הקורסים הבאים:');
+console.log('ציונים נמצאו: 5 ציונים');
+console.log('האם הנתונים נכונים? (y/n)');
+```
+
+### **Interactive Prompts**
+```javascript
+// Use these prompt patterns
+const confirm = await prompt('Are these your courses? (y/n): ');
+const issue = await prompt('What\'s wrong? Please describe: ');
+const selector = await prompt('What selector should I use? ');
+const delay = await prompt('How many seconds delay? (default: 2): ');
+```
+
+### **Error Handling**
+```javascript
+// Always handle errors gracefully
+try {
+  // scraping code
+} catch (error) {
+  console.log('❌ Error occurred:');
+  console.log(error.message);
+  const retry = await prompt('Retry? (y/n): ');
+  if (retry === 'y') {
+    // retry logic
+  }
+}
+```
+
+## 🎯 First Task: Login and Show Courses
+
+### **Requirements:**
+1. Takes BGU username and password as input
+2. Logs into Moodle (https://moodle2.bgu.ac.il/moodle/)
+3. Extracts the list of enrolled courses
+4. Displays courses in console with:
+   - Course name
+   - Course ID
+   - Professor name (if available)
+   - Number of students (if visible)
+5. Asks: "Are these your courses? (y/n)"
+6. If yes, saves the selectors used
+7. If no, asks what's wrong and adjusts
+
+### **Implementation Notes:**
+- Use Playwright for handling SSO redirects
+- Show all console logs during development
+- Add delays between actions so developer can follow along
+- Use Hebrew-friendly console output
+- Create a simple test file: `test-scraping.js`
+
+## 🔧 Code Structure
+
+### **Test Script Structure**
+```javascript
+// test-scraping.js
+async function testLogin() {
+  console.log('🔐 Starting BGU Moodle login test...');
+  
+  const username = await prompt('Enter BGU username: ');
+  const password = await prompt('Enter BGU password: ');
+  
+  console.log('🌐 Navigating to Moodle...');
+  // ... login code ...
+  
+  console.log('📚 Found the following courses:');
+  courses.forEach(course => {
+    console.log(`- ${course.name} (ID: ${course.id})`);
+  });
+  
+  const confirm = await prompt('Are these your courses? (y/n): ');
+  if (confirm === 'y') {
+    console.log('✅ Great! Saving selectors...');
+  }
+}
+```
+
+### **Environment Variables**
+```javascript
+// Use environment variables but allow manual input for testing
+const username = process.env.BGU_USERNAME || await prompt('Enter BGU username: ');
+const password = process.env.BGU_PASSWORD || await prompt('Enter BGU password: ');
+```
+
+### **Easy Execution**
+```json
+// package.json
+{
+  "scripts": {
+    "test-scrape": "node test-scraping.js"
+  }
+}
+```
+
+## 🚨 Critical Rules
+
+### **NEVER Do This:**
+- ❌ Use mock data without real credentials
+- ❌ Assume selectors work without testing
+- ❌ Skip developer confirmation
+- ❌ Hide console logs during development
+- ❌ Proceed without error handling
+- ❌ Use hardcoded selectors without validation
+
+### **ALWAYS Do This:**
+- ✅ Use real credentials for testing
+- ✅ Show extracted data for confirmation
+- ✅ Ask for developer feedback
+- ✅ Show all console logs during development
+- ✅ Handle errors gracefully
+- ✅ Use Hebrew-friendly output
+- ✅ Add delays for developer visibility
+- ✅ Save selectors only after confirmation
+
+### **Development Process:**
+1. **Start with login** - Test authentication first
+2. **Extract course list** - Show courses for confirmation
+3. **Navigate to grades** - Only after courses are confirmed
+4. **Extract grades** - Show grades for confirmation
+5. **Save selectors** - Only after all data is confirmed correct
+
+## 📊 Success Criteria
+
+### **Interactive Testing is Successful When:**
+- Developer can see all steps in console
+- Extracted data matches developer's expectations
+- All Hebrew text displays correctly
+- Error handling works gracefully
+- Selectors are saved only after confirmation
+- Developer can easily retry failed steps
+
+### **Ready for Production When:**
+- All selectors are validated with real data
+- Error handling covers all edge cases
+- Performance is acceptable (reasonable delays)
+- Hebrew text processing works correctly
+- Database integration is confirmed working
+
+---
+
+**Remember**: The goal is to build a reliable scraping system through interactive validation. Every selector should be tested with real data before being used in production.
+description:
+globs:
+alwaysApply: false
+---

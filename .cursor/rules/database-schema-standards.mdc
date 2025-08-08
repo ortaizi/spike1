@@ -1,0 +1,239 @@
+# Database Schema Standards for Spike
+
+## 🏗️ Technology Stack
+- **Supabase** - PostgreSQL database with real-time features
+- **NextAuth v5** - Authentication framework
+- **TypeScript** - Type safety for database operations
+
+## 🗄️ Database Architecture
+- Use Supabase PostgreSQL as primary database
+- Implement proper indexing for performance
+- Use UUIDs for primary keys
+- Include audit trails (created_at, updated_at)
+- Implement soft deletes where appropriate
+
+## 📚 Academic Data Models
+
+### User Model
+```prisma
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  studentId     String?  @unique // BGU student ID
+  faculty       String?  // פקולטה
+  department    String?  // מחלקה
+  yearOfStudy   Int?     // שנת לימודים
+  avatar        String?
+  preferences   Json?    // User preferences
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  courses       Course[]
+  assignments   Assignment[]
+  grades        Grade[]
+  teams         TeamMember[]
+
+  @@map("users")
+}
+```
+
+### Course Model
+```prisma
+model Course {
+  id            String   @id @default(cuid())
+  code          String   @unique // BGU course code (e.g., 201-1-1234)
+  name          String   // Hebrew course name
+  nameEn        String?  // English course name
+  description   String?
+  credits       Int
+  semester      String   // א/ב/קיץ
+  academicYear  Int
+  faculty       String
+  department    String
+  instructor    String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  students      CourseEnrollment[]
+  assignments   Assignment[]
+  grades        Grade[]
+
+  @@map("courses")
+}
+```
+
+### Assignment Model
+```prisma
+model Assignment {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  courseId      String
+  dueDate       DateTime
+  priority      Priority @default(MEDIUM)
+  status        AssignmentStatus @default(PENDING)
+  weight        Float?   // Assignment weight in final grade
+  maxGrade      Float?   // Maximum possible grade
+  attachments   String[] // File URLs
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  submissions   AssignmentSubmission[]
+  reminders     Reminder[]
+
+  @@map("assignments")
+}
+```
+
+### Grade Model
+```prisma
+model Grade {
+  id            String   @id @default(cuid())
+  userId        String
+  courseId      String
+  assignmentId  String?
+  grade         Float
+  maxGrade      Float
+  percentage    Float    // Calculated percentage
+  comments      String?
+  gradedAt      DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  assignment    Assignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+
+  @@map("grades")
+}
+```
+
+## 🔗 Junction Tables
+
+### Course Enrollment
+```prisma
+model CourseEnrollment {
+  id            String   @id @default(cuid())
+  userId        String
+  courseId      String
+  enrolledAt    DateTime @default(now())
+  status        EnrollmentStatus @default(ACTIVE)
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("course_enrollments")
+}
+```
+
+### Team Collaboration
+```prisma
+model Team {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  courseId      String
+  maxMembers    Int      @default(4)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  members       TeamMember[]
+
+  @@map("teams")
+}
+
+model TeamMember {
+  id            String   @id @default(cuid())
+  teamId        String
+  userId        String
+  role          TeamRole @default(MEMBER)
+  joinedAt      DateTime @default(now())
+
+  // Relations
+  team          Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@map("team_members")
+}
+```
+
+## 📊 Enums
+```prisma
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum AssignmentStatus {
+  PENDING
+  IN_PROGRESS
+  SUBMITTED
+  GRADED
+  OVERDUE
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  DROPPED
+  COMPLETED
+}
+
+enum TeamRole {
+  LEADER
+  MEMBER
+  OBSERVER
+}
+```
+
+## 🔍 Indexing Strategy
+```prisma
+// Performance indexes
+model User {
+  // ... fields
+
+  @@index([email])
+  @@index([studentId])
+  @@index([faculty, department])
+}
+
+model Course {
+  // ... fields
+
+  @@index([code])
+  @@index([academicYear, semester])
+  @@index([faculty, department])
+}
+
+model Assignment {
+  // ... fields
+
+  @@index([courseId])
+  @@index([dueDate])
+  @@index([status])
+  @@index([userId, status])
+}
+```
+
+## 🚨 Data Integrity
+- Use foreign key constraints
+- Implement proper cascading rules
+- Add check constraints for valid data
+- Use triggers for calculated fields
+- Implement proper validation at application level
+---
+globs: *.prisma,*.sql
+---

@@ -1,0 +1,498 @@
+# Smart Incremental Scraping Service Standards for Spike
+
+## 🏗️ Smart Incremental Scraping Architecture
+- Use Python 3.11+ for centralized scraping service
+- Implement 3-layer update strategy (Real-time, Dynamic, Static)
+- Use centralized service for all 300 users (no per-user scraping)
+- Implement proper rate limiting (max 10 requests/minute to BGU)
+- Add random delays (1-3 seconds) between requests
+- Use job queue system (BullMQ/Redis) for task management
+- Implement shared cache (Redis/in-memory) for common data
+- Store data directly to PostgreSQL with batch inserts
+
+## 🔄 3-Layer Update Strategy
+
+### Real-time Layer (15-minute updates)
+- Critical assignments due in 7 days
+- New grades and urgent messages
+- Exam schedule changes
+- Priority: HIGH - Update frequently
+
+### Dynamic Layer (3-hour updates)
+- Course announcements
+- Calendar events
+- Assignment updates
+- Course material changes
+- Priority: MEDIUM - Update periodically
+
+### Static Layer (Daily updates)
+- Course lists and descriptions
+- Grade history
+- User profiles
+- Faculty/department information
+- Priority: LOW - Update infrequently
+
+## 📚 Ben Gurion University Scraping
+
+### Course Catalog Scraping
+```python
+# spiders/bgu_courses.py
+import scrapy
+from datetime import datetime
+from typing import Dict, Any
+
+class BGUCourseSpider(scrapy.Spider):
+    name = 'bgu_courses'
+    allowed_domains = ['bgu.ac.il']
+    start_urls = ['https://in.bgu.ac.il/students/Pages/courses.aspx']
+    
+    def parse(self, response):
+        """Parse course catalog pages"""
+        for course in response.css('.course-item'):
+            yield {
+                'code': course.css('.course-code::text').get(),
+                'name': course.css('.course-name::text').get(),
+                'name_en': course.css('.course-name-en::text').get(),
+                'credits': course.css('.course-credits::text').get(),
+                'faculty': course.css('.course-faculty::text').get(),
+                'department': course.css('.course-department::text').get(),
+                'semester': course.css('.course-semester::text').get(),
+                'academic_year': self.get_current_academic_year(),
+                'scraped_at': datetime.utcnow().isoformat()
+            }
+    
+    def get_current_academic_year(self) -> int:
+        """Get current academic year (October-September)"""
+        now = datetime.now()
+        return now.year if now.month >= 10 else now.year - 1
+```
+
+### Assignment Scraping
+```python
+# spiders/bgu_assignments.py
+import scrapy
+from datetime import datetime
+import re
+
+class BGUAssignmentSpider(scrapy.Spider):
+    name = 'bgu_assignments'
+    allowed_domains = ['bgu.ac.il']
+    
+    def start_requests(self):
+        """Start requests for each course"""
+        courses = self.get_enrolled_courses()
+        for course in courses:
+            url = f"https://moodle.bgu.ac.il/course/view.php?id={course['moodle_id']}"
+            yield scrapy.Request(
+                url=url,
+                callback=self.parse_assignments,
+                meta={'course_id': course['id']}
+            )
+    
+    def parse_assignments(self, response):
+        """Parse assignments from Moodle course pages"""
+        for assignment in response.css('.assign'):
+            due_date = self.extract_due_date(assignment)
+            yield {
+                'course_id': response.meta['course_id'],
+                'title': assignment.css('.assign-title::text').get(),
+                'description': assignment.css('.assign-description::text').get(),
+                'due_date': due_date,
+                'max_grade': self.extract_max_grade(assignment),
+                'weight': self.extract_weight(assignment),
+                'scraped_at': datetime.utcnow().isoformat()
+            }
+    
+    def extract_due_date(self, assignment) -> str:
+        """Extract and parse due date from assignment"""
+        date_text = assignment.css('.due-date::text').get()
+        if date_text:
+            # Parse Hebrew date format
+            return self.parse_hebrew_date(date_text)
+        return None
+    
+    def parse_hebrew_date(self, date_text: str) -> str:
+        """Parse Hebrew date format to ISO format"""
+        # Implementation for Hebrew date parsing
+        pass
+```
+
+## 🔄 Smart Task Queue Integration
+```python
+# tasks/smart_scraping_tasks.py
+from bullmq import Queue, Worker
+import asyncio
+import random
+from typing import Dict, Any
+from datetime import datetime, timedelta
+
+class SmartScrapingTaskQueue:
+    def __init__(self):
+        self.queue = Queue("smart-scraping-tasks")
+        self.worker = Worker("smart-scraping-tasks", self.process_task)
+        self.rate_limit = 10  # requests per minute
+        self.request_count = 0
+        self.last_reset = datetime.now()
+    
+    async def schedule_layer_update(self, layer_type: str, priority: str = "normal"):
+        """Schedule layer-specific scraping task"""
+        await self.queue.add("update_layer", {
+            "layer_type": layer_type,  # 'real_time', 'dynamic', 'static'
+            "priority": priority,
+            "created_at": datetime.now().isoformat()
+        })
+    
+    async def schedule_real_time_update(self):
+        """Schedule real-time layer update (15-minute cycle)"""
+        await self.schedule_layer_update("real_time", "high")
+    
+    async def schedule_dynamic_update(self):
+        """Schedule dynamic layer update (3-hour cycle)"""
+        await self.schedule_layer_update("dynamic", "medium")
+    
+    async def schedule_static_update(self):
+        """Schedule static layer update (daily cycle)"""
+        await self.schedule_layer_update("static", "low")
+    
+    async def process_task(self, job):
+        """Process smart scraping tasks with rate limiting"""
+        # Check rate limit
+        if not self.check_rate_limit():
+            await asyncio.sleep(60)  # Wait for rate limit reset
+        
+        # Add random delay
+        delay = random.uniform(1, 3)
+        await asyncio.sleep(delay)
+        
+        # Process based on layer type
+        layer_type = job.data.get("layer_type", "dynamic")
+        
+        if layer_type == "real_time":
+            await self.process_real_time_layer()
+        elif layer_type == "dynamic":
+            await self.process_dynamic_layer()
+        elif layer_type == "static":
+            await self.process_static_layer()
+    
+    def check_rate_limit(self) -> bool:
+        """Check if we're within rate limits"""
+        now = datetime.now()
+        if (now - self.last_reset).seconds >= 60:
+            self.request_count = 0
+            self.last_reset = now
+        
+        if self.request_count >= self.rate_limit:
+            return False
+        
+        self.request_count += 1
+        return True
+    
+    async def process_real_time_layer(self):
+        """Process real-time layer (15-minute updates)"""
+        # Fetch critical data
+        assignments = await self.fetch_assignments_due_soon()
+        grades = await self.fetch_new_grades()
+        urgent_messages = await self.fetch_urgent_messages()
+        
+        # Update cache with short TTL
+        await self.update_cache("real_time", {
+            "assignments": assignments,
+            "grades": grades,
+            "urgent_messages": urgent_messages,
+            "updated_at": datetime.now(),
+            "ttl": 900  # 15 minutes
+        })
+    
+    async def process_dynamic_layer(self):
+        """Process dynamic layer (3-hour updates)"""
+        # Fetch course updates
+        announcements = await self.fetch_course_announcements()
+        calendar_events = await self.fetch_calendar_events()
+        assignment_updates = await self.fetch_assignment_updates()
+        
+        # Update cache with medium TTL
+        await self.update_cache("dynamic", {
+            "announcements": announcements,
+            "calendar_events": calendar_events,
+            "assignment_updates": assignment_updates,
+            "updated_at": datetime.now(),
+            "ttl": 10800  # 3 hours
+        })
+    
+    async def process_static_layer(self):
+        """Process static layer (daily updates)"""
+        # Fetch stable data
+        course_lists = await self.fetch_course_lists()
+        grade_history = await self.fetch_grade_history()
+        user_profiles = await self.fetch_user_profiles()
+        
+        # Update cache with long TTL
+        await self.update_cache("static", {
+            "course_lists": course_lists,
+            "grade_history": grade_history,
+            "user_profiles": user_profiles,
+            "updated_at": datetime.now(),
+            "ttl": 86400  # 24 hours
+        })
+    
+    async def update_cache(self, layer: str, data: Dict[str, Any]):
+        """Update cache for specific layer"""
+        # Implementation for cache update
+        pass
+```
+
+## 🛡️ Smart Anti-Detection & Rate Limiting
+```python
+# middleware/smart_anti_detection.py
+import random
+import time
+from typing import Dict, Any
+from fake_useragent import UserAgent
+from datetime import datetime, timedelta
+
+class SmartAntiDetectionMiddleware:
+    def __init__(self):
+        self.ua = UserAgent()
+        self.proxy_pool = self.load_proxy_pool()
+        self.rate_limit = 10  # requests per minute
+        self.request_count = 0
+        self.last_reset = datetime.now()
+    
+    def process_request(self, request, spider):
+        """Add smart anti-detection headers and rate limiting"""
+        # Check rate limit
+        if not self.check_rate_limit():
+            time.sleep(60)  # Wait for rate limit reset
+        
+        # Random user agent
+        request.headers['User-Agent'] = self.ua.random
+        
+        # Random proxy
+        if self.proxy_pool:
+            request.meta['proxy'] = random.choice(self.proxy_pool)
+        
+        # Smart random delay (1-3 seconds)
+        delay = random.uniform(1, 3)
+        time.sleep(delay)
+        
+        # Add realistic headers
+        request.headers.update({
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'he-IL,he;q=0.9,en;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+        })
+    
+    def check_rate_limit(self) -> bool:
+        """Check if we're within rate limits"""
+        now = datetime.now()
+        if (now - self.last_reset).seconds >= 60:
+            self.request_count = 0
+            self.last_reset = now
+        
+        if self.request_count >= self.rate_limit:
+            return False
+        
+        self.request_count += 1
+        return True
+    
+    def load_proxy_pool(self) -> list:
+        """Load proxy pool from configuration"""
+        # Implementation for proxy loading
+        return []
+```
+
+## 📊 Data Processing Pipeline
+```python
+# pipelines/data_processing.py
+import json
+from datetime import datetime
+from typing import Dict, Any
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+class DataProcessingPipeline:
+    def __init__(self):
+        self.db_config = self.load_db_config()
+        self.batch_size = 100
+        self.batch_data = []
+    
+    def process_item(self, item, spider):
+        """Process scraped items"""
+        # Clean and validate data
+        cleaned_item = self.clean_item(item)
+        
+        # Add to batch
+        self.batch_data.append(cleaned_item)
+        
+        # Flush batch if full
+        if len(self.batch_data) >= self.batch_size:
+            self.flush_batch()
+        
+        return item
+    
+    def clean_item(self, item: Dict[str, Any]) -> Dict[str, Any]:
+        """Clean and validate scraped data"""
+        cleaned = {}
+        
+        # Clean course code
+        if 'code' in item:
+            cleaned['code'] = self.clean_course_code(item['code'])
+        
+        # Clean Hebrew text
+        if 'name' in item:
+            cleaned['name'] = self.clean_hebrew_text(item['name'])
+        
+        # Parse dates
+        if 'due_date' in item:
+            cleaned['due_date'] = self.parse_date(item['due_date'])
+        
+        return cleaned
+    
+    def clean_course_code(self, code: str) -> str:
+        """Clean BGU course code format"""
+        # Remove extra spaces and normalize format
+        return code.strip().replace(' ', '')
+    
+    def clean_hebrew_text(self, text: str) -> str:
+        """Clean Hebrew text"""
+        # Remove extra whitespace and normalize
+        return ' '.join(text.split())
+    
+    def flush_batch(self):
+        """Flush batch data to database"""
+        if not self.batch_data:
+            return
+        
+        try:
+            with psycopg2.connect(**self.db_config) as conn:
+                with conn.cursor() as cur:
+                    # Batch insert logic
+                    self.batch_insert(cur, self.batch_data)
+            
+            self.batch_data = []
+        except Exception as e:
+            print(f"Error flushing batch: {e}")
+    
+    def batch_insert(self, cursor, data: list):
+        """Batch insert data to PostgreSQL"""
+        # Implementation for batch insert
+        pass
+```
+
+## 🔍 Monitoring & Logging
+```python
+# monitoring/scraping_monitor.py
+import logging
+from datetime import datetime
+from typing import Dict, Any
+
+class ScrapingMonitor:
+    def __init__(self):
+        self.logger = logging.getLogger('scraping_monitor')
+        self.stats = {
+            'total_requests': 0,
+            'successful_requests': 0,
+            'failed_requests': 0,
+            'items_scraped': 0,
+            'start_time': datetime.utcnow()
+        }
+    
+    def log_request(self, success: bool, url: str, status_code: int = None):
+        """Log request statistics"""
+        self.stats['total_requests'] += 1
+        
+        if success:
+            self.stats['successful_requests'] += 1
+            self.logger.info(f"Successful request: {url}")
+        else:
+            self.stats['failed_requests'] += 1
+            self.logger.error(f"Failed request: {url} - Status: {status_code}")
+    
+    def log_item_scraped(self, item_type: str, item_id: str):
+        """Log scraped item"""
+        self.stats['items_scraped'] += 1
+        self.logger.info(f"Scraped {item_type}: {item_id}")
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get current scraping statistics"""
+        duration = datetime.utcnow() - self.stats['start_time']
+        return {
+            **self.stats,
+            'duration_seconds': duration.total_seconds(),
+            'success_rate': self.stats['successful_requests'] / max(self.stats['total_requests'], 1)
+        }
+```
+
+## 🏗️ Centralized Architecture for 300 Users
+
+### **Single Scraping Service**
+- **No per-user scraping** - All 300 users share the same service
+- **3-5 background workers** handling all requests
+- **Shared cache** for common data (Redis/in-memory)
+- **Job queue system** for managing scraping tasks
+- **Connection pooling** for efficient resource usage
+
+### **Scalability Features**
+```python
+# architecture/centralized_service.py
+class CentralizedScrapingService:
+    def __init__(self):
+        self.workers = []  # 3-5 background workers
+        self.shared_cache = {}  # Redis/in-memory cache
+        self.job_queue = None  # BullMQ/Redis queue
+        self.connection_pool = None  # Database connection pool
+    
+    async def start_workers(self, worker_count: int = 3):
+        """Start background workers"""
+        for i in range(worker_count):
+            worker = SmartScrapingWorker()
+            self.workers.append(worker)
+            await worker.start()
+    
+    async def get_cached_data(self, layer: str, user_id: str = None):
+        """Get data from shared cache"""
+        cache_key = f"{layer}:{user_id}" if user_id else layer
+        return self.shared_cache.get(cache_key)
+    
+    async def schedule_update(self, layer: str, priority: str = "normal"):
+        """Schedule layer update for all users"""
+        await self.job_queue.add("update_layer", {
+            "layer_type": layer,
+            "priority": priority,
+            "for_all_users": True
+        })
+```
+
+## 🚨 Error Handling
+```python
+# exceptions/scraping_exceptions.py
+class ScrapingException(Exception):
+    """Base exception for scraping errors"""
+    pass
+
+class RateLimitException(ScrapingException):
+    """Raised when rate limit is exceeded"""
+    pass
+
+class AuthenticationException(ScrapingException):
+    """Raised when authentication fails"""
+    pass
+
+class DataValidationException(ScrapingException):
+    """Raised when scraped data is invalid"""
+    pass
+
+class CacheException(ScrapingException):
+    """Raised when cache operations fail"""
+    pass
+
+class QueueException(ScrapingException):
+    """Raised when job queue operations fail"""
+    pass
+```
+---
+globs: *.py,*.js
+---

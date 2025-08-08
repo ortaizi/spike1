@@ -1,0 +1,329 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dashboard-specific styles */
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700;800&display=swap');
+
+/* Custom CSS variables for dashboard - Updated colors based on the image */
+:root {
+  --primary-color: #00D4AA; /* Green-turquoise for charts */
+  --primary-hover: #00B894;
+  --secondary-color: #6B7280;
+  --success-color: #00D4AA; /* Green-turquoise */
+  --warning-color: #FFD700; /* Yellow-green glow */
+  --error-color: #EF4444;
+  --background-light: #F8F9FA; /* Light gray background */
+  --background-dark: #1F2937;
+  --text-primary: #000000; /* Black for headings */
+  --text-secondary: #6B7280;
+  --border-color: #E5E7EB;
+  --shadow-soft: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-large: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --accent-green: #00D4AA; /* Green-turquoise for highlights */
+  --accent-yellow: #FFD700; /* Yellow-green glow for positive numbers */
+}
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+  font-family: 'Assistant', sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Assistant', sans-serif;
+  background-color: var(--background-light);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* Dashboard layout */
+.dashboard-container {
+  min-height: 100vh;
+  background: var(--background-light);
+}
+
+.dashboard-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Modern sidebar separator */
+.sidebar-separator {
+  position: relative;
+  border-right: 1px solid #e5e7eb;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 1));
+}
+
+.sidebar-separator::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.15), transparent);
+  box-shadow: 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+/* Hover effect for sidebar */
+.sidebar-separator:hover::after {
+  background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.2), transparent);
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.15);
+}
+
+/* Card styles - Updated for clean white cards */
+.dashboard-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.dashboard-card:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-2px);
+}
+
+/* Dipy card styles for dashboard components */
+.dipy-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border-color);
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.dipy-card:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-2px);
+}
+
+/* Dipy fade-in animation */
+.dipy-fade-in {
+  animation: dipyFadeIn 0.6s ease-out;
+}
+
+@keyframes dipyFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dipy accent colors for cards */
+.dipy-accent-sky {
+  border-left: 4px solid #0ea5e9;
+}
+
+.dipy-accent-orange {
+  border-left: 4px solid #f97316;
+}
+
+.dipy-accent-emerald {
+  border-left: 4px solid #10b981;
+}
+
+.dipy-accent-indigo {
+  border-left: 4px solid #6366f1;
+}
+
+.dipy-accent-rose {
+  border-left: 4px solid #f43f5e;
+}
+
+.dipy-accent-amber {
+  border-left: 4px solid #f59e0b;
+}
+
+.dipy-accent-slate {
+  border-left: 4px solid #64748b;
+}
+
+/* Dipy icon colors */
+.dipy-icon-sky {
+  color: #0ea5e9;
+}
+
+.dipy-icon-orange {
+  color: #f97316;
+}
+
+.dipy-icon-emerald {
+  color: #10b981;
+}
+
+.dipy-icon-indigo {
+  color: #6366f1;
+}
+
+.dipy-icon-rose {
+  color: #f43f5e;
+}
+
+.dipy-icon-amber {
+  color: #f59e0b;
+}
+
+.dipy-icon-slate {
+  color: #64748b;
+}
+
+/* Dipy text styles */
+.dipy-title {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.dipy-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Text overflow handling */
+.dipy-card h3,
+.dipy-card p,
+.dipy-card span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dipy-card p,
+.dipy-card span {
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+/* Button styles - Updated colors */
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+/* Navigation styles - Updated for sidebar */
+.nav-item {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.nav-item:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.nav-item.active {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Status indicators - Updated colors */
+.status-success {
+  color: var(--accent-green);
+}
+
+.status-warning {
+  color: var(--accent-yellow);
+}
+
+.status-error {
+  color: var(--error-color);
+}
+
+/* Chart colors - Updated for green-turquoise theme */
+.chart-primary {
+  color: var(--accent-green);
+}
+
+.chart-secondary {
+  color: var(--accent-yellow);
+}
+
+/* Positive numbers and highlights */
+.positive-value {
+  color: var(--accent-yellow);
+  font-weight: 600;
+}
+
+/* Loading states */
+.loading-spinner {
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid var(--primary-color);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .dashboard-content {
+    padding: 1rem;
+  }
+  
+  .dashboard-card {
+    margin-bottom: 1rem;
+  }
+}
+
+/* RTL specific adjustments */
+[dir="rtl"] .nav-item {
+  text-align: right;
+}
+
+[dir="rtl"] .dashboard-card {
+  text-align: right;
+}
+
+/* Dark mode support - Updated for new color scheme */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-light: #1F2937;
+    --text-primary: #F9FAFB;
+    --text-secondary: #D1D5DB;
+    --border-color: #374151;
+  }
+  
+  .dashboard-card {
+    background: #374151;
+    border-color: #4B5563;
+  }
+} 

@@ -1,0 +1,336 @@
+# TypeScript Coding Standards - Spike Platform
+
+## 🚀 סטנדרטים לפיתוח מערכת סנכרון אוטומטי
+
+### ארכיטקטורת קבצים
+```
+apps/web/
+├── lib/
+│   ├── database/
+│   │   ├── operations.ts          # פעולות דטה בייס
+│   │   └── sync-jobs.ts          # ניהול jobs
+│   ├── background-sync.ts         # תהליך רקע
+│   ├── error-handler.ts           # טיפול בשגיאות
+│   └── utils/
+│       └── sync-status-messages.ts # הודעות סטטוס
+├── app/api/
+│   └── sync-status/
+│       ├── [jobId]/route.ts       # בדיקת סטטוס
+│       └── active/route.ts        # job פעיל
+└── components/dashboard/
+    └── sync-progress.tsx          # רכיב התקדמות
+```
+
+### טיפוסי נתונים (Types)
+```typescript
+// Sync Job Types
+interface SyncJob {
+  id: string;
+  user_id: string;
+  status: SyncStatus;
+  progress: number;
+  message?: string;
+  data?: any;
+  created_at: Date;
+  updated_at: Date;
+}
+
+type SyncStatus = 
+  | 'starting'
+  | 'creating_tables'
+  | 'fetching_courses'
+  | 'analyzing_content'
+  | 'classifying_data'
+  | 'saving_to_database'
+  | 'completed'
+  | 'error';
+
+// User Credentials
+interface MoodleCredentials {
+  moodle_username: string;
+  moodle_password: string;
+  university_id: string;
+}
+
+// Sync Progress
+interface SyncProgress {
+  jobId: string;
+  status: SyncStatus;
+  progress: number;
+  message: string;
+  error?: string;
+}
+```
+
+### פונקציות עיקריות
+```typescript
+// יצירת job חדש
+async function createSyncJob(userId: string): Promise<string> {
+  const jobId = generateJobId();
+  await db.insert('sync_jobs', {
+    id: jobId,
+    user_id: userId,
+    status: 'starting',
+    progress: 0
+  });
+  return jobId;
+}
+
+// עדכון סטטוס job
+async function updateJobStatus(
+  jobId: string, 
+  status: SyncStatus, 
+  progress: number,
+  message?: string
+): Promise<void> {
+  await db.update('sync_jobs', jobId, {
+    status,
+    progress,
+    message,
+    updated_at: new Date()
+  });
+}
+
+// התחלת סנכרון רקע
+async function startBackgroundSync(
+  userId: string, 
+  credentials: MoodleCredentials
+): Promise<string> {
+  const jobId = await createSyncJob(userId);
+  
+  // הרצה ברקע
+  setImmediate(() => {
+    performBackgroundSync(jobId, userId, credentials);
+  });
+  
+  return jobId;
+}
+```
+
+### רכיבי React
+```typescript
+// רכיב התקדמות סנכרון
+interface SyncProgressProps {
+  jobId: string;
+  onComplete?: () => void;
+  onError?: (error: string) => void;
+}
+
+export function SyncProgress({ jobId, onComplete, onError }: SyncProgressProps) {
+  const [progress, setProgress] = useState<SyncProgress | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/sync-status/${jobId}`);
+        const data = await response.json();
+        
+        setProgress(data);
+        
+        if (data.status === 'completed') {
+          onComplete?.();
+          clearInterval(pollInterval);
+        } else if (data.status === 'error') {
+          setError(data.message);
+          onError?.(data.message);
+          clearInterval(pollInterval);
+        }
+      } catch (err) {
+        setError('שגיאה בבדיקת סטטוס');
+      }
+    }, 2000);
+
+    return () => clearInterval(pollInterval);
+  }, [jobId, onComplete, onError]);
+
+  if (error) {
+    return <div className="text-red-500">שגיאה: {error}</div>;
+  }
+
+  if (!progress) {
+    return <div>טוען...</div>;
+  }
+
+  return (
+    <div className="sync-progress">
+      <div className="progress-bar">
+        <div 
+          className="progress-fill" 
+          style={{ width: `${progress.progress}%` }}
+        />
+      </div>
+      <div className="progress-message">
+        {getStatusMessage(progress.status)}
+      </div>
+    </div>
+  );
+}
+```
+
+### API Routes
+```typescript
+// בדיקת סטטוס job
+export async function GET(
+  request: Request,
+  { params }: { params: { jobId: string } }
+) {
+  try {
+    const jobId = params.jobId;
+    const job = await getSyncJobStatus(jobId);
+    
+    if (!job) {
+      return Response.json({ error: 'Job לא נמצא' }, { status: 404 });
+    }
+    
+    return Response.json(job);
+  } catch (error) {
+    return Response.json(
+      { error: 'שגיאה בבדיקת סטטוס' }, 
+      { status: 500 }
+    );
+  }
+}
+
+// בדיקת job פעיל
+export async function GET() {
+  try {
+    const userId = getCurrentUserId();
+    const activeJob = await getActiveSyncJob(userId);
+    
+    return Response.json({
+      hasActiveJob: !!activeJob,
+      jobId: activeJob?.id,
+      status: activeJob?.status,
+      progress: activeJob?.progress
+    });
+  } catch (error) {
+    return Response.json(
+      { error: 'שגיאה בבדיקת job פעיל' }, 
+      { status: 500 }
+    );
+  }
+}
+```
+
+### טיפול בשגיאות
+```typescript
+// Retry mechanism
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error as Error;
+      
+      if (attempt === maxRetries) {
+        throw lastError;
+      }
+      
+      const delay = baseDelay * Math.pow(2, attempt);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError!;
+}
+
+// Error handler
+export function handleSyncError(error: unknown): string {
+  if (error instanceof NetworkError) {
+    return 'שגיאת רשת - בדוק את החיבור לאינטרנט';
+  }
+  
+  if (error instanceof TimeoutError) {
+    return 'פג תוקף הבקשה - נסה שוב';
+  }
+  
+  if (error instanceof AuthError) {
+    return 'שגיאת התחברות - בדוק פרטי התחברות';
+  }
+  
+  return 'שגיאה לא ידועה - נסה שוב מאוחר יותר';
+}
+```
+
+### הודעות סטטוס
+```typescript
+// הודעות בעברית
+export function getStatusMessage(status: SyncStatus): string {
+  const messages: Record<SyncStatus, string> = {
+    starting: '🚀 מתחיל תהליך סנכרון...',
+    creating_tables: '🏗️ בודק ומייצר טבלאות נדרשות...',
+    fetching_courses: '📊 אוסף נתוני קורסים מהמודל...',
+    analyzing_content: '🔍 מנתח תוכן קורסים...',
+    classifying_data: '🗂️ מסווג ומארגן נתונים...',
+    saving_to_database: '💾 שומר נתונים בדטה בייס...',
+    completed: '✅ סנכרון הושלם בהצלחה!',
+    error: '❌ שגיאה בתהליך הסנכרון'
+  };
+  
+  return messages[status];
+}
+```
+
+### סטנדרטי קוד
+```typescript
+// Naming conventions
+const syncJobId = 'job-123';           // camelCase
+const SYNC_TIMEOUT = 300000;           // UPPER_SNAKE_CASE
+const syncStatus: SyncStatus = 'starting'; // PascalCase for types
+
+// Function naming
+async function performBackgroundSync() {}    // verb + noun
+async function updateJobStatus() {}         // verb + noun
+async function getSyncJobStatus() {}        // get + noun
+
+// Error handling
+try {
+  await riskyOperation();
+} catch (error) {
+  logger.error('Operation failed', { error, context });
+  throw new CustomError('User-friendly message');
+}
+
+// Type safety
+function processUserData(user: User): ProcessedUser {
+  if (!user.id) {
+    throw new ValidationError('User ID is required');
+  }
+  
+  return {
+    id: user.id,
+    name: user.name || 'Unknown',
+    email: user.email
+  };
+}
+```
+
+### הגדרות סביבה
+```typescript
+// Environment variables
+const config = {
+  JOB_POLLING_INTERVAL: parseInt(process.env.JOB_POLLING_INTERVAL || '2000'),
+  JOB_TIMEOUT: parseInt(process.env.JOB_TIMEOUT || '300000'),
+  JOB_CLEANUP_DAYS: parseInt(process.env.JOB_CLEANUP_DAYS || '7'),
+  JOB_MAX_RETRIES: parseInt(process.env.JOB_MAX_RETRIES || '3'),
+  AUTO_SYNC_ENABLED: process.env.AUTO_SYNC_ENABLED === 'true'
+} as const;
+```
+
+## 🎯 סיכום
+
+סטנדרטי הקוד החדשים מספקים:
+- ✅ **Type Safety** - טיפוסים מדויקים לכל הנתונים
+- ✅ **Error Handling** - טיפול בשגיאות מקיף
+- ✅ **Hebrew Support** - תמיכה מלאה בעברית
+- ✅ **Performance** - קוד מיטבי לביצועים
+- ✅ **Maintainability** - קוד נקי וקריא
+
+**הסטנדרטים מוכנים לשימוש!** 🚀 

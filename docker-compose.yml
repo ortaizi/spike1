@@ -1,0 +1,160 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database with PgBouncer
+  postgres:
+    image: postgres:15-alpine
+    container_name: spike_postgres
+    environment:
+      POSTGRES_DB: spike_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./packages/database/init:/docker-entrypoint-initdb.d
+      - ./packages/database/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./packages/database/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    networks:
+      - spike_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d spike_dev"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PgBouncer for Connection Pooling
+  pgbouncer:
+    image: edoburu/pgbouncer:1.18.0
+    container_name: spike_pgbouncer
+    environment:
+      DB_HOST: postgres
+      DB_USER: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      DB_NAME: spike_dev
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 20
+      RESERVE_POOL_SIZE: 5
+      RESERVE_POOL_TIMEOUT: 5
+      SERVER_RESET_QUERY: DISCARD ALL
+      SERVER_CHECK_QUERY: select 1
+      SERVER_CHECK_DELAY: 30
+    ports:
+      - "6432:5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - spike_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis with Sentinel for High Availability
+  redis-master:
+    image: redis:7-alpine
+    container_name: spike_redis_master
+    command: redis-server --requirepass ${REDIS_PASSWORD:-password} --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_master_data:/data
+      - ./packages/database/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - spike_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis-replica:
+    image: redis:7-alpine
+    container_name: spike_redis_replica
+    command: redis-server --requirepass ${REDIS_PASSWORD:-password} --replicaof redis-master 6379 --appendonly yes
+    volumes:
+      - redis_replica_data:/data
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    networks:
+      - spike_network
+
+  redis-sentinel:
+    image: redis:7-alpine
+    container_name: spike_redis_sentinel
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    volumes:
+      - ./packages/database/sentinel.conf:/usr/local/etc/redis/sentinel.conf
+    depends_on:
+      - redis-master
+      - redis-replica
+    networks:
+      - spike_network
+
+  # Redis Commander for Management UI
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: spike_redis_commander
+    environment:
+      REDIS_HOSTS: local:redis-master:6379:0:${REDIS_PASSWORD:-password}
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis-master
+    networks:
+      - spike_network
+
+  # pgAdmin for PostgreSQL Management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: spike_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@spike.local
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - spike_network
+
+  # Python Scraper Service
+  scraper:
+    build:
+      context: ./apps/scraper
+      dockerfile: Dockerfile
+    container_name: spike_scraper
+    environment:
+      - COCKROACH_DEV_URL=${COCKROACH_DEV_URL}
+      - COCKROACH_PROD_URL=${COCKROACH_PROD_URL}
+      - DATABASE_URL=${COCKROACH_DEV_URL:-postgresql://postgres:${POSTGRES_PASSWORD:-password}@pgbouncer:5432/spike_dev}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-password}@redis-master:6379
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+      redis-master:
+        condition: service_healthy
+    networks:
+      - spike_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_master_data:
+  redis_replica_data:
+  pgadmin_data:
+
+networks:
+  spike_network:
+    driver: bridge 

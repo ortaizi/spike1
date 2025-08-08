@@ -1,0 +1,397 @@
+# Performance Optimization Standards for Spike
+
+## 🏗️ Technology Stack
+- **Next.js 14+** - React framework with App Router
+- **Supabase** - Database with real-time features
+- **NextAuth v5** - Authentication framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+
+## 🚀 Core Performance Targets
+- **Page Load Time**: < 3 seconds
+- **API Response Time**: < 200ms
+- **Core Web Vitals**: All green
+- **Mobile Performance Score**: > 90
+- **Scraping Success Rate**: > 95%
+
+## 📱 Frontend Optimization
+
+### Next.js 14 Optimizations
+```typescript
+// Use App Router for better performance
+// Implement proper loading states
+export default function Loading() {
+  return <div>Loading...</div>;
+}
+
+// Use Suspense for code splitting
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
+
+const AssignmentList = dynamic(() => import('./AssignmentList'), {
+  loading: () => <div>Loading assignments...</div>,
+  ssr: false // For client-only components
+});
+
+// Implement proper image optimization
+import Image from 'next/image';
+
+<Image
+  src="/course-icon.png"
+  alt="Course Icon"
+  width={64}
+  height={64}
+  priority={true} // For above-the-fold images
+  placeholder="blur"
+  blurDataURL="data:image/jpeg;base64,..."
+/>
+```
+
+### React Query Optimization
+```typescript
+// Implement proper caching strategies
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+// Optimistic updates for better UX
+const queryClient = useQueryClient();
+
+const updateAssignment = useMutation({
+  mutationFn: updateAssignmentApi,
+  onMutate: async (newAssignment) => {
+    // Cancel outgoing refetches
+    await queryClient.cancelQueries({ queryKey: ['assignments'] });
+    
+    // Snapshot previous value
+    const previousAssignments = queryClient.getQueryData(['assignments']);
+    
+    // Optimistically update
+    queryClient.setQueryData(['assignments'], (old) => 
+      old?.map(assignment => 
+        assignment.id === newAssignment.id ? newAssignment : assignment
+      )
+    );
+    
+    return { previousAssignments };
+  },
+  onError: (err, newAssignment, context) => {
+    // Rollback on error
+    queryClient.setQueryData(['assignments'], context?.previousAssignments);
+  },
+  onSettled: () => {
+    // Always refetch after error or success
+    queryClient.invalidateQueries({ queryKey: ['assignments'] });
+  },
+});
+```
+
+### Bundle Optimization
+```typescript
+// Implement proper code splitting
+// pages/assignments.tsx
+import dynamic from 'next/dynamic';
+
+const AssignmentCalendar = dynamic(() => import('../components/AssignmentCalendar'), {
+  loading: () => <div>Loading calendar...</div>
+});
+
+const AssignmentStats = dynamic(() => import('../components/AssignmentStats'), {
+  loading: () => <div>Loading stats...</div>
+});
+
+// Use proper tree shaking
+import { Button } from '@/components/ui/button'; // Only import what you need
+```
+
+## 🗄️ Database Optimization
+
+### Query Optimization
+```sql
+-- Use proper indexes
+CREATE INDEX idx_assignments_user_status ON assignments(user_id, status);
+CREATE INDEX idx_assignments_due_date ON assignments(due_date);
+CREATE INDEX idx_courses_academic_year ON courses(academic_year, semester);
+
+-- Use efficient queries
+SELECT a.*, c.name as course_name 
+FROM assignments a 
+JOIN courses c ON a.course_id = c.id 
+WHERE a.user_id = $1 
+  AND a.due_date >= NOW() 
+  AND a.status = 'PENDING'
+ORDER BY a.due_date ASC;
+
+-- Use pagination
+SELECT * FROM assignments 
+WHERE user_id = $1 
+ORDER BY due_date 
+LIMIT 20 OFFSET 40;
+```
+
+### Connection Pooling
+```typescript
+// Implement proper connection pooling
+import { Pool } from 'pg';
+
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT || '5432'),
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  max: 20, // Maximum number of clients
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+```
+
+## 🔄 Caching Strategy
+
+### Redis Caching
+```typescript
+// Implement multi-level caching
+import { Redis } from '@upstash/redis';
+
+const redis = Redis.fromEnv();
+
+// Cache frequently accessed data
+export async function getCachedAssignments(userId: string) {
+  const cacheKey = `assignments:${userId}`;
+  
+  // Try cache first
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+  
+  // Fetch from database
+  const assignments = await fetchAssignmentsFromDB(userId);
+  
+  // Cache for 5 minutes
+  await redis.setex(cacheKey, 300, JSON.stringify(assignments));
+  
+  return assignments;
+}
+
+// Cache invalidation
+export async function invalidateUserCache(userId: string) {
+  const keys = await redis.keys(`*:${userId}`);
+  if (keys.length > 0) {
+    await redis.del(...keys);
+  }
+}
+```
+
+### In-Memory Caching
+```typescript
+// Use LRU cache for hot data
+import LRU from 'lru-cache';
+
+const courseCache = new LRU({
+  max: 500, // Maximum number of items
+  ttl: 1000 * 60 * 5, // 5 minutes
+});
+
+export function getCachedCourse(courseId: string) {
+  return courseCache.get(courseId);
+}
+
+export function setCachedCourse(courseId: string, courseData: any) {
+  courseCache.set(courseId, courseData);
+}
+```
+
+## 📊 API Performance
+
+### Response Optimization
+```typescript
+// Implement proper response compression
+import compression from 'compression';
+
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+  level: 6, // Balance between compression and CPU usage
+}));
+
+// Use proper HTTP caching headers
+export async function GET(request: Request) {
+  const assignments = await getAssignments();
+  
+  return Response.json(assignments, {
+    headers: {
+      'Cache-Control': 'public, max-age=300, s-maxage=600', // 5min browser, 10min CDN
+      'ETag': generateETag(assignments),
+      'Content-Type': 'application/json',
+    },
+  });
+}
+```
+
+### Rate Limiting
+```typescript
+// Implement intelligent rate limiting
+import { Ratelimit } from '@upstash/ratelimit';
+
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(100, '1 m'), // 100 requests per minute
+  analytics: true,
+  prefix: 'api_ratelimit',
+});
+
+export async function POST(request: Request) {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown';
+  const { success, limit, reset, remaining } = await ratelimit.limit(ip);
+  
+  if (!success) {
+    return Response.json(
+      { error: 'Rate limit exceeded' },
+      { 
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': limit.toString(),
+          'X-RateLimit-Remaining': remaining.toString(),
+          'X-RateLimit-Reset': reset.toString(),
+        }
+      }
+    );
+  }
+  
+  // Process request
+}
+```
+
+## 🕷️ Scraping Performance
+
+### Batch Processing
+```python
+# Implement batch processing for scraping
+class BatchProcessor:
+    def __init__(self, batch_size=100):
+        self.batch_size = batch_size
+        self.batch = []
+    
+    def add_item(self, item):
+        self.batch.append(item)
+        
+        if len(self.batch) >= self.batch_size:
+            self.flush()
+    
+    def flush(self):
+        if self.batch:
+            # Batch insert to database
+            self.batch_insert(self.batch)
+            self.batch = []
+    
+    def batch_insert(self, items):
+        # Use COPY command for fast batch inserts
+        with psycopg2.connect(**self.db_config) as conn:
+            with conn.cursor() as cur:
+                # Implementation for batch insert
+                pass
+```
+
+### Concurrent Scraping
+```python
+# Use asyncio for concurrent scraping
+import asyncio
+import aiohttp
+
+async def scrape_multiple_courses(course_ids):
+    async with aiohttp.ClientSession() as session:
+        tasks = [
+            scrape_course(session, course_id) 
+            for course_id in course_ids
+        ]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        return results
+
+async def scrape_course(session, course_id):
+    url = f"https://bgu.ac.il/course/{course_id}"
+    async with session.get(url) as response:
+        return await response.text()
+```
+
+## 📈 Monitoring & Analytics
+
+### Performance Monitoring
+```typescript
+// Implement performance monitoring
+export function trackPageLoad(page: string, loadTime: number) {
+  // Send to analytics service
+  analytics.track('page_load', {
+    page,
+    load_time: loadTime,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+// Monitor API performance
+export async function monitorApiCall(
+  endpoint: string, 
+  startTime: number
+) {
+  const duration = Date.now() - startTime;
+  
+  if (duration > 1000) { // Log slow requests
+    console.warn(`Slow API call: ${endpoint} took ${duration}ms`);
+  }
+  
+  // Send metrics to monitoring service
+  metrics.histogram('api_duration', duration, {
+    endpoint,
+    status: 'success',
+  });
+}
+```
+
+### Error Tracking
+```typescript
+// Implement proper error tracking
+import * as Sentry from '@sentry/nextjs';
+
+export function trackError(error: Error, context?: any) {
+  Sentry.captureException(error, {
+    extra: context,
+    tags: {
+      component: 'spike-platform',
+    },
+  });
+}
+
+// Monitor scraping errors
+export function trackScrapingError(url: string, error: Error) {
+  Sentry.captureException(error, {
+    extra: { url },
+    tags: {
+      service: 'scraping',
+      university: 'bgu',
+    },
+  });
+}
+```
+
+## 🎯 Progressive Enhancement
+
+### Phase 1: Basic Performance (0-100 users)
+- Implement basic caching
+- Use Next.js built-in optimizations
+- Basic database indexing
+
+### Phase 2: Enhanced Performance (100-300 users)
+- Add Redis caching
+- Implement CDN
+- Advanced query optimization
+
+### Phase 3: High Performance (300-500+ users)
+- Full monitoring suite
+- Advanced caching strategies
+- Database read replicas
+- Microservice architecture
+---
+alwaysApply: true
+---

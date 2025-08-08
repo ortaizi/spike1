@@ -1,0 +1,201 @@
+# Testing Standards - Spike Platform
+
+## 🧪 מערכת בדיקות למערכת סנכרון אוטומטי
+
+### בדיקות יחידה (Unit Tests)
+```typescript
+// בדיקת יצירת job
+describe('Sync Job Creation', () => {
+  it('should create a new sync job', async () => {
+    const jobId = await createSyncJob(userId);
+    expect(jobId).toBeDefined();
+  });
+});
+
+// בדיקת עדכון סטטוס
+describe('Status Updates', () => {
+  it('should update job status correctly', async () => {
+    await updateJobStatus(jobId, 'fetching_courses', 20);
+    const status = await getJobStatus(jobId);
+    expect(status.status).toBe('fetching_courses');
+    expect(status.progress).toBe(20);
+  });
+});
+```
+
+### בדיקות אינטגרציה (Integration Tests)
+```typescript
+// בדיקת תהליך סנכרון מלא
+describe('Full Sync Process', () => {
+  it('should complete sync process successfully', async () => {
+    const jobId = await startBackgroundSync(userId, credentials);
+    
+    // בדיקת התקדמות
+    await waitForStatus(jobId, 'completed');
+    
+    const finalStatus = await getJobStatus(jobId);
+    expect(finalStatus.status).toBe('completed');
+    expect(finalStatus.progress).toBe(100);
+  });
+});
+```
+
+### בדיקות API
+```typescript
+// בדיקת endpoints
+describe('Sync Status API', () => {
+  it('should return job status', async () => {
+    const response = await fetch(`/api/sync-status/${jobId}`);
+    const data = await response.json();
+    expect(data.status).toBeDefined();
+    expect(data.progress).toBeGreaterThanOrEqual(0);
+  });
+  
+  it('should return active job', async () => {
+    const response = await fetch('/api/sync-status/active');
+    const data = await response.json();
+    expect(data.hasActiveJob).toBeDefined();
+  });
+});
+```
+
+### בדיקות UI
+```typescript
+// בדיקת רכיב התקדמות
+describe('Sync Progress Component', () => {
+  it('should display progress correctly', () => {
+    render(<SyncProgress jobId={jobId} />);
+    expect(screen.getByText('מתחיל תהליך סנכרון...')).toBeInTheDocument();
+  });
+  
+  it('should update progress in real-time', async () => {
+    render(<SyncProgress jobId={jobId} />);
+    await waitFor(() => {
+      expect(screen.getByText('אוסף נתוני קורסים...')).toBeInTheDocument();
+    });
+  });
+});
+```
+
+### בדיקות ביצועים
+```typescript
+// בדיקת זמני תגובה
+describe('Performance Tests', () => {
+  it('should complete sync within timeout', async () => {
+    const startTime = Date.now();
+    await startBackgroundSync(userId, credentials);
+    const endTime = Date.now();
+    
+    expect(endTime - startTime).toBeLessThan(300000); // 5 minutes
+  });
+});
+```
+
+### בדיקות שגיאות
+```typescript
+// בדיקת טיפול בשגיאות
+describe('Error Handling', () => {
+  it('should handle network errors gracefully', async () => {
+    // Simulate network error
+    mockNetworkError();
+    
+    const jobId = await startBackgroundSync(userId, credentials);
+    const status = await getJobStatus(jobId);
+    
+    expect(status.status).toBe('error');
+    expect(status.message).toContain('שגיאת רשת');
+  });
+  
+  it('should retry failed operations', async () => {
+    const retryCount = await getRetryCount(jobId);
+    expect(retryCount).toBeLessThanOrEqual(3);
+  });
+});
+```
+
+### בדיקות אבטחה
+```typescript
+// בדיקת הרשאות
+describe('Security Tests', () => {
+  it('should only allow access to own jobs', async () => {
+    const otherUserId = 'other-user-id';
+    const response = await fetch(`/api/sync-status/${jobId}`, {
+      headers: { 'user-id': otherUserId }
+    });
+    
+    expect(response.status).toBe(403);
+  });
+});
+```
+
+### בדיקות עומס
+```typescript
+// בדיקת מספר משתמשים במקביל
+describe('Load Tests', () => {
+  it('should handle multiple concurrent users', async () => {
+    const userCount = 10;
+    const promises = Array(userCount).fill(0).map(() => 
+      startBackgroundSync(userId, credentials)
+    );
+    
+    const results = await Promise.all(promises);
+    expect(results).toHaveLength(userCount);
+  });
+});
+```
+
+### הגדרות בדיקות
+```json
+{
+  "testEnvironment": "jsdom",
+  "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"],
+  "testMatch": [
+    "**/__tests__/**/*.test.{ts,tsx}",
+    "**/*.test.{ts,tsx}"
+  ],
+  "collectCoverageFrom": [
+    "lib/**/*.{ts,tsx}",
+    "components/**/*.{ts,tsx}",
+    "app/**/*.{ts,tsx}"
+  ]
+}
+```
+
+### סקריפטי בדיקה
+```bash
+# הרצת כל הבדיקות
+npm run test
+
+# בדיקות עם coverage
+npm run test:coverage
+
+# בדיקות ביצועים
+npm run test:performance
+
+# בדיקות אינטגרציה
+npm run test:integration
+```
+
+### מדדי איכות
+- **Coverage מינימלי**: 80%
+- **זמן תגובה מקסימלי**: 2 שניות
+- **זמן סנכרון מקסימלי**: 5 דקות
+- **דיוק מינימלי**: 95%
+
+### כלי בדיקה
+- **Jest**: Framework ראשי
+- **React Testing Library**: בדיקות UI
+- **MSW**: Mocking של API
+- **Lighthouse**: בדיקות ביצועים
+- **Cypress**: בדיקות E2E
+
+## 🎯 סיכום
+
+מערכת הבדיקות החדשה מספקת:
+- ✅ **כיסוי מלא** - בדיקות לכל הרכיבים
+- ✅ **ביצועים מיטביים** - בדיקות זמני תגובה
+- ✅ **אמינות גבוהה** - בדיקות שגיאות מקיפות
+- ✅ **אבטחה** - בדיקות הרשאות
+- ✅ **עומס** - בדיקות מספר משתמשים
+
+**מערכת הבדיקות מוכנה!** 🧪 

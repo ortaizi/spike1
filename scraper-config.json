@@ -1,0 +1,12 @@
+{
+  "credentials": {
+    "username": "ortaiz",
+    "password": "Orking!123"
+  },
+  "scraping": {
+    "debug": true,
+    "headless": false,
+    "slowMo": 1000,
+    "url": "https://moodle.bgu.ac.il"
+  }
+} 

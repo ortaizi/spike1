@@ -1,0 +1,17 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="30" cy="30" r="25" fill="#1e40af" stroke="#1e3a8a" stroke-width="2"/>
+  
+  <!-- University building icon -->
+  <path d="M20 40 L40 40 L40 20 L35 20 L35 15 L25 15 L25 20 L20 20 Z" fill="white"/>
+  <rect x="22" y="25" width="3" height="3" fill="white"/>
+  <rect x="27" y="25" width="3" height="3" fill="white"/>
+  <rect x="32" y="25" width="3" height="3" fill="white"/>
+  <rect x="22" y="30" width="3" height="3" fill="white"/>
+  <rect x="27" y="30" width="3" height="3" fill="white"/>
+  <rect x="32" y="30" width="3" height="3" fill="white"/>
+  
+  <!-- Text -->
+  <text x="70" y="25" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#1e40af">אוניברסיטת בן-גוריון</text>
+  <text x="70" y="40" font-family="Arial, sans-serif" font-size="10" fill="#6b7280">בנגב</text>
+</svg> 

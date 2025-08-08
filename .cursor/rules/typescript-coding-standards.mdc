@@ -1,0 +1,364 @@
+# TypeScript Coding Standards for Spike
+
+## 🔧 TypeScript Configuration
+- Use TypeScript strict mode
+- Prefer explicit types over inference when unclear
+- Use interfaces for object shapes, types for unions/primitives
+- Always use semicolons
+- Use double quotes for strings
+- Enable all strict checks in tsconfig.json
+
+## 📝 Naming Conventions
+- **Components**: PascalCase (e.g., `AssignmentCard`, `CourseList`)
+- **Functions**: camelCase (e.g., `fetchAssignments`, `updateCourse`)
+- **Constants**: UPPER_SNAKE_CASE (e.g., `API_ENDPOINTS`, `MAX_RETRIES`)
+- **Types/Interfaces**: PascalCase (e.g., `Assignment`, `CourseData`)
+- **Files**: kebab-case (e.g., `assignment-card.tsx`, `course-service.ts`)
+- **Directories**: kebab-case (e.g., `assignment-management/`, `course-tracking/`)
+
+## 🏗️ Component Structure
+```typescript
+// 1. Imports (external first, then internal)
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Assignment } from '@/types/assignment';
+import { useAssignments } from '@/hooks/use-assignments';
+
+// 2. Types/Interfaces
+interface AssignmentCardProps {
+  assignment: Assignment;
+  onUpdate?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  className?: string;
+}
+
+// 3. Component
+export function AssignmentCard({ 
+  assignment, 
+  onUpdate, 
+  onDelete, 
+  className 
+}: AssignmentCardProps) {
+  // 4. State
+  const [isLoading, setIsLoading] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // 5. Hooks
+  const { updateAssignment, deleteAssignment } = useAssignments();
+
+  // 6. Effects
+  useEffect(() => {
+    // Effect logic
+  }, []);
+
+  // 7. Handlers
+  const handleUpdate = async () => {
+    setIsLoading(true);
+    try {
+      await updateAssignment(assignment.id, { status: 'IN_PROGRESS' });
+      onUpdate?.(assignment.id);
+    } catch (error) {
+      console.error('Failed to update assignment:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('האם אתה בטוח שברצונך למחוק מטלה זו?')) return;
+    
+    setIsLoading(true);
+    try {
+      await deleteAssignment(assignment.id);
+      onDelete?.(assignment.id);
+    } catch (error) {
+      console.error('Failed to delete assignment:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 8. Render
+  return (
+    <div className={`p-4 border rounded-lg ${className}`}>
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <h3 className="font-semibold text-lg">{assignment.title}</h3>
+          <p className="text-gray-600 mt-1">{assignment.description}</p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-sm text-gray-500">
+              תאריך יעד: {new Date(assignment.dueDate).toLocaleDateString('he-IL')}
+            </span>
+            <span className={`px-2 py-1 rounded text-xs ${
+              assignment.priority === 'HIGH' ? 'bg-red-100 text-red-800' :
+              assignment.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-green-100 text-green-800'
+            }`}>
+              {assignment.priority}
+            </span>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            size="sm" 
+            onClick={handleUpdate}
+            disabled={isLoading}
+          >
+            עדכן
+          </Button>
+          <Button 
+            size="sm" 
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={isLoading}
+          >
+            מחק
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+## 🎯 Best Practices
+- Use React Query for server state management
+- Implement proper error boundaries
+- Use Zod for runtime validation
+- Prefer composition over inheritance
+- Keep components small and focused
+- Use proper TypeScript generics when needed
+- Implement proper loading states
+- Use proper accessibility attributes
+- Support Hebrew RTL text direction
+
+## 🚨 Error Handling
+```typescript
+// Always handle errors gracefully
+try {
+  const data = await fetchData();
+  return data;
+} catch (error) {
+  console.error('Failed to fetch data:', error);
+  
+  // Log to monitoring service
+  if (process.env.NODE_ENV === 'production') {
+    Sentry.captureException(error);
+  }
+  
+  throw new Error('Failed to fetch data');
+}
+
+// Custom error boundary component
+export function ErrorBoundary({ children }: { children: React.ReactNode }) {
+  return (
+    <ErrorBoundary
+      fallback={<div>משהו השתבש. אנא נסה שוב.</div>}
+      onError={(error) => {
+        console.error('Error boundary caught error:', error);
+        Sentry.captureException(error);
+      }}
+    >
+      {children}
+    </ErrorBoundary>
+  );
+}
+```
+
+## 📊 State Management
+- Use Zustand for global state
+- Use React Query for server state
+- Prefer local state when possible
+- Use context sparingly
+- Implement proper state persistence
+
+```typescript
+// Zustand store example
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+interface UserStore {
+  user: User | null;
+  setUser: (user: User | null) => void;
+  preferences: UserPreferences;
+  updatePreferences: (preferences: Partial<UserPreferences>) => void;
+}
+
+export const useUserStore = create<UserStore>()(
+  persist(
+    (set) => ({
+      user: null,
+      setUser: (user) => set({ user }),
+      preferences: {
+        language: 'he',
+        theme: 'light',
+        notifications: true,
+      },
+      updatePreferences: (preferences) => 
+        set((state) => ({
+          preferences: { ...state.preferences, ...preferences }
+        })),
+    }),
+    {
+      name: 'user-storage',
+    }
+  )
+);
+```
+
+## 🔧 Type Definitions
+```typescript
+// Academic types
+export interface Assignment {
+  id: string;
+  title: string;
+  description?: string;
+  courseId: string;
+  dueDate: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  status: 'PENDING' | 'IN_PROGRESS' | 'SUBMITTED' | 'GRADED' | 'OVERDUE';
+  weight?: number;
+  maxGrade?: number;
+  attachments: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Course {
+  id: string;
+  code: string; // BGU course code (e.g., 201-1-1234)
+  name: string; // Hebrew course name
+  nameEn?: string; // English course name
+  description?: string;
+  credits: number;
+  semester: string; // א/ב/קיץ
+  academicYear: number;
+  faculty: string;
+  department: string;
+  instructor?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  studentId?: string; // BGU student ID
+  faculty?: string;
+  department?: string;
+  yearOfStudy?: number;
+  avatar?: string;
+  preferences: UserPreferences;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserPreferences {
+  language: 'he' | 'en';
+  theme: 'light' | 'dark';
+  notifications: boolean;
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+}
+```
+
+## 🎨 Styling Guidelines
+```typescript
+// Use Tailwind CSS with proper Hebrew support
+const containerClasses = `
+  p-4 
+  border 
+  rounded-lg 
+  bg-white 
+  shadow-sm 
+  hover:shadow-md 
+  transition-shadow 
+  duration-200
+`;
+
+// RTL support
+const rtlContainerClasses = `
+  text-right 
+  [dir="rtl"] 
+  rtl:pr-4 
+  ltr:pl-4
+`;
+
+// Responsive design
+const responsiveClasses = `
+  w-full 
+  md:w-1/2 
+  lg:w-1/3 
+  xl:w-1/4
+`;
+```
+
+## 🧪 Testing Standards
+```typescript
+// Component testing with Vitest
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { AssignmentCard } from './assignment-card';
+
+describe('AssignmentCard', () => {
+  it('renders assignment title and description', () => {
+    const assignment = {
+      id: '1',
+      title: 'מטלה ראשונה',
+      description: 'תיאור המטלה',
+      courseId: 'course-1',
+      dueDate: '2024-01-15',
+      priority: 'MEDIUM' as const,
+      status: 'PENDING' as const,
+      attachments: [],
+      createdAt: '2024-01-01',
+      updatedAt: '2024-01-01',
+    };
+
+    render(<AssignmentCard assignment={assignment} />);
+    
+    expect(screen.getByText('מטלה ראשונה')).toBeInTheDocument();
+    expect(screen.getByText('תיאור המטלה')).toBeInTheDocument();
+  });
+
+  it('calls onUpdate when update button is clicked', () => {
+    const onUpdate = vi.fn();
+    const assignment = { /* ... */ };
+
+    render(<AssignmentCard assignment={assignment} onUpdate={onUpdate} />);
+    
+    fireEvent.click(screen.getByText('עדכן'));
+    expect(onUpdate).toHaveBeenCalledWith(assignment.id);
+  });
+});
+```
+
+## 📝 Code Comments
+```typescript
+/**
+ * Fetches assignments for a specific user
+ * @param userId - The ID of the user
+ * @param filters - Optional filters for assignments
+ * @returns Promise resolving to array of assignments
+ */
+export async function fetchUserAssignments(
+  userId: string, 
+  filters?: AssignmentFilters
+): Promise<Assignment[]> {
+  // Implementation
+}
+
+// Inline comments for complex logic
+const processedData = rawData
+  .filter(item => item.status === 'ACTIVE') // Only active items
+  .map(item => ({
+    ...item,
+    processedAt: new Date().toISOString(), // Add processing timestamp
+  }))
+  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); // Sort by creation date
+```
+---
+globs: *.ts,*.tsx
+---

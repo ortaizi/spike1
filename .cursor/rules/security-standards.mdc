@@ -1,0 +1,350 @@
+# Security Standards for Spike
+
+## 🏗️ Technology Stack
+- **NextAuth v5** - Authentication framework
+- **Supabase** - Database with built-in security features
+- **TypeScript** - Type safety for security
+
+## 🔐 Authentication & Authorization
+- Use NextAuth v5 for authentication
+- Implement proper session management
+- Use JWT tokens with appropriate expiration
+- Implement role-based access control (RBAC)
+- Support university-specific authentication (BGU, TAU, HUJI)
+
+## 🛡️ Data Protection
+- Encrypt sensitive data at rest
+- Use HTTPS for all communications
+- Implement proper CORS policies
+- Sanitize all user inputs
+- Use parameterized queries to prevent SQL injection
+
+## 🔒 API Security
+```typescript
+// Rate limiting implementation
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(10, '1 m'),
+  analytics: true,
+});
+
+export async function POST(request: Request) {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown';
+  const { success } = await ratelimit.limit(ip);
+  
+  if (!success) {
+    return Response.json(
+      { error: 'Rate limit exceeded' },
+      { status: 429 }
+    );
+  }
+  
+  // Process request
+}
+
+// Input validation with Zod
+import { z } from 'zod';
+
+const UserInputSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  name: z.string().min(1, 'Name is required'),
+});
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const validatedData = UserInputSchema.parse(body);
+    
+    // Process validated data
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return Response.json(
+        { error: 'Validation failed', details: error.errors },
+        { status: 400 }
+      );
+    }
+  }
+}
+```
+
+## 🔐 Environment Variables Security
+```env
+# Never commit these to version control
+DATABASE_URL="postgresql://..."
+NEXTAUTH_SECRET="your-secret-key-here"
+NEXTAUTH_URL="http://localhost:3000"
+UPSTASH_REDIS_REST_URL="..."
+UPSTASH_REDIS_REST_TOKEN="..."
+SENTRY_DSN="..."
+```
+
+## 🚨 Error Handling Security
+```typescript
+// Don't expose sensitive information in errors
+export async function GET(request: Request) {
+  try {
+    const data = await fetchSensitiveData();
+    return Response.json({ data });
+  } catch (error) {
+    // Log the full error for debugging
+    console.error('Error fetching data:', error);
+    
+    // Return generic error to user
+    return Response.json(
+      { error: 'An error occurred' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+## 🔍 Content Security Policy
+```typescript
+// next.config.js
+const nextConfig = {
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: `
+              default-src 'self';
+              script-src 'self' 'unsafe-eval' 'unsafe-inline';
+              style-src 'self' 'unsafe-inline';
+              img-src 'self' data: https:;
+              font-src 'self';
+              connect-src 'self' https://api.example.com;
+              frame-ancestors 'none';
+            `.replace(/\s{2,}/g, ' ').trim()
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
+          }
+        ]
+      }
+    ];
+  }
+};
+```
+
+## 🔐 Database Security
+```sql
+-- Use parameterized queries
+-- Don't use string concatenation for SQL queries
+SELECT * FROM users WHERE email = $1 AND active = true;
+
+-- Implement proper user permissions
+CREATE ROLE spike_app_user WITH LOGIN PASSWORD 'secure_password';
+GRANT SELECT, INSERT, UPDATE, DELETE ON assignments TO spike_app_user;
+GRANT SELECT ON courses TO spike_app_user;
+
+-- Use row level security (RLS)
+ALTER TABLE assignments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can only access their own assignments" ON assignments
+  FOR ALL USING (user_id = current_user_id());
+```
+
+## 🛡️ File Upload Security
+```typescript
+// Validate file uploads
+import { z } from 'zod';
+
+const FileUploadSchema = z.object({
+  file: z.instanceof(File),
+  maxSize: z.number().max(5 * 1024 * 1024), // 5MB max
+  allowedTypes: z.array(z.string()).refine(
+    (types) => types.every(type => 
+      ['image/jpeg', 'image/png', 'application/pdf'].includes(type)
+    ),
+    'Invalid file type'
+  )
+});
+
+export async function POST(request: Request) {
+  const formData = await request.formData();
+  const file = formData.get('file') as File;
+  
+  if (!file) {
+    return Response.json({ error: 'No file provided' }, { status: 400 });
+  }
+  
+  // Validate file
+  const validation = FileUploadSchema.safeParse({
+    file,
+    maxSize: file.size,
+    allowedTypes: [file.type]
+  });
+  
+  if (!validation.success) {
+    return Response.json(
+      { error: 'Invalid file' },
+      { status: 400 }
+    );
+  }
+  
+  // Process file
+}
+```
+
+## 🔐 Session Security
+```typescript
+// Secure session configuration
+export const authOptions: NextAuthOptions = {
+  session: {
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
+  callbacks: {
+    async session({ session, token }) {
+      // Add user ID to session
+      session.user.id = token.sub;
+      return session;
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+  },
+};
+```
+
+## 🔍 Security Monitoring
+```typescript
+// Log security events
+export function logSecurityEvent(event: string, details: any) {
+  console.log(JSON.stringify({
+    level: 'security',
+    event,
+    details,
+    timestamp: new Date().toISOString(),
+    ip: request.headers.get('x-forwarded-for'),
+    userAgent: request.headers.get('user-agent'),
+  }));
+}
+
+// Monitor for suspicious activity
+export function detectSuspiciousActivity(request: Request) {
+  const userAgent = request.headers.get('user-agent');
+  const ip = request.headers.get('x-forwarded-for');
+  
+  // Check for suspicious patterns
+  const suspiciousPatterns = [
+    /bot/i,
+    /crawler/i,
+    /scraper/i,
+    /sqlmap/i,
+    /nikto/i,
+  ];
+  
+  const isSuspicious = suspiciousPatterns.some(pattern => 
+    pattern.test(userAgent || '')
+  );
+  
+  if (isSuspicious) {
+    logSecurityEvent('suspicious_activity', { userAgent, ip });
+    return true;
+  }
+  
+  return false;
+}
+```
+
+## 🔐 Password Security
+```typescript
+// Password hashing with bcrypt
+import bcrypt from 'bcryptjs';
+
+export async function hashPassword(password: string): Promise<string> {
+  const saltRounds = 12;
+  return bcrypt.hash(password, saltRounds);
+}
+
+export async function verifyPassword(
+  password: string, 
+  hashedPassword: string
+): Promise<boolean> {
+  return bcrypt.compare(password, hashedPassword);
+}
+
+// Password validation
+const PasswordSchema = z.string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+  .regex(/[0-9]/, 'Password must contain at least one number')
+  .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character');
+```
+
+## 🛡️ CORS Configuration
+```typescript
+// Configure CORS properly
+export const corsOptions = {
+  origin: [
+    'http://localhost:3000',
+    'https://spike.vercel.app',
+    'https://spike-production.vercel.app'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['X-Total-Count'],
+};
+```
+
+## 🔐 API Key Security
+```typescript
+// Secure API key handling
+export function validateApiKey(apiKey: string): boolean {
+  const validKeys = process.env.API_KEYS?.split(',') || [];
+  return validKeys.includes(apiKey);
+}
+
+// Use API keys for external services
+export async function callExternalService(endpoint: string, data: any) {
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.EXTERNAL_SERVICE_API_KEY}`,
+    },
+    body: JSON.stringify(data),
+  });
+  
+  return response.json();
+}
+```
+---
+alwaysApply: true
+---

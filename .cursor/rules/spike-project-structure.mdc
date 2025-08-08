@@ -1,0 +1,164 @@
+# Spike Academic Management Platform - Project Structure
+
+## 🎯 Project Overview
+Spike is a comprehensive academic management platform for Israeli university students, starting with Ben Gurion University. Built with Next.js 14, TypeScript, and a scalable monorepo architecture.
+
+## 🏗️ Technology Stack
+- **Next.js 14+** - React framework with App Router
+- **Supabase** - Database and authentication backend
+- **NextAuth v5** - Authentication framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+
+## 📁 Monorepo Structure
+```
+spike/
+├── apps/
+│   ├── web/                    # Next.js frontend + API
+│   │   ├── app/               # App Router (Next.js 14)
+│   │   │   ├── (auth)/        # Authentication routes
+│   │   │   ├── dashboard/     # Main dashboard
+│   │   │   ├── courses/       # Course management
+│   │   │   ├── assignments/   # Assignment tracking
+│   │   │   ├── calendar/      # Academic calendar
+│   │   │   ├── teams/         # Team collaboration
+│   │   │   ├── api/           # API routes
+│   │   │   ├── globals.css    # Global styles
+│   │   │   ├── layout.tsx     # Root layout
+│   │   │   └── page.tsx       # Home page
+│   │   ├── components/        # React components
+│   │   │   ├── ui/           # Shadcn/ui components
+│   │   │   ├── forms/        # Form components
+│   │   │   ├── dashboard/    # Dashboard components
+│   │   │   ├── courses/      # Course components
+│   │   │   ├── assignments/  # Assignment components
+│   │   │   └── shared/       # Shared components
+│   │   ├── lib/              # Utilities and helpers
+│   │   │   ├── auth/         # NextAuth v5 configuration
+│   │   │   ├── db.ts         # Supabase client
+│   │   │   ├── utils.ts      # General utilities
+│   │   │   ├── validations.ts # Zod schemas
+│   │   │   └── api.ts        # API utilities
+│   │   ├── types/            # TypeScript types
+│   │   ├── hooks/            # Custom React hooks
+│   │   ├── stores/           # Zustand stores
+│   │   └── public/           # Static assets
+│   ├── api/                   # Express.js service (when needed)
+│   │   ├── src/
+│   │   ├── package.json
+│   │   └── Dockerfile
+│   └── scraper/              # Python scraping service
+│       ├── spiders/          # Scrapy spiders
+│       ├── pipelines/        # Data processing
+│       ├── middleware/       # Scraping middleware
+│       ├── utils/            # Scraping utilities
+│       ├── requirements.txt  # Python dependencies
+│       ├── main.py           # Entry point
+│       └── docker/           # Container config
+├── packages/
+│   ├── database/             # Supabase schema & client
+│   │   ├── src/
+│   │   └── package.json
+│   ├── shared/              # Shared types & utils
+│   │   ├── src/
+│   │   │   ├── types/       # Shared TypeScript types
+│   │   │   ├── utils/       # Shared utilities
+│   │   │   └── constants/   # Shared constants
+│   │   └── package.json
+│   └── ui/                  # Shared UI components
+│       ├── src/
+│       ├── package.json
+│       └── tailwind.config.js
+├── docker-compose.yml       # Local development
+├── turbo.json              # Turborepo config
+├── package.json            # Root package.json
+├── .env.example            # Environment variables example
+├── .gitignore              # Git ignore rules
+├── README.md               # Project documentation
+└── .cursor/rules/          # Cursor rules for development
+```
+
+## 🛠️ Tech Stack
+- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS, Shadcn/ui
+- **Backend**: Next.js API Routes, Supabase
+- **Database**: Supabase PostgreSQL
+- **Authentication**: NextAuth v5
+- **State Management**: Zustand + React Query (TanStack Query)
+- **Forms**: React Hook Form + Zod
+- **Testing**: Vitest, Playwright
+- **Monitoring**: Sentry, BetterUptime
+
+## 🎓 Academic Features
+- Assignment tracking with priority levels
+- Academic calendar with Hebrew dates
+- Course management with BGU integration
+- Email organization and notifications
+- Team collaboration and project management
+- Hebrew RTL support throughout
+- Ben Gurion University specific features
+- Grade tracking and analytics
+- Reminder system for deadlines
+
+## 📊 Development Principles
+- Start simple, scale smart
+- Cost-optimal (free tiers first)
+- Production-ready from day one
+- Minimal complexity, maximum flexibility
+- Progressive enhancement strategy
+- Hebrew-first design approach
+- Mobile-first responsive design
+
+## 🚀 Quick Start Commands
+```bash
+# Install dependencies
+npm install
+
+# Start development
+npm run dev
+
+# Build for production
+npm run build
+
+# Run tests
+npm run test
+
+# Database operations
+npm run db:generate
+npm run db:push
+
+# Scraping service
+npm run scraper:dev
+```
+
+## 📱 Key Pages & Routes
+- `/` - Landing page (DELETED)
+- `/dashboard` - Main dashboard
+- `/courses` - Course management
+- `/assignments` - Assignment tracking
+- `/calendar` - Academic calendar
+- `/teams` - Team collaboration
+- `/profile` - User profile
+- `/settings` - Application settings
+
+## 🔧 Environment Variables
+```env
+# Supabase Configuration
+SUPABASE_URL="https://fnizmtpiyszmmccorscc.supabase.co"
+SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZuaXptdHBpeXN6bW1jY29yc2NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwMDMxNTAsImV4cCI6MjA2OTU3OTE1MH0.w0JdGXECMBJt42mX9a8wT83Wv-k8kSEM0wt2AYOpKWU"
+
+# NextAuth v5 Configuration
+APP_URL="http://localhost:3000"
+AUTH_SECRET="IuEsrue0232Y4JVNCi3vKf8va/umSUyRqlfjSfDdiaA="
+AUTH_URL="http://localhost:3000"
+
+# Environment Settings
+NODE_ENV="development"
+NEXTAUTH_DEBUG=true
+```
+
+## 📈 Scaling Strategy
+- **Phase 1 (0-100 users)**: Vercel + Supabase free tiers
+- **Phase 2 (100-300 users)**: Add monitoring + advanced features
+- **Phase 3 (300-500+ users)**: Full production setup with CDN
+alwaysApply: true
+---
