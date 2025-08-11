@@ -1,0 +1,45 @@
+export * from './types';
+export declare function formatDate(date: string | Date): string;
+export declare function formatDateTime(date: string | Date): string;
+export declare function formatGrade(grade: number, maxGrade: number): string;
+export declare const hebrewValidationMessages: {
+    required: string;
+    email: string;
+    minLength: (min: number) => string;
+    maxLength: (max: number) => string;
+    invalidCourseCode: string;
+    invalidStudentId: string;
+    invalidGrade: string;
+    invalidDate: string;
+    invalidTime: string;
+    passwordTooWeak: string;
+    passwordsNotMatch: string;
+    phoneInvalid: string;
+    required_field: string;
+    min_length: (min: number) => string;
+    max_length: (max: number) => string;
+    invalid_email: string;
+    invalid_phone: string;
+    invalid_url: string;
+    future_date: string;
+    past_date: string;
+    positive_number: string;
+    integer_only: string;
+    between: (min: number, max: number) => string;
+};
+export declare function getCurrentAcademicYear(): number;
+export declare function getCurrentSemester(): string;
+export declare function getAcademicYearString(year: number): string;
+export declare function isValidCourseCode(code: string): boolean;
+export declare function isValidStudentId(id: string): boolean;
+export declare function calculateGPA(grades: Array<{
+    grade: number;
+    credits: number;
+}>): number;
+export declare function getGradeStatus(grade: number): 'excellent' | 'good' | 'satisfactory' | 'fail';
+export declare function getPriorityColor(priority: string): string;
+export declare function getStatusColor(status: string): string;
+export declare function timeUntilDue(dueDate: string): string;
+export declare function isOverdue(dueDate: string): boolean;
+export declare function isDueSoon(dueDate: string, hoursThreshold?: number): boolean;
+//# sourceMappingURL=index.d.ts.map

@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { MoveRight, PhoneCall } from "lucide-react";
 import { Button } from "./button";
-import { useRouter } from "next/navigation";
 
-function Hero() {
-  const router = useRouter();
+interface HeroProps {
+  onLoginClick?: () => void;
+}
+
+function Hero({ onLoginClick }: HeroProps) {
   
   return (
     <div className="w-full relative overflow-hidden">
@@ -45,7 +46,7 @@ function Hero() {
               <Button 
                 size="lg" 
                 className="gap-4 bg-white/90 backdrop-blur-sm border border-white/30 text-gray-700 hover:bg-white/95 shadow-lg"
-                onClick={() => router.push("/auth/signin")}
+                onClick={onLoginClick}
               >
                 צפה בדמו <PhoneCall className="w-4 h-4" />
               </Button>
@@ -57,7 +58,7 @@ function Hero() {
               <Button 
                 size="lg" 
                 className="gap-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-lg"
-                onClick={() => router.push("/auth/signin")}
+                onClick={onLoginClick}
               >
                 התחבר עכשיו <MoveRight className="w-4 h-4" />
               </Button>

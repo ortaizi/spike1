@@ -8,6 +8,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { chromium, Browser, Page } from 'playwright';
+import { env } from "./env"
 
 // טיפוסים
 export interface MoodleCredentials {
@@ -47,8 +48,8 @@ export interface UniversityConfig {
 const UNIVERSITY_CONFIGS: Record<string, UniversityConfig> = {
   bgu: {
     name: 'Ben-Gurion University',
-    moodleUrl: process.env.BGU_MOODLE_URL || 'https://moodle.bgu.ac.il',
-    loginUrl: `${process.env.BGU_MOODLE_URL || 'https://moodle.bgu.ac.il'}/login/index.php`,
+    moodleUrl: env.BGU_MOODLE_URL || 'https://moodle.bgu.ac.il',
+    loginUrl: `${env.BGU_MOODLE_URL || 'https://moodle.bgu.ac.il'}/login/index.php`,
     selectors: {
       usernameField: '#username',
       passwordField: '#password',
@@ -59,8 +60,8 @@ const UNIVERSITY_CONFIGS: Record<string, UniversityConfig> = {
   },
   technion: {
     name: 'Technion',
-    moodleUrl: process.env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il',
-    loginUrl: `${process.env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il'}/login/index.php`,
+    moodleUrl: env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il',
+    loginUrl: `${env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il'}/login/index.php`,
     selectors: {
       usernameField: '#username',
       passwordField: '#password',
@@ -71,8 +72,8 @@ const UNIVERSITY_CONFIGS: Record<string, UniversityConfig> = {
   },
   huji: {
     name: 'Hebrew University',
-    moodleUrl: process.env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il',
-    loginUrl: `${process.env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il'}/login/index.php`,
+    moodleUrl: env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il',
+    loginUrl: `${env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il'}/login/index.php`,
     selectors: {
       usernameField: '#username',
       passwordField: '#password',
@@ -83,8 +84,8 @@ const UNIVERSITY_CONFIGS: Record<string, UniversityConfig> = {
   },
   tau: {
     name: 'Tel Aviv University',
-    moodleUrl: process.env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il',
-    loginUrl: `${process.env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il'}/login/index.php`,
+    moodleUrl: env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il',
+    loginUrl: `${env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il'}/login/index.php`,
     selectors: {
       usernameField: '#username',
       passwordField: '#password',
@@ -96,8 +97,8 @@ const UNIVERSITY_CONFIGS: Record<string, UniversityConfig> = {
 };
 
 // חיבור ל-Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 /**

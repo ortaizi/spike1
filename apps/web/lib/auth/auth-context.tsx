@@ -26,13 +26,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    console.log('🔍 HYDRATION DEBUG - AuthProvider mounting', {
-      isServer: typeof window === 'undefined',
-      status,
-      hasSession: !!session
-    });
     setIsClient(true);
-  }, [status, session]);
+  }, []);
 
   const login = async (username: string, password: string, universityId: string): Promise<AuthResult> => {
     setIsLoading(true);
@@ -69,9 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value: AuthContextType = {
-    isAuthenticated: !!session,
-    isLoading: isLoading, // רק טעינה של תהליך ההתחברות
-    isInitializing: status === 'loading', // טעינה ראשונית של NextAuth
+    isAuthenticated: isClient ? !!session : false,
+    isLoading: isLoading,
+    isInitializing: status === 'loading' || !isClient,
     user: session?.user,
     login,
     logout,
@@ -80,15 +75,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSelectedUniversity,
   };
 
-  // Show loading state until client-side hydration is complete
+  // Prevent hydration mismatch by ensuring consistent initial state
   if (!isClient) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">טוען...</p>
-        </div>
-      </div>
+      <AuthContext.Provider value={{
+        ...value,
+        isAuthenticated: false,
+        isInitializing: true
+      }}>
+        {children}
+      </AuthContext.Provider>
     );
   }
 

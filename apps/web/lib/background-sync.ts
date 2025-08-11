@@ -1,5 +1,6 @@
-import { createSyncJob, updateSyncJob, getSyncJobStatus } from './database/sync-jobs';
+import { createSyncJob, updateSyncJob } from './database/sync-jobs';
 import { withRetry } from './error-handler';
+import { supabase } from './db';
 
 export interface SyncCredentials {
   moodle_username: string;
@@ -181,7 +182,7 @@ async function ensureUserTables(userId: string): Promise<void> {
 /**
  * איסוף נתוני קורסים מהמודל
  */
-async function fetchUserCourses(userId: string, credentials: SyncCredentials): Promise<any[]> {
+async function fetchUserCourses(userId: string, _credentials: SyncCredentials): Promise<any[]> {
   console.log('📊 אוסף נתוני קורסים עבור:', userId);
   
   // נחזיר נתונים מדומים כרגע - מותאם למבנה הדטה בייס
@@ -426,7 +427,7 @@ async function fetchUserCourses(userId: string, credentials: SyncCredentials): P
 /**
  * ניתוח קורס בודד
  */
-async function analyzeCourse(course: any, jobId: string): Promise<void> {
+async function analyzeCourse(course: any, _jobId: string): Promise<void> {
   console.log('🔍 מנתח קורס:', course.name || course.id);
   
   // נשתמש ב-mock analysis במקום API call

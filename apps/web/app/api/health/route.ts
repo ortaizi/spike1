@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { checkDatabaseConnection } from '../../../lib/db';
+import { env } from "../../../lib/env"
 
 export async function GET() {
   const startTime = Date.now();
   
   try {
     // Check if Supabase is available (not using placeholder values)
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
     
     let databaseStatus;
     if (supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {

@@ -1,8 +1,6 @@
 "use client"
 
-import { useState } from "react"
-import { BarChart3, Calendar, Shield, CreditCard, Mail, ClipboardList, Bell, X, AlertCircle } from "lucide-react"
-import { Notifications } from "./notifications"
+import { BarChart3, Calendar, Shield, CreditCard, Mail, ClipboardList } from "lucide-react"
 
 const dashboardCards = [
   // Top row components (right side)

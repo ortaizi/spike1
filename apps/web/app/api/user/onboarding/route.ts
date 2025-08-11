@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth/auth-provider';
+import { getServerSession } from 'next-auth';
+import { unifiedAuthOptions } from '../../../../lib/auth/unified-auth';
 import { supabase } from '../../../../lib/db';
 import { z } from 'zod';
+import { env } from "../../../../lib/env"
 
 // Validation schema for onboarding data
 const onboardingSchema = z.object({
@@ -10,8 +12,8 @@ const onboardingSchema = z.object({
 
 export async function GET() {
   try {
-    // Get session using Auth.js v5
-    const session = await auth();
+    // Get session using NextAuth
+    const session = await getServerSession(unifiedAuthOptions);
     
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -21,8 +23,8 @@ export async function GET() {
     }
 
     // Check if Supabase is available (not using placeholder values)
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
     
     if (supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
       console.log('Using mock onboarding status (Supabase not configured)');
@@ -63,8 +65,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get session using Auth.js v5
-    const session = await auth();
+    // Get session using NextAuth
+    const session = await getServerSession(unifiedAuthOptions);
     
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -78,8 +80,8 @@ export async function POST(request: NextRequest) {
     const validatedData = onboardingSchema.parse(body);
 
     // Check if Supabase is available (not using placeholder values)
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
     
     if (supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
       console.log('Using mock onboarding completion (Supabase not configured)');

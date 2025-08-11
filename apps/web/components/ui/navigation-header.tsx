@@ -1,14 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Button } from "./button"
-import { Zap, ChevronDown, Menu, X } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { ChevronDown, Menu, X } from "lucide-react"
+import { LoginPopup } from "../auth/login-popup"
+import { useIsClient } from "../../hooks/use-is-client"
 
 export function NavigationHeader() {
-  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isLoginPopupOpen, setIsLoginPopupOpen] = useState(false)
+  const isClient = useIsClient()
 
   const navigationItems = [
     {
@@ -25,6 +27,8 @@ export function NavigationHeader() {
   ]
 
   const scrollToSection = (sectionId: string) => {
+    if (!isClient) return; // Prevent DOM access during SSR
+    
     const element = document.getElementById(sectionId)
     if (element) {
       // Calculate offset for header height
@@ -126,7 +130,7 @@ export function NavigationHeader() {
               <Button 
                 size="sm"
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-lg"
-                onClick={() => router.push("/auth/signin")}
+                onClick={() => setIsLoginPopupOpen(true)}
               >
                 התחברות
               </Button>
@@ -174,7 +178,10 @@ export function NavigationHeader() {
                   <Button 
                     size="sm"
                     className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-700 shadow-lg"
-                    onClick={() => router.push("/auth/signin")}
+                    onClick={() => {
+                      setIsLoginPopupOpen(true)
+                      setIsMobileMenuOpen(false)
+                    }}
                   >
                     התחברות
                   </Button>
@@ -184,6 +191,12 @@ export function NavigationHeader() {
           )}
         </div>
       </div>
+
+      {/* Login Popup */}
+      <LoginPopup 
+        isOpen={isLoginPopupOpen} 
+        onClose={() => setIsLoginPopupOpen(false)} 
+      />
     </header>
   )
 } 

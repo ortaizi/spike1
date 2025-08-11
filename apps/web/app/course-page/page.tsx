@@ -35,9 +35,9 @@ import {
   SortAsc,
   SortDesc,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Button } from "../../components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
+import { Badge } from "../../components/ui/badge"
 
 interface CourseMaterial {
   id: string
@@ -172,7 +172,7 @@ export default function CoursePage() {
 
   // Redirect if not authenticated
   if (status === "unauthenticated") {
-    router.push("/auth/signin")
+    router.push("/")
     return null
   }
 

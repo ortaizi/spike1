@@ -3,6 +3,7 @@ import Credentials from 'next-auth/providers/credentials';
 import { supabase } from '../db';
 import bcrypt from 'bcryptjs';
 import type { UniversityConfig } from './types';
+import { env } from "../env"
 
 // University configuration using environment variables
 export const UNIVERSITIES: UniversityConfig[] = [
@@ -10,32 +11,32 @@ export const UNIVERSITIES: UniversityConfig[] = [
     id: 'bgu',
     name: 'אוניברסיטת בן-גוריון',
     domain: 'bgu.ac.il',
-    moodleUrl: process.env.BGU_MOODLE_URL || 'https://moodle.bgu.ac.il',
-    apiEndpoint: `${process.env.BGU_MOODLE_URL || 'https://moodle.bgu.ac.il'}/login/index.php`,
+    moodleUrl: env.BGU_MOODLE_URL || 'https://moodle.bgu.ac.il',
+    apiEndpoint: `${env.BGU_MOODLE_URL || 'https://moodle.bgu.ac.il'}/login/index.php`,
     logo: '/universities/bgu-logo.png'
   },
   {
     id: 'technion',
     name: 'הטכניון',
     domain: 'technion.ac.il',
-    moodleUrl: process.env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il',
-    apiEndpoint: `${process.env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il'}/login/index.php`,
+    moodleUrl: env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il',
+    apiEndpoint: `${env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il'}/login/index.php`,
     logo: '/universities/technion-logo.png'
   },
   {
     id: 'hebrew',
     name: 'האוניברסיטה העברית',
     domain: 'mail.huji.ac.il',
-    moodleUrl: process.env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il',
-    apiEndpoint: `${process.env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il'}/login/index.php`,
+    moodleUrl: env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il',
+    apiEndpoint: `${env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il'}/login/index.php`,
     logo: '/universities/huji-logo.png'
   },
   {
     id: 'tau',
     name: 'אוניברסיטת תל אביב',
     domain: 'post.tau.ac.il',
-    moodleUrl: process.env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il',
-    apiEndpoint: `${process.env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il'}/login/index.php`,
+    moodleUrl: env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il',
+    apiEndpoint: `${env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il'}/login/index.php`,
     logo: '/universities/tau-logo.png'
   }
 ];
@@ -50,10 +51,10 @@ async function scrapeMoodleData(
     console.log('Scraping Moodle data for:', username, 'at:', university.name);
     
     // Get scraping configuration from environment
-    const timeout = parseInt(process.env.SCRAPING_TIMEOUT || '30000');
-    const userAgent = process.env.SCRAPING_USER_AGENT || 'Spike-Platform/1.0';
-    const retryAttempts = parseInt(process.env.SCRAPING_RETRY_ATTEMPTS || '3');
-    const delay = parseInt(process.env.SCRAPING_DELAY || '1000');
+    const timeout = parseInt(env.SCRAPING_TIMEOUT || '30000');
+    const userAgent = env.SCRAPING_USER_AGENT || 'Spike-Platform/1.0';
+    const retryAttempts = parseInt(env.SCRAPING_RETRY_ATTEMPTS || '3');
+    const delay = parseInt(env.SCRAPING_DELAY || '1000');
     
     // Simulate scraping process
     // In production, this would use a library like Puppeteer or Playwright
@@ -127,7 +128,7 @@ async function fetchUserDataFromMoodle(
 }
 
 // Dynamic authentication function
-async function authenticateWithUniversity(
+export async function authenticateWithUniversity(
   username: string, 
   password: string, 
   universityId: string
@@ -215,7 +216,7 @@ async function authenticateWithUniversity(
 }
 
 // Auth.js v5 configuration
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const authOptions = {
   providers: [
     Credentials({
       name: 'credentials',
@@ -339,8 +340,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             console.log('Creating new user for:', username);
             
             // Check if Supabase is available (not using placeholder values)
-            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-            const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+            const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || '';
+            const supabaseKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
             
             if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
               console.log('Using mock user creation (Supabase not configured)');
@@ -454,7 +455,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       console.log('Redirect callback - url:', url, 'baseUrl:', baseUrl);
       
       // Use APP_URL from environment variables
-      const appUrl = process.env.APP_URL || 'http://localhost:3000';
+      const appUrl = env.APP_URL || 'http://localhost:3000';
       console.log('Using APP_URL:', appUrl);
       
       // If user is trying to access signin page but is already authenticated,
@@ -497,7 +498,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  secret: process.env.AUTH_SECRET,
-  debug: process.env.AUTH_DEBUG === 'true',
+  secret: env.AUTH_SECRET,
+  debug: env.AUTH_DEBUG === 'true',
   trustHost: true
-}); 
+};
+
+export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);

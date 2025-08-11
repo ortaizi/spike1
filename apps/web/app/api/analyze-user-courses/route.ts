@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/server-auth';
+import { authOptions } from '../../../lib/auth/server-auth';
+import { env } from "../../../lib/env"
 
 interface AnalysisRequest {
   user_id: string;
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // קריאה למערכת הניתוח
-    const analyzerResponse = await fetch(`${process.env.COURSE_ANALYZER_API_URL || 'http://localhost:8000'}/analyze-user-courses`, {
+    const analyzerResponse = await fetch(`${env.COURSE_ANALYZER_API_URL || 'http://localhost:8000'}/analyze-user-courses`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
     }
 
     // קריאה למערכת הניתוח לקבלת קורסים של המשתמש
-    const analyzerResponse = await fetch(`${process.env.COURSE_ANALYZER_API_URL || 'http://localhost:8000'}/user-courses/${user_id}`);
+    const analyzerResponse = await fetch(`${env.COURSE_ANALYZER_API_URL || 'http://localhost:8000'}/user-courses/${user_id}`);
 
     if (!analyzerResponse.ok) {
       return NextResponse.json(

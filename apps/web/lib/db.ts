@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
+import { env } from "./env"
 
 // Supabase client configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
@@ -10,7 +11,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export async function checkDatabaseConnection() {
   try {
     // Try to connect to Supabase without querying a specific table
-    const { data, error } = await supabase.auth.getSession()
+    const { error } = await supabase.auth.getSession()
     if (error) throw error
     return { success: true, message: 'Database connection successful' }
   } catch (error) {

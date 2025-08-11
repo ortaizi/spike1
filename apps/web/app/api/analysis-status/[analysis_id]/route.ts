@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/server-auth';
+import { authOptions } from '../../../../lib/auth/server-auth';
+import { env } from "../../../../lib/env"
 
 interface AnalysisStatus {
   analysis_id: string;
@@ -11,7 +12,7 @@ interface AnalysisStatus {
 }
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { analysis_id: string } }
 ) {
   try {
@@ -35,7 +36,7 @@ export async function GET(
 
     // קריאה למערכת הניתוח לבדיקת סטטוס
     const analyzerResponse = await fetch(
-      `${process.env.COURSE_ANALYZER_API_URL || 'http://localhost:8000'}/analysis-status/${analysis_id}`
+      `${env.COURSE_ANALYZER_API_URL || 'http://localhost:8000'}/analysis-status/${analysis_id}`
     );
 
     if (!analyzerResponse.ok) {

@@ -1,32 +1,85 @@
-import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { NextResponse } from "next/server"
 
 export async function GET() {
-  try {
-    const { data: universities, error } = await supabase
-      .from('universities')
-      .select('*')
-      .order('name')
-
-    if (error) {
-      console.error('Error fetching universities:', error)
-      return NextResponse.json(
-        { error: 'שגיאה בטעינת מוסדות לימוד' },
-        { status: 500 }
-      )
+  const universities = [
+    {
+      id: "bgu",
+      name: "אוניברסיטת בן-גוריון",
+      domain: "bgu.ac.il",
+      moodleUrl: "https://moodle.bgu.ac.il",
+      apiEndpoint: "https://moodle.bgu.ac.il/login/index.php",
+      logo: "/universities/bgu-logo.png",
+      activeUsers: 0,
+      supportedFeatures: {
+        coursesScraping: true,
+        assignmentTracking: true,
+        gradeMonitoring: true,
+        realTimeSync: true,
+        fileDownloads: true,
+        announcementsSync: true
+      },
+      status: "active"
+    },
+    {
+      id: "technion",
+      name: "הטכניון",
+      domain: "technion.ac.il",
+      moodleUrl: "https://moodle.technion.ac.il",
+      apiEndpoint: "https://moodle.technion.ac.il/login/index.php",
+      logo: "/universities/technion-logo.png",
+      activeUsers: 0,
+      supportedFeatures: {
+        coursesScraping: true,
+        assignmentTracking: true,
+        gradeMonitoring: true,
+        realTimeSync: true,
+        fileDownloads: true,
+        announcementsSync: true
+      },
+      status: "active"
+    },
+    {
+      id: "hebrew",
+      name: "האוניברסיטה העברית",
+      domain: "mail.huji.ac.il",
+      moodleUrl: "https://moodle.huji.ac.il",
+      apiEndpoint: "https://moodle.huji.ac.il/login/index.php",
+      logo: "/universities/huji-logo.png",
+      activeUsers: 0,
+      supportedFeatures: {
+        coursesScraping: true,
+        assignmentTracking: true,
+        gradeMonitoring: true,
+        realTimeSync: true,
+        fileDownloads: true,
+        announcementsSync: true
+      },
+      status: "active"
+    },
+    {
+      id: "tau",
+      name: "אוניברסיטת תל אביב",
+      domain: "post.tau.ac.il",
+      moodleUrl: "https://moodle.tau.ac.il",
+      apiEndpoint: "https://moodle.tau.ac.il/login/index.php",
+      logo: "/universities/tau-logo.png",
+      activeUsers: 0,
+      supportedFeatures: {
+        coursesScraping: true,
+        assignmentTracking: true,
+        gradeMonitoring: true,
+        realTimeSync: true,
+        fileDownloads: true,
+        announcementsSync: true
+      },
+      status: "active"
     }
-
-    return NextResponse.json(universities)
-  } catch (error) {
-    console.error('Universities API error:', error)
-    return NextResponse.json(
-      { error: 'שגיאה בטעינת מוסדות לימוד' },
-      { status: 500 }
-    )
-  }
+  ];
+  
+  return NextResponse.json({
+    universities: universities,
+    total: universities.length,
+    supported: universities.filter(u => u.status === 'active').length,
+    totalActiveUsers: 0
+  });
 } 

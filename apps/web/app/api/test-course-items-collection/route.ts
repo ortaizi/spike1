@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { CourseItemsCollector } from '@/lib/data-collectors/course-items-collector.js';
+import { CourseItemsCollector } from '../../../lib/data-collectors/course-items-collector';
 
 export async function POST(request: NextRequest) {
   try {

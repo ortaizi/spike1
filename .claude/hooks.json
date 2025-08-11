@@ -1,0 +1,100 @@
+{
+  "$schema": "https://anthropic.com/claude-code/hooks-schema.json",
+  "hooks": [
+    {
+      "name": "hebrew-rtl-validator",
+      "description": "Validate Hebrew/RTL compliance before tool execution",
+      "trigger": "before_tool_call",
+      "filter": {
+        "tools": ["Edit", "MultiEdit", "Write"],
+        "patterns": ["**/*.{tsx,jsx,ts,js}"]
+      },
+      "command": "node -e \"const fs = require('fs'); const args = JSON.parse(process.argv[1]); if (args.file_path && args.new_string && /[א-ת]/.test(args.new_string) && !/dir=[\\\"']rtl[\\\"']/.test(args.new_string)) { console.warn('⚠️ Hebrew text without RTL direction - consider adding dir=\\\"rtl\\\"'); }\"",
+      "args": ["{\"file_path\": \"${tool_args.file_path}\", \"new_string\": \"${tool_args.new_string}\"}"],
+      "async": false,
+      "failOnError": false
+    },
+    {
+      "name": "db-types-sync-reminder",
+      "description": "Remind to sync database types after schema changes",
+      "trigger": "after_tool_call",
+      "filter": {
+        "tools": ["Edit", "MultiEdit", "Write"],
+        "patterns": ["**/migrations/**", "**/schema/**", "**/*.sql"]
+      },
+      "command": "echo '🗄️ Database schema change detected. Run: npm run db:generate'",
+      "async": false,
+      "failOnError": false
+    },
+    {
+      "name": "hebrew-component-reminder",
+      "description": "Remind about Hebrew testing for new components",
+      "trigger": "after_tool_call",
+      "filter": {
+        "tools": ["Write"],
+        "patterns": ["**/components/**/*.{tsx,jsx}"]
+      },
+      "command": "echo '🧪 New component created. Remember to test with Hebrew content: npm run test:hebrew'",
+      "async": false,
+      "failOnError": false
+    },
+    {
+      "name": "rtl-css-blocker",
+      "description": "Block commits with forbidden directional CSS",
+      "trigger": "before_tool_call", 
+      "filter": {
+        "tools": ["Edit", "MultiEdit", "Write"],
+        "patterns": ["**/*.{css,scss,tsx,jsx}"]
+      },
+      "command": "node -e \"const args = JSON.parse(process.argv[1]); if (args.new_string && /margin-(left|right)|padding-(left|right)|text-align:\\s*(left|right)|\\b(ml|mr|pl|pr)-/.test(args.new_string)) { console.error('❌ Forbidden directional CSS detected. Use logical properties (ms-, me-, ps-, pe-)'); process.exit(1); }\"",
+      "args": ["{\"new_string\": \"${tool_args.new_string}\"}"],
+      "async": false,
+      "failOnError": true
+    },
+    {
+      "name": "test-runner-after-changes",
+      "description": "Run Hebrew tests after significant component changes",
+      "trigger": "after_tool_call",
+      "filter": {
+        "tools": ["MultiEdit"],
+        "patterns": ["**/components/**/*.{tsx,jsx}"]
+      },
+      "command": "npm run test:hebrew --passWithNoTests --silent",
+      "async": true,
+      "failOnError": false,
+      "timeout": 30000
+    },
+    {
+      "name": "academic-context-validator",
+      "description": "Validate academic context in course/assignment related files",
+      "trigger": "before_tool_call",
+      "filter": {
+        "tools": ["Edit", "Write"],
+        "patterns": ["**/course*/**", "**/assignment*/**", "**/academic*/**"]
+      },
+      "command": "node -e \"const args = JSON.parse(process.argv[1]); if (args.new_string && /course|assignment|grade|semester/i.test(args.new_string) && !/[א-ת]/.test(args.new_string)) { console.warn('⚠️ Academic content without Hebrew - consider adding Hebrew labels'); }\"",
+      "args": ["{\"new_string\": \"${tool_args.new_string}\"}"],
+      "async": false,
+      "failOnError": false
+    },
+    {
+      "name": "build-validator",
+      "description": "Validate build after major changes",
+      "trigger": "after_tool_call",
+      "filter": {
+        "tools": ["MultiEdit"],
+        "minEdits": 3
+      },
+      "command": "npm run type-check --silent",
+      "async": true,
+      "failOnError": false,
+      "timeout": 15000
+    }
+  ],
+  "globalSettings": {
+    "enabled": true,
+    "logLevel": "info",
+    "maxHooks": 10,
+    "timeout": 30000
+  }
+}

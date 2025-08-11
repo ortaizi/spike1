@@ -22,8 +22,8 @@ import {
   Zap,
   Home,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "../../components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
 
 interface UploadedFile {
   id: string
@@ -47,7 +47,7 @@ export default function TestUploadPage() {
 
   // Redirect if not authenticated
   if (status === "unauthenticated") {
-    router.push("/auth/signin")
+    router.push("/")
     return null
   }
 

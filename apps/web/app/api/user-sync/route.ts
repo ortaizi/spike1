@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '../../../lib/auth/server-auth';
+import { env } from "../../../lib/env"
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     const user_id = `user_${session.user.email.replace('@', '_').replace('.', '_')}`;
 
     // קריאה ל-API הסנכרון
-    const syncApiUrl = process.env.SYNC_API_URL || 'http://localhost:8000';
+    const syncApiUrl = env.SYNC_API_URL || 'http://localhost:8000';
     
     const syncResponse = await fetch(`${syncApiUrl}/sync/user`, {
       method: 'POST',
@@ -81,7 +82,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user_id = `user_${session.user.email.replace('@', '_').replace('.', '_')}`;
-    const syncApiUrl = process.env.SYNC_API_URL || 'http://localhost:8000';
+    const syncApiUrl = env.SYNC_API_URL || 'http://localhost:8000';
 
     // בדיקת סטטוס סנכרון
     const statusResponse = await fetch(`${syncApiUrl}/user/${user_id}/status`);

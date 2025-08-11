@@ -1,19 +1,30 @@
-export { PrismaClient } from '@prisma/client';
-export * from '@prisma/client';
+// Database package for Spike Platform
+// Using Supabase client
 
-// Re-export types for convenience
-export type {
-  User,
-  Course,
-  Assignment,
-  Grade,
-  CourseEnrollment,
-  Team,
-  TeamMember,
-  AssignmentSubmission,
-  Reminder,
-  Priority,
-  AssignmentStatus,
-  EnrollmentStatus,
-  TeamRole,
-} from '@prisma/client'; 
+export { createClient } from '@supabase/supabase-js';
+
+// Supabase configuration
+export const supabaseConfig = {
+  url: process.env['SUPABASE_URL'] || '',
+  anonKey: process.env['SUPABASE_ANON_KEY'] || '',
+  serviceRoleKey: process.env['SUPABASE_SERVICE_ROLE_KEY'] || '',
+};
+
+// Create a Supabase client helper
+export function createSupabaseClient(serviceRole = false) {
+  const { createClient } = require('@supabase/supabase-js');
+  
+  return createClient(
+    supabaseConfig.url,
+    serviceRole ? supabaseConfig.serviceRoleKey : supabaseConfig.anonKey,
+    {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+      },
+    }
+  );
+}
+
+// Database connection helper
+export const db = createSupabaseClient();

@@ -1,78 +1,87 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { Suspense } from 'react';
 
-function AuthErrorContent() {
+export default function AuthErrorPage() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
 
-  const getErrorMessage = (error: string | null) => {
-    switch (error) {
-      case 'AccessDenied':
-        return 'הגישה נדחתה. אנא ודא שאתה משתמש במייל האוניברסיטאי שלך (@post.bgu.ac.il)';
+  const getErrorDetails = (errorCode: string | null) => {
+    switch (errorCode) {
       case 'Configuration':
-        return 'שגיאת תצורה. אנא פנה למנהל המערכת';
+        return {
+          title: 'בעיית הגדרות',
+          description: 'יש בעיה בהגדרות המערכת. אנא פנה למנהל המערכת.',
+          action: 'חזור לדף הבית'
+        };
+      case 'AccessDenied':
+        return {
+          title: 'גישה נדחתה',
+          description: 'לא ניתן להתחבר עם החשבון שלך. אנא נסה שוב.',
+          action: 'נסה שוב'
+        };
       case 'Verification':
-        return 'שגיאה באימות. אנא נסה שוב';
+        return {
+          title: 'בעיית אימות',
+          description: 'יש בעיה באימות החשבון שלך. אנא נסה שוב.',
+          action: 'נסה שוב'
+        };
+      case 'Default':
       default:
-        return 'אירעה שגיאה בהתחברות. אנא נסה שוב';
+        return {
+          title: 'שגיאה בהתחברות',
+          description: 'אירעה שגיאה בתהליך ההתחברות. אנא נסה שוב.',
+          action: 'נסה שוב'
+        };
     }
   };
 
+  const errorDetails = getErrorDetails(error);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-red-100">
-            <svg className="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+    <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-pink-100 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4 w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-red-600" />
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            שגיאה בהתחברות
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            {getErrorMessage(error)}
-          </p>
-        </div>
-
-        <div className="mt-8 space-y-6">
-          <div className="text-center">
-            <Link
-              href="/auth/signin"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              נסה שוב
-            </Link>
+          <CardTitle className="text-2xl font-bold text-gray-900">
+            {errorDetails.title}
+          </CardTitle>
+          <CardDescription className="text-gray-600">
+            {errorDetails.description}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+            <p className="font-medium">פרטי השגיאה:</p>
+            <p className="mt-1">קוד שגיאה: {error || 'לא ידוע'}</p>
           </div>
-
-          <div className="text-center">
-            <Link
-              href="/"
-              className="text-sm text-blue-600 hover:text-blue-500"
-            >
-              חזור לדף הבית
-            </Link>
+          
+          <div className="flex flex-col gap-2">
+            <Button asChild className="w-full">
+              <Link href="/auth/signin">
+                {errorDetails.action}
+                <ArrowRight className="w-4 h-4 mr-2" />
+              </Link>
+            </Button>
+            
+            <Button variant="outline" asChild className="w-full">
+              <Link href="/">
+                חזור לדף הבית
+              </Link>
+            </Button>
           </div>
-        </div>
-      </div>
+          
+          <div className="text-center text-sm text-gray-500">
+            <p>אם הבעיה נמשכת, אנא פנה לתמיכה</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
-
-export default function AuthErrorPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">טוען...</p>
-        </div>
-      </div>
-    }>
-      <AuthErrorContent />
-    </Suspense>
-  );
-} 

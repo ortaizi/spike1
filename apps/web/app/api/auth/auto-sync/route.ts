@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../lib/auth/auth-provider';
+import { env } from "../../../../lib/env"
 
 // Helper function to get session
 async function getSession() {
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     // שלב 1: סנכרון נתונים מהמודל
     console.log('🚀 מתחיל סנכרון אוטומטי עבור:', user_id);
     
-    const syncApiUrl = process.env.SYNC_API_URL || 'http://localhost:8000';
+    const syncApiUrl = env.SYNC_API_URL || 'http://localhost:8000';
     
     const syncResponse = await fetch(`${syncApiUrl}/sync/user`, {
       method: 'POST',
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
     // שלב 2: ניתוח קורסים
     console.log('🔍 מתחיל ניתוח קורסים...');
     
-    const analyzerApiUrl = process.env.COURSE_ANALYZER_API_URL || 'http://localhost:8000';
+    const analyzerApiUrl = env.COURSE_ANALYZER_API_URL || 'http://localhost:8000';
     
     const analysisResponse = await fetch(`${analyzerApiUrl}/analyze-user-courses`, {
       method: 'POST',
@@ -147,8 +148,8 @@ export async function GET(request: NextRequest) {
     }
 
     const user_id = `user_${session.user.email.replace('@', '_').replace('.', '_')}`;
-    const syncApiUrl = process.env.SYNC_API_URL || 'http://localhost:8000';
-    const analyzerApiUrl = process.env.COURSE_ANALYZER_API_URL || 'http://localhost:8000';
+    const syncApiUrl = env.SYNC_API_URL || 'http://localhost:8000';
+    const analyzerApiUrl = env.COURSE_ANALYZER_API_URL || 'http://localhost:8000';
 
     // בדיקת סטטוס סנכרון - נחזיר נתונים מדומים כרגע
     const syncStatus = {

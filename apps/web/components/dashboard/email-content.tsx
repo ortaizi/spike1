@@ -4,7 +4,7 @@ import { useState } from "react"
 import { EmailHeader } from "./email/email-header"
 import { CourseEmailSection } from "./email/course-email-section"
 import { EmailView } from "./email/email-view"
-import { Mail, Search, Filter, Download, Archive, Trash2, Reply, Forward, Star, Clock, User, Calendar, FileText, Bell, Settings, Plus, ChevronDown, ChevronUp, MoreHorizontal, Paperclip, Send, Inbox, SendHorizontal } from "lucide-react"
+import { Mail, Search, Filter, Download, Archive, Trash2, Reply, Forward } from "lucide-react"
 import type { EmailData } from "./email/email-card"
 
 // Mock data for emails

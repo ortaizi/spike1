@@ -48,6 +48,9 @@ next-env.d.ts
 .vscode/
 .idea/
 
+# Claude MCP settings with sensitive data
+.claude/mcp-settings.json
+
 # OS
 Thumbs.db
 
@@ -98,8 +101,10 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
+# dotenv environment variables file - keep only .env.development
 .env
-.env.development
-.env.development.backup
-.env.* 
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.development.backup 

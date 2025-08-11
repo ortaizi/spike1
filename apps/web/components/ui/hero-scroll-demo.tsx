@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ContainerScroll } from "./container-scroll-animation";
 import { 
@@ -11,14 +11,33 @@ import {
   Mail, 
   CalendarDays, 
   Bell, 
-  FileText, 
-  Clock, 
   LogOut, 
   Zap,
   BarChart3,
   Shield,
   CreditCard
 } from "lucide-react";
+
+interface DashboardCardWithValue {
+  title: string;
+  icon: any;
+  iconColor: string;
+  value: string;
+  subtitle: string;
+}
+
+interface DashboardCardWithItems {
+  title: string;
+  icon: any;
+  iconColor: string;
+  items: Array<{
+    label: string;
+    value: string;
+    urgent?: boolean;
+  }>;
+}
+
+type DashboardCard = DashboardCardWithValue | DashboardCardWithItems;
 
 export function HeroScrollDemo() {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -366,18 +385,18 @@ export function HeroScrollDemo() {
                           </div>
 
                           {/* Content */}
-                          {card.value ? (
+                          {'value' in card ? (
                             /* Large Number Display */
                             <div className="text-center mb-4 overflow-hidden">
-                              <div className="text-4xl font-bold text-slate-900 mb-1">{card.value}</div>
-                              <p className="text-sm font-medium text-slate-600">{card.subtitle}</p>
+                              <div className="text-4xl font-bold text-slate-900 mb-1">{'value' in card ? card.value : ''}</div>
+                              <p className="text-sm font-medium text-slate-600">{'subtitle' in card ? card.subtitle : ''}</p>
                             </div>
                           ) : (
                             /* Items List */
                             <div>
                               <p className="text-xs text-gray-500 mb-4">עדכונים אחרונים</p>
                               <div className="space-y-3 mb-6 overflow-hidden overflow-y-auto max-h-[150px]">
-                                {card.items?.map((item, itemIndex) => (
+                                {'items' in card && card.items?.map((item: any, itemIndex: number) => (
                                   <motion.div 
                                     key={itemIndex} 
                                     className="flex justify-between items-center py-2 px-3 bg-gray-50/80 rounded-lg"
