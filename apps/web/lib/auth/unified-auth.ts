@@ -2,10 +2,10 @@ import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
 import { supabase } from '../db';
+import { supabaseAdmin } from '../database/service-role';
 import { env } from '../env';
 import type { AuthOptions, SessionStrategy } from 'next-auth';
-import { UNIVERSITIES } from './auth-provider';
-import { authenticateWithUniversity } from './auth-provider';
+import { UNIVERSITIES, authenticateWithUniversity } from './university-auth';
 import { validateUniversityEmail, formatHebrewError } from './hebrew-auth-errors';
 
 // Enhanced interface for dual-stage authentication
@@ -54,24 +54,51 @@ async function createOrUpdateGoogleUser(user: any, account: any) {
     console.log('🔄 Creating/updating Google user:', user.email);
     console.log('🔍 User object:', { id: user.id, name: user.name, email: user.email, image: user.image });
     
-    // Check if user exists by email (since google_id might not exist)
-    const { data: existingUser, error: fetchError } = await supabase
+    // Check if user exists by google_id first (primary), then by email
+    let existingUser = null;
+    let fetchError = null;
+    
+    // Try to find by google_id first
+    const { data: existingByGoogleId, error: googleIdError } = await supabaseAdmin
       .from('users')
       .select('*')
-      .eq('email', user.email)
+      .eq('google_id', user.id)
       .single();
-
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      console.error('❌ Error fetching user:', fetchError);
+      
+    if (googleIdError && googleIdError.code !== 'PGRST116') {
+      console.error('❌ Error fetching user by google_id:', googleIdError);
       return null;
+    }
+    
+    if (existingByGoogleId) {
+      existingUser = existingByGoogleId;
+      console.log('🔍 Found existing user by google_id');
+    } else {
+      // If not found by google_id, try by email
+      const { data: existingByEmail, error: emailError } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('email', user.email)
+        .single();
+        
+      if (emailError && emailError.code !== 'PGRST116') {
+        console.error('❌ Error fetching user by email:', emailError);
+        return null;
+      }
+      
+      if (existingByEmail) {
+        existingUser = existingByEmail;
+        fetchError = emailError;
+        console.log('🔍 Found existing user by email');
+      }
     }
 
     console.log('🔍 User lookup result:', { existingUser: !!existingUser, fetchError: fetchError?.code });
 
     if (!existingUser) {
-      console.log('👤 Creating new user...');
-      // Create new user using only columns that exist in the database
-      const { data: newUser, error: insertError } = await supabase
+      console.log('👤 Creating new user with service role...');
+      // Create new user using service role to bypass RLS
+      const { data: newUser, error: insertError } = await supabaseAdmin
         .from('users')
         .insert({
           id: user.id,
@@ -81,8 +108,8 @@ async function createOrUpdateGoogleUser(user: any, account: any) {
           profile_picture: user.image,
           university_id: null,
           is_setup_complete: false,
-          createdat: new Date().toISOString(),
-          updatedat: new Date().toISOString()
+          created_at: new Date().toISOString()
+          // Note: updated_at will be handled by database trigger
         })
         .select()
         .single();
@@ -90,6 +117,22 @@ async function createOrUpdateGoogleUser(user: any, account: any) {
       if (insertError) {
         console.error('❌ Error creating user:', insertError);
         console.error('❌ Insert error details:', JSON.stringify(insertError, null, 2));
+        
+        // If it's a duplicate key error, try to fetch the existing user
+        if (insertError.code === '23505') {
+          console.log('🔄 Duplicate key detected, fetching existing user...');
+          const { data: existingUser, error: fetchError } = await supabaseAdmin
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+            
+          if (existingUser && !fetchError) {
+            console.log('✅ Found existing user after duplicate key error');
+            return existingUser;
+          }
+        }
+        
         return null;
       }
       
@@ -97,12 +140,13 @@ async function createOrUpdateGoogleUser(user: any, account: any) {
       console.log('✅ New user data:', { id: newUser?.id, email: newUser?.email });
       return newUser;
     } else {
-      // Update existing user with available fields
-      const { data: updatedUser, error: updateError } = await supabase
+      // Update existing user with service role
+      const { data: updatedUser, error: updateError } = await supabaseAdmin
         .from('users')
         .update({
-          updatedat: new Date().toISOString(),
-          profile_picture: user.image // Update avatar in case it changed
+          profile_picture: user.image, // Update avatar in case it changed
+          google_id: user.id // Ensure google_id is set
+          // Note: updated_at will be handled by database trigger
         })
         .eq('id', existingUser.id)
         .select()
@@ -125,7 +169,7 @@ async function createOrUpdateGoogleUser(user: any, account: any) {
 // Helper function to verify Google user exists for credentials auth
 async function verifyGoogleUserExists(googleUserId: string) {
   try {
-    const { data: user, error } = await supabase
+    const { data: user, error } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('google_id', googleUserId)
@@ -144,7 +188,7 @@ async function verifyGoogleUserExists(googleUserId: string) {
 }
 
 // Helper function to save university credentials (encrypted)
-async function saveUniversityCredentials(userId: string, credentials: any) {
+async function saveUniversityCredentials(userEmail: string, credentials: any) {
   try {
     // Import encryption utilities
     const { CredentialsEncryption } = await import('./encryption');
@@ -156,21 +200,18 @@ async function saveUniversityCredentials(userId: string, credentials: any) {
     );
     
     // Save to database
-    const { error } = await supabase
-      .from('university_credentials')
+    const { error } = await supabaseAdmin
+      .from('user_credentials')
       .upsert({
-        user_id: userId,
+        user_email: credentials.userEmail,
         university_id: credentials.universityId,
-        encrypted_username: encrypted.encryptedUsername,
+        username: credentials.username,
         encrypted_password: encrypted.encryptedPassword,
-        auth_tag: encrypted.authTag,
-        iv: encrypted.iv,
-        last_sync: null,
-        is_valid: true,
-        credentials_expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-        updated_at: new Date().toISOString()
+        is_active: true,
+        last_validated_at: new Date().toISOString()
+        // Note: updated_at will be handled by database trigger
       }, {
-        onConflict: 'user_id,university_id'
+        onConflict: 'user_email,university_id'
       });
       
     if (error) {
@@ -179,11 +220,11 @@ async function saveUniversityCredentials(userId: string, credentials: any) {
     }
     
     // Update user setup status
-    await supabase
+    await supabaseAdmin
       .from('users')
       .update({ 
-        is_setup_complete: true,
-        updatedat: new Date().toISOString()
+        is_setup_complete: true
+        // Note: updated_at will be handled by database trigger
       })
       .eq('id', userId);
     
@@ -198,17 +239,19 @@ async function saveUniversityCredentials(userId: string, credentials: any) {
 // Unified NextAuth configuration
 export const unifiedAuthOptions: AuthOptions = {
   providers: [
-    // Stage 1: Google OAuth
-    GoogleProvider({
-      clientId: env.GOOGLE_CLIENT_ID!,
-      clientSecret: env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          scope: "openid email profile",
-          prompt: "select_account",
+    // Stage 1: Google OAuth (only if credentials are provided)
+    ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET ? [
+      GoogleProvider({
+        clientId: env.GOOGLE_CLIENT_ID,
+        clientSecret: env.GOOGLE_CLIENT_SECRET,
+        authorization: {
+          params: {
+            scope: "openid email profile",
+            prompt: "select_account",
+          }
         }
-      }
-    }),
+      })
+    ] : []),
     
     // Stage 2: University Credentials (Enhanced)
     Credentials({
@@ -246,7 +289,7 @@ export const unifiedAuthOptions: AuthOptions = {
             console.log('University authentication failed:', authResult.message);
             
             // Log failed attempt
-            await supabase.from('auth_attempts').insert({
+            await supabaseAdmin.from('auth_attempts').insert({
               user_identifier: googleUser.email,
               attempt_type: 'moodle',
               university_id: credentials.universityId,
@@ -259,10 +302,14 @@ export const unifiedAuthOptions: AuthOptions = {
           }
           
           // Save encrypted credentials
-          await saveUniversityCredentials(googleUser.id, credentials);
+          await saveUniversityCredentials(googleUser.email, {
+            ...credentials,
+            userEmail: googleUser.email,
+            username: credentials.username
+          });
           
           // Log successful attempt
-          await supabase.from('auth_attempts').insert({
+          await supabaseAdmin.from('auth_attempts').insert({
             user_identifier: googleUser.email,
             attempt_type: 'moodle',
             university_id: credentials.universityId,
@@ -310,21 +357,20 @@ export const unifiedAuthOptions: AuthOptions = {
   
   callbacks: {
     async signIn({ user, account, profile }) {
-      console.log('🔐 SignIn callback:', { provider: account?.provider, userId: user?.id });
-      console.log('🔐 Full user object:', user);
-      console.log('🔐 Full account object:', account);
+      // Minimal logging to prevent callback loops
+      console.log('🔐 SignIn callback:', { provider: account?.provider, email: user?.email });
       
       if (account?.provider === 'google') {
         console.log('🎯 Processing Google OAuth...');
         
         // Validate university email domain
         const emailValidation = validateUniversityEmail(user.email!);
+        
         if (!emailValidation.isValid) {
-          console.error('❌ Invalid university domain:', emailValidation.error);
-          console.error('🏫 User email domain not supported:', user.email?.split('@')[1]);
+          console.log('❌ Email validation failed:', emailValidation.error);
           
           // Log failed attempt
-          await supabase.from('auth_attempts').insert({
+          await supabaseAdmin.from('auth_attempts').insert({
             user_identifier: user.email!,
             attempt_type: 'google',
             success: false,
@@ -341,14 +387,24 @@ export const unifiedAuthOptions: AuthOptions = {
         const googleUser = await createOrUpdateGoogleUser(user, account);
         
         if (!googleUser) {
-          console.error('❌ Failed to create/update Google user - returning false');
+          console.log('❌ Database user creation failed');
+          
+          // Log failed attempt
+          await supabaseAdmin.from('auth_attempts').insert({
+            user_identifier: user.email!,
+            attempt_type: 'google',
+            success: false,
+            error_message: 'Database user creation failed',
+            created_at: new Date().toISOString()
+          });
+          
           return false;
         }
         
         console.log('✅ Google user processed successfully');
         
         // Log successful Google auth
-        await supabase.from('auth_attempts').insert({
+        await supabaseAdmin.from('auth_attempts').insert({
           user_identifier: user.email!,
           attempt_type: 'google',
           success: true,
@@ -369,38 +425,32 @@ export const unifiedAuthOptions: AuthOptions = {
     },
     
     async redirect({ url, baseUrl }) {
-      console.log('🔀 Redirect callback:', { url, baseUrl });
-      
+      // Smart redirect based on user setup status
       const appUrl = env.APP_URL || baseUrl;
       
-      // After Google OAuth → check onboarding status
+      // Smart routing for Google OAuth callback
       if (url.includes('/api/auth/callback/google')) {
-        // For now, always redirect to onboarding
-        // TODO: Add logic to check if user already completed onboarding
-        console.log('Redirecting to onboarding after Google auth');
-        return `${appUrl}/onboarding`;
+        try {
+          // Extract email from URL parameters to check user setup status
+          const urlObj = new URL(url);
+          // We can't easily get email from URL, but we can check in the JWT callback
+          // For now, use a smart intermediate route
+          return `${appUrl}/auth/smart-redirect`;
+        } catch (error) {
+          console.warn('⚠️ Error in smart redirect, falling back to onboarding:', error);
+          return `${appUrl}/onboarding`;
+        }
       }
       
-      // After university credentials → redirect to verification
-      if (url.includes('university-credentials')) {
-        console.log('Redirecting to verification after university auth');
-        return `${appUrl}/auth/verify`;
-      }
-      
-      // Default redirect handling
-      if (url.startsWith('/')) {
-        return `${appUrl}${url}`;
-      }
-      
-      if (url.startsWith(appUrl)) {
-        return url;
-      }
-      
+      // For all other cases, just return the base URL to avoid redirect loops
       return appUrl;
     },
     
     async jwt({ token, user, account, trigger }) {
-      console.log('🎫 JWT callback:', { trigger, provider: account?.provider, userId: user?.id });
+      // Minimal JWT logging to prevent loops
+      if (trigger === 'signIn') {
+        console.log('🎫 JWT signIn:', { provider: account?.provider, email: token?.email });
+      }
       
       if (user && account) {
         token.provider = account.provider;
@@ -421,30 +471,36 @@ export const unifiedAuthOptions: AuthOptions = {
       // Refresh session data if needed
       if (trigger === 'update' && token.sub) {
         try {
-          const { data: userData } = await supabase
+          const { data: userData } = await supabaseAdmin
             .from('users')
-            .select(`
-              *,
-              university_credentials (
-                university_id,
-                last_sync
-              )
-            `)
+            .select('*')
             .eq('id', token.sub)
             .single();
             
+          // Check user credentials separately
+          const { data: credentialsData } = await supabaseAdmin
+            .from('user_credentials')
+            .select('university_id, last_validated_at, is_active')
+            .eq('user_email', userData?.email)
+            .eq('is_active', true)
+            .single();
+            
           if (userData) {
-            token.isDualStageComplete = userData.is_setup_complete;
-            token.universityId = userData.university_credentials?.[0]?.university_id;
-            token.lastSync = userData.university_credentials?.[0]?.last_sync;
+            token.isDualStageComplete = userData.is_setup_complete && !!credentialsData;
+            token.universityId = credentialsData?.university_id;
+            token.lastSync = credentialsData?.last_validated_at;
             
             if (token.universityId) {
               const university = UNIVERSITIES.find(u => u.id === token.universityId);
               token.universityName = university?.name;
             }
+            
+            // Silent success
+          } else {
+            console.warn('⚠️ User not found during JWT refresh');
           }
         } catch (error) {
-          console.error('Error refreshing JWT session data:', error);
+          console.error('❌ Error refreshing JWT session data:', error);
         }
       }
       
@@ -452,8 +508,7 @@ export const unifiedAuthOptions: AuthOptions = {
     },
     
     async session({ session, token }) {
-      console.log('🏠 Session callback:', { userId: token.sub, provider: token.provider });
-      
+      // Minimal session logging
       if (token && session.user) {
         session.user.id = token.sub!;
         session.user.googleId = token.googleId as string;
@@ -461,8 +516,7 @@ export const unifiedAuthOptions: AuthOptions = {
         session.user.universityId = token.universityId as string;
         session.user.universityName = token.universityName as string;
         session.user.lastSync = token.lastSync as string;
-        session.user.isDualStageComplete = token.isDualStageComplete as boolean || false;
-        session.user.hasValidCredentials = !!token.universityId;
+        session.user.isDualStageComplete = token.isDualStageComplete as boolean;
       }
       
       return session;
@@ -486,7 +540,7 @@ export const unifiedAuthOptions: AuthOptions = {
       // Track user session
       if (user.id && account) {
         try {
-          await supabase.from('user_sessions').insert({
+          await supabaseAdmin.from('user_sessions').insert({
             id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             user_id: user.id,
             session_type: account.provider === 'university-credentials' ? 'dual_stage_complete' : 'google_only',
@@ -494,19 +548,35 @@ export const unifiedAuthOptions: AuthOptions = {
             created_at: new Date().toISOString(),
             last_activity: new Date().toISOString()
           });
+          console.log('✅ User session tracked for:', user.email);
         } catch (error) {
-          console.warn('Failed to track user session:', error);
+          console.warn('⚠️ Failed to track user session:', error);
         }
       }
     },
     
     async signOut({ session, token }) {
-      console.log('👋 SignOut event:', { userId: token?.sub });
+      console.log('🚪 SignOut event for:', session?.user?.email || token?.email);
+      
+      // Log sign out attempt
+      if (session?.user?.email) {
+        try {
+          await supabaseAdmin.from('auth_attempts').insert({
+            user_identifier: session.user.email,
+            attempt_type: 'signout',
+            success: true,
+            created_at: new Date().toISOString()
+          });
+          console.log('✅ Sign out logged for:', session.user.email);
+        } catch (error) {
+          console.error('❌ Error logging sign out:', error);
+        }
+      }
       
       // Deactivate user sessions
       if (token?.sub) {
         try {
-          await supabase
+          await supabaseAdmin
             .from('user_sessions')
             .update({ 
               is_active: false,
@@ -514,8 +584,9 @@ export const unifiedAuthOptions: AuthOptions = {
             })
             .eq('user_id', token.sub)
             .eq('is_active', true);
+          console.log('✅ User sessions deactivated for:', token.sub);
         } catch (error) {
-          console.warn('Failed to deactivate user sessions:', error);
+          console.warn('⚠️ Failed to deactivate user sessions:', error);
         }
       }
     }

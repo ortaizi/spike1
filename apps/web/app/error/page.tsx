@@ -350,14 +350,14 @@ export default function ErrorPage() {
                   onClick={handleContactSupport}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
-                  <Mail className="w-4 h-4 mr-2" />
+                  <Mail className="w-4 h-4 me-2" />
                   שלח דוח שגיאה
                 </Button>
                 <Button 
                   variant="outline"
                   onClick={handleGoHome}
                 >
-                  <Home className="w-4 h-4 mr-2" />
+                  <Home className="w-4 h-4 me-2" />
                   חזור לדף הבית
                 </Button>
               </div>

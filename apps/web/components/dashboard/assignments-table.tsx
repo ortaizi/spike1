@@ -120,9 +120,9 @@ export function AssignmentsTable() {
 
   const getDaysLeftIcon = (daysLeft: number) => {
     if (daysLeft < 0) {
-      return <AlertTriangle className="w-3 h-3 mr-1" />
+      return <AlertTriangle className="w-3 h-3 me-1" />
     }
-    return <Clock className="w-3 h-3 mr-1" />
+    return <Clock className="w-3 h-3 me-1" />
   }
 
   const getRowBackgroundClass = (daysLeft: number) => {

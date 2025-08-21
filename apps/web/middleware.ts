@@ -3,14 +3,15 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 /**
- * Enhanced Middleware for Dual-Stage Authentication System
- * Handles routing based on authentication stage completion
+ * Smart Authentication Middleware for Spike Platform
+ * Handles intelligent routing based on credential status and authentication flow
+ * Integrates with the smart authentication system
  */
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const url = request.nextUrl.clone();
   
-  console.log(`🛡️ Middleware: ${pathname}`);
+  console.log(`🛡️ Smart Middleware: ENABLED - Processing ${pathname}`);
   
   // Skip middleware for public routes and static files
   const publicRoutes = [
@@ -19,15 +20,16 @@ export default async function middleware(request: NextRequest) {
     '/favicon.ico',
     '/robots.txt',
     '/sitemap.xml',
-    '/auth/signin', // Google OAuth entry point
     '/auth/error', // Auth error page
-    '/', // Landing page (if exists)
   ];
   
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
   if (isPublicRoute) {
+    console.log(`🔓 Public route detected: ${pathname}`);
     return NextResponse.next();
   }
+  
+  console.log(`🔒 Protected route processing: ${pathname}`);
   
   try {
     // Get JWT token from NextAuth
@@ -36,43 +38,73 @@ export default async function middleware(request: NextRequest) {
       secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET
     });
     
-    console.log(`🎫 Token status: ${token ? 'present' : 'missing'}, provider: ${token?.provider}, dual-stage: ${token?.['isDualStageComplete']}`);
+    console.log(`🎫 Token extraction attempt: ${token ? 'SUCCESS' : 'FAILED'}`);
     
-    // No token - redirect to signin
-    if (!token) {
-      console.log(`🔄 No token, redirecting to signin from ${pathname}`);
-      url.pathname = '/auth/signin';
-      url.search = '';
-      return NextResponse.redirect(url);
+    if (token) {
+      console.log(`🔍 Token details:`, {
+        provider: token.provider,
+        isDualStageComplete: token['isDualStageComplete'],
+        credentialsValid: token['credentialsValid'],
+        email: token.email,
+        sub: token.sub
+      });
+    } else {
+      console.log(`🚫 No token found - this might be the cause of auth issues`);
     }
     
-    // Token exists - determine routing based on dual-stage completion
+    // Enhanced token analysis for smart authentication
     const isDualStageComplete = token['isDualStageComplete'] === true;
     const isGoogleProvider = token.provider === 'google';
     const isDualStageProvider = token.provider === 'university-credentials';
+    const hasValidCredentials = token['credentialsValid'] !== false;
+    const authenticationFlow = token['authenticationFlow'] as string || 'unknown';
+    const lastValidation = token['lastValidation'] as string;
     
-    // === ROUTE PROTECTION LOGIC ===
+    console.log('🧠 Smart middleware token analysis:', {
+      isDualStageComplete,
+      isGoogleProvider,
+      isDualStageProvider,
+      hasValidCredentials,
+      authenticationFlow,
+      lastValidation,
+      provider: token.provider,
+      pathname
+    });
+
+    // Helper function to check if credentials need revalidation
+    const needsCredentialRevalidation = () => {
+      if (!lastValidation) return true;
+      
+      const validationDate = new Date(lastValidation);
+      const now = new Date();
+      const daysSinceValidation = (now.getTime() - validationDate.getTime()) / (1000 * 60 * 60 * 24);
+      
+      // Require revalidation after 30 days
+      return daysSinceValidation > 30;
+    };
+
+    // Determine smart routing flow
+    const determineSmartFlow = () => {
+      if (!token) return 'no_auth';
+      if (isDualStageComplete && hasValidCredentials && !needsCredentialRevalidation()) return 'fully_authenticated';
+      if (isDualStageComplete && (!hasValidCredentials || needsCredentialRevalidation())) return 'needs_revalidation';
+      if (isGoogleProvider && !isDualStageComplete) return 'needs_university_auth';
+      return 'partial_auth';
+    };
+
+    const smartFlow = determineSmartFlow();
+    console.log(`🚀 Smart flow determined: ${smartFlow}`);
+    
+    // === SMART ROUTE PROTECTION LOGIC ===
     
     // Auth flow routes
     if (pathname.startsWith('/auth/')) {
-      if (pathname === '/auth/signin') {
-        // Already authenticated - redirect based on completion status
-        if (isDualStageComplete) {
-          console.log('🔄 Already dual-stage complete, redirecting to dashboard');
-          url.pathname = '/dashboard';
-          return NextResponse.redirect(url);
-        } else if (isGoogleProvider) {
-          console.log('🔄 Google complete, redirecting to moodle setup');
-          url.pathname = '/auth/moodle-setup';
-          return NextResponse.redirect(url);
-        }
-      }
       
       if (pathname === '/auth/moodle-setup') {
         // Must have Google auth to access moodle setup
         if (!token || (!isGoogleProvider && !isDualStageProvider)) {
-          console.log('🔄 No Google auth for moodle setup, redirecting to signin');
-          url.pathname = '/auth/signin';
+          console.log('🔄 No Google auth for moodle setup, redirecting to landing page');
+          url.pathname = '/';
           return NextResponse.redirect(url);
         }
         
@@ -89,10 +121,10 @@ export default async function middleware(request: NextRequest) {
         if (!isDualStageComplete) {
           console.log('🔄 Verification requires dual-stage complete');
           if (isGoogleProvider) {
-            url.pathname = '/auth/moodle-setup';
+            url.pathname = '/onboarding';
             return NextResponse.redirect(url);
           } else {
-            url.pathname = '/auth/signin';
+            url.pathname = '/';
             return NextResponse.redirect(url);
           }
         }
@@ -102,17 +134,53 @@ export default async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
     
-    // Onboarding route
+    // Onboarding route - allow access if user has Google auth
     if (pathname.startsWith('/onboarding')) {
       // Must have at least Google auth for onboarding
       if (!token) {
         console.log('🔄 Onboarding requires auth');
-        url.pathname = '/auth/signin';
+        url.pathname = '/';
+        return NextResponse.redirect(url);
+      }
+      
+      // If already fully authenticated, redirect to dashboard
+      if (smartFlow === 'fully_authenticated') {
+        console.log('🔄 Already fully authenticated, redirecting from onboarding to dashboard');
+        url.pathname = '/dashboard';
         return NextResponse.redirect(url);
       }
       
       // Allow access to onboarding
+      console.log('✅ Allowing access to onboarding');
       return NextResponse.next();
+    }
+    
+    // Smart root route handling
+    if (pathname === '/') {
+      console.log(`🏠 Root route with smart flow: ${smartFlow}`);
+      
+      switch (smartFlow) {
+        case 'fully_authenticated':
+          console.log('🔄 Fully authenticated, redirecting to dashboard');
+          url.pathname = '/dashboard';
+          return NextResponse.redirect(url);
+          
+        case 'needs_revalidation':
+          console.log('🔄 Credentials need revalidation, redirecting to onboarding');
+          url.pathname = '/onboarding';
+          url.search = '?revalidate=true';
+          return NextResponse.redirect(url);
+          
+        case 'needs_university_auth':
+          console.log('🔄 Google complete but needs university auth, redirecting to onboarding');
+          url.pathname = '/onboarding';
+          return NextResponse.redirect(url);
+          
+        case 'no_auth':
+        default:
+          console.log('🔄 No authentication, allowing access to landing page');
+          return NextResponse.next();
+      }
     }
     
     // Protected app routes (dashboard, courses, etc.)
@@ -120,34 +188,43 @@ export default async function middleware(request: NextRequest) {
     const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
     
     if (isProtectedRoute) {
-      // Must have completed dual-stage authentication
-      if (!isDualStageComplete) {
-        console.log('🔄 Protected route requires dual-stage complete');
-        
-        if (isGoogleProvider) {
-          // Google complete but university pending
-          console.log('🔄 Google complete, redirecting to moodle setup');
-          url.pathname = '/auth/moodle-setup';
-          return NextResponse.redirect(url);
-        } else {
-          // No authentication at all
-          console.log('🔄 No auth, redirecting to signin');
-          url.pathname = '/auth/signin';
-          return NextResponse.redirect(url);
-        }
-      }
+      console.log(`🔒 Accessing protected route ${pathname} with smart flow: ${smartFlow}`);
       
-      // Check if credentials are still valid (optional - can be handled by session refresh)
-      if (token['credentialsValid'] === false) {
-        console.log('🔄 Credentials expired, redirecting to moodle setup');
-        url.pathname = '/auth/moodle-setup';
-        url.search = '?expired=true';
-        return NextResponse.redirect(url);
+      switch (smartFlow) {
+        case 'fully_authenticated':
+          console.log('✅ Full authentication verified, granting access to protected route');
+          return NextResponse.next();
+          
+        case 'needs_revalidation':
+          console.log('🔄 Credentials need revalidation, redirecting to onboarding');
+          url.pathname = '/onboarding';
+          url.search = '?revalidate=true&from=' + encodeURIComponent(pathname);
+          return NextResponse.redirect(url);
+          
+        case 'needs_university_auth':
+          console.log('🔄 Google complete but needs university auth, redirecting to onboarding');
+          url.pathname = '/onboarding';
+          url.search = '?from=' + encodeURIComponent(pathname);
+          return NextResponse.redirect(url);
+          
+        case 'partial_auth':
+          console.log('🔄 Partial authentication, redirecting to complete setup');
+          if (isGoogleProvider) {
+            url.pathname = '/onboarding';
+            url.search = '?from=' + encodeURIComponent(pathname);
+          } else {
+            url.pathname = '/';
+            url.search = '?from=' + encodeURIComponent(pathname);
+          }
+          return NextResponse.redirect(url);
+          
+        case 'no_auth':
+        default:
+          console.log('🔄 No authentication, redirecting to landing page');
+          url.pathname = '/';
+          url.search = '?from=' + encodeURIComponent(pathname);
+          return NextResponse.redirect(url);
       }
-      
-      // Allow access to protected routes
-      console.log('✅ Access granted to protected route');
-      return NextResponse.next();
     }
     
     // Default behavior for other routes
@@ -156,8 +233,8 @@ export default async function middleware(request: NextRequest) {
   } catch (error) {
     console.error('❌ Middleware error:', error);
     
-    // On error, redirect to signin for safety
-    url.pathname = '/auth/signin';
+    // On error, redirect to landing page for safety
+    url.pathname = '/';
     url.search = '?error=middleware_error';
     return NextResponse.redirect(url);
   }

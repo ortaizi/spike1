@@ -36,7 +36,7 @@ export function CourseEmailSection({
           <div className={`w-3 h-3 rounded-full ${courseColor}`}></div>
           <h3 className="text-base font-semibold text-slate-900">
             {courseName}
-            {unreadCount > 0 && <span className="mr-2 text-sm font-medium text-[#387ADF]">({unreadCount} חדשים)</span>}
+            {unreadCount > 0 && <span className="me-2 text-sm font-medium text-[#387ADF]">({unreadCount} חדשים)</span>}
           </h3>
         </div>
 

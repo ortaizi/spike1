@@ -505,7 +505,7 @@ export default function CoursePage() {
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">
                         {announcement.title}
                         {announcement.isImportant && (
-                          <Badge className="mr-2 bg-red-100 text-red-800">חשוב</Badge>
+                          <Badge className="me-2 bg-red-100 text-red-800">חשוב</Badge>
                         )}
                       </h3>
                       <p className="text-gray-600 mb-2">{announcement.content}</p>
