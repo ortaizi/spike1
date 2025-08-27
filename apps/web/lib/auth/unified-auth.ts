@@ -105,7 +105,7 @@ async function createOrUpdateGoogleUser(user: any, account: any) {
           email: user.email,
           name: user.name,
           google_id: user.id,
-          profile_picture: user.image,
+          avatar_url: user.image,
           university_id: null,
           is_setup_complete: false,
           created_at: new Date().toISOString()
@@ -144,7 +144,7 @@ async function createOrUpdateGoogleUser(user: any, account: any) {
       const { data: updatedUser, error: updateError } = await supabaseAdmin
         .from('users')
         .update({
-          profile_picture: user.image, // Update avatar in case it changed
+          avatar_url: user.image, // Update avatar in case it changed
           google_id: user.id // Ensure google_id is set
           // Note: updated_at will be handled by database trigger
         })
@@ -431,14 +431,11 @@ export const unifiedAuthOptions: AuthOptions = {
       // Smart routing for Google OAuth callback
       if (url.includes('/api/auth/callback/google')) {
         try {
-          // Extract email from URL parameters to check user setup status
-          const urlObj = new URL(url);
-          // We can't easily get email from URL, but we can check in the JWT callback
-          // For now, use a smart intermediate route
+          // Use smart redirect to determine the best route based on user status
           return `${appUrl}/auth/smart-redirect`;
         } catch (error) {
-          console.warn('⚠️ Error in smart redirect, falling back to onboarding:', error);
-          return `${appUrl}/onboarding`;
+          console.warn('⚠️ Error in smart redirect, falling back to smart redirect:', error);
+          return `${appUrl}/auth/smart-redirect`;
         }
       }
       
@@ -447,10 +444,13 @@ export const unifiedAuthOptions: AuthOptions = {
     },
     
     async jwt({ token, user, account, trigger }) {
-      // Minimal JWT logging to prevent loops
-      if (trigger === 'signIn') {
-        console.log('🎫 JWT signIn:', { provider: account?.provider, email: token?.email });
-      }
+      // Enhanced JWT logging for debugging
+      console.log('🎫 JWT Callback triggered:', { 
+        trigger, 
+        provider: account?.provider, 
+        email: token?.email,
+        isDualStageComplete: token?.isDualStageComplete 
+      });
       
       if (user && account) {
         token.provider = account.provider;
@@ -468,34 +468,44 @@ export const unifiedAuthOptions: AuthOptions = {
         }
       }
       
-      // Refresh session data if needed
-      if (trigger === 'update' && token.sub) {
+      // Refresh session data on update or always check for dual-stage completion
+      if ((trigger === 'update' || !token.isDualStageComplete) && token.sub) {
         try {
+          console.log('🔄 Refreshing JWT session data for:', token.email);
+          
           const { data: userData } = await supabaseAdmin
             .from('users')
             .select('*')
             .eq('id', token.sub)
             .single();
             
-          // Check user credentials separately
-          const { data: credentialsData } = await supabaseAdmin
-            .from('user_credentials')
-            .select('university_id, last_validated_at, is_active')
-            .eq('user_email', userData?.email)
-            .eq('is_active', true)
-            .single();
-            
           if (userData) {
-            token.isDualStageComplete = userData.is_setup_complete && !!credentialsData;
+            // Check user credentials using the new schema
+            const { data: credentialsData } = await supabaseAdmin
+              .from('user_university_connections')
+              .select('university_id, last_verified_at, is_verified, is_active')
+              .eq('user_id', userData.id)
+              .eq('is_active', true)
+              .single();
+              
+            const wasComplete = token.isDualStageComplete;
+            token.isDualStageComplete = userData.is_setup_complete && !!credentialsData?.is_verified;
             token.universityId = credentialsData?.university_id;
-            token.lastSync = credentialsData?.last_validated_at;
+            token.lastSync = credentialsData?.last_verified_at;
             
             if (token.universityId) {
               const university = UNIVERSITIES.find(u => u.id === token.universityId);
               token.universityName = university?.name;
             }
             
-            // Silent success
+            if (wasComplete !== token.isDualStageComplete) {
+              console.log('✅ JWT token dual-stage status updated:', { 
+                from: wasComplete, 
+                to: token.isDualStageComplete,
+                userSetupComplete: userData.is_setup_complete,
+                hasCredentials: !!credentialsData?.is_verified
+              });
+            }
           } else {
             console.warn('⚠️ User not found during JWT refresh');
           }

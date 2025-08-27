@@ -174,7 +174,20 @@ jobs:
       - name: 🧪 Run ${{ matrix.test-type }} tests
         run: |
           echo "🧪 Running ${{ matrix.test-type }} tests..."
-          npm run test:${{ matrix.test-type }}
+          case "${{ matrix.test-type }}" in
+            "unit")
+              npm run test:unit
+              ;;
+            "integration")
+              # Run Hebrew/RTL and authentication specific tests
+              npm run test:hebrew
+              npm run test:auth
+              ;;
+            *)
+              echo "Unknown test type: ${{ matrix.test-type }}"
+              exit 1
+              ;;
+          esac
         env:
           CI: true
 
@@ -282,6 +295,8 @@ jobs:
             "secret\s*[:=]\s*['\"][^'\"]+['\"]"
             "api[_-]?key\s*[:=]\s*['\"][^'\"]+['\"]"
             "private[_-]?key"
+            "SUPABASE_SERVICE_ROLE_KEY\s*[:=]"
+            "GOOGLE_CLIENT_SECRET\s*[:=]"
           )
           
           for pattern in "${SECRET_PATTERNS[@]}"; do
@@ -382,7 +397,7 @@ jobs:
   scraper-validation:
     name: 🐍 Python Scraper Validation
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.modified, 'apps/scraper/') || contains(github.event.head_commit.modified, 'spike-analyzer/')
+    if: contains(github.event.head_commit.modified, 'apps/scraper/') || contains(github.event.head_commit.added, 'apps/scraper/')
     
     steps:
       - name: 📥 Checkout repository
@@ -392,26 +407,43 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
 
       - name: 📦 Install Python dependencies
         run: |
+          python -m pip install --upgrade pip
           if [ -f "apps/scraper/requirements.txt" ]; then
+            echo "📦 Installing scraper dependencies..."
             pip install -r apps/scraper/requirements.txt
           fi
-          if [ -f "spike-analyzer/requirements.txt" ]; then
-            pip install -r spike-analyzer/requirements.txt
-          fi
+          
+          # Install development dependencies
+          pip install flake8 black isort pytest pytest-asyncio
+
+      - name: 🎨 Python code formatting (black)
+        run: |
+          echo "🎨 Checking Python code formatting..."
+          black --check --diff apps/scraper/
+
+      - name: 📋 Import sorting (isort)
+        run: |
+          echo "📋 Checking import sorting..."
+          isort --check-only --diff apps/scraper/
 
       - name: 🔍 Python linting (flake8)
         run: |
-          pip install flake8
           echo "🔍 Running Python linting..."
-          find . -name "*.py" -not -path "./venv/*" -not -path "./.venv/*" | xargs flake8 --max-line-length=100
+          flake8 apps/scraper/ --max-line-length=88 --extend-ignore=E203,W503
 
       - name: 🧪 Python tests
         run: |
           echo "🧪 Running Python scraper tests..."
-          # Add Python tests here when available
+          cd apps/scraper
+          if [ -d "tests" ]; then
+            python -m pytest tests/ -v
+          else
+            echo "ℹ️  No Python tests found - consider adding tests for scraper functionality"
+          fi
 
   # ================================================================================================
   # 🏁 FINAL STATUS

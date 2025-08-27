@@ -22,43 +22,44 @@ const UNIVERSITY_CONFIGS = {
       logoutButton: '.dropdown-toggle, .user-menu',
       courseListSelector: '.course-list, .courses'
     }
-  },
-  technion: {
-    name: 'Technion',
-    moodleUrl: process.env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il',
-    loginUrl: `${process.env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il'}/login/index.php`,
-    selectors: {
-      usernameField: 'input[name="username"], #username, .username input',
-      passwordField: 'input[name="password"], #password, .password input',
-      loginButton: 'input[type="submit"], #loginbtn, .loginbtn, button[type="submit"]',
-      logoutButton: '.dropdown-toggle, .user-menu',
-      courseListSelector: '.course-list, .courses'
-    }
-  },
-  huji: {
-    name: 'Hebrew University',
-    moodleUrl: process.env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il',
-    loginUrl: `${process.env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il'}/login/index.php`,
-    selectors: {
-      usernameField: 'input[name="username"], #username, .username input',
-      passwordField: 'input[name="password"], #password, .password input',
-      loginButton: 'input[type="submit"], #loginbtn, .loginbtn, button[type="submit"]',
-      logoutButton: '.dropdown-toggle, .user-menu',
-      courseListSelector: '.course-list, .courses'
-    }
-  },
-  tau: {
-    name: 'Tel Aviv University',
-    moodleUrl: process.env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il',
-    loginUrl: `${process.env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il'}/login/index.php`,
-    selectors: {
-      usernameField: 'input[name="username"], #username, .username input',
-      passwordField: 'input[name="password"], #password, .password input',
-      loginButton: 'input[type="submit"], #loginbtn, .loginbtn, button[type="submit"]',
-      logoutButton: '.dropdown-toggle, .user-menu',
-      courseListSelector: '.course-list, .courses'
-    }
   }
+  // Other universities coming soon:
+  // technion: {
+  //   name: 'Technion',
+  //   moodleUrl: process.env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il',
+  //   loginUrl: `${process.env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il'}/login/index.php`,
+  //   selectors: {
+  //     usernameField: 'input[name="username"], #username, .username input',
+  //     passwordField: 'input[name="password"], #password, .password input',
+  //     loginButton: 'input[type="submit"], #loginbtn, .loginbtn, button[type="submit"]',
+  //     logoutButton: '.dropdown-toggle, .user-menu',
+  //     courseListSelector: '.course-list, .courses'
+  //   }
+  // },
+  // huji: {
+  //   name: 'Hebrew University',
+  //   moodleUrl: process.env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il',
+  //   loginUrl: `${process.env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il'}/login/index.php`,
+  //   selectors: {
+  //     usernameField: 'input[name="username"], #username, .username input',
+  //     passwordField: 'input[name="password"], #password, .password input',
+  //     loginButton: 'input[type="submit"], #loginbtn, .loginbtn, button[type="submit"]',
+  //     logoutButton: '.dropdown-toggle, .user-menu',
+  //     courseListSelector: '.course-list, .courses'
+  //   }
+  // },
+  // tau: {
+  //   name: 'Tel Aviv University',
+  //   moodleUrl: process.env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il',
+  //   loginUrl: `${process.env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il'}/login/index.php`,
+  //   selectors: {
+  //     usernameField: 'input[name="username"], #username, .username input',
+  //     passwordField: 'input[name="password"], #password, .password input',
+  //     loginButton: 'input[type="submit"], #loginbtn, .loginbtn, button[type="submit"]',
+  //     logoutButton: '.dropdown-toggle, .user-menu',
+  //     courseListSelector: '.course-list, .courses'
+  //   }
+  // }
 };
 
 // חיבור ל-Supabase

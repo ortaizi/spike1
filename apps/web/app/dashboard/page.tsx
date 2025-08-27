@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { ProtectedRoute } from "../../components/auth/protected-route"
 import { HomeContent } from "../../components/dashboard/home-content"
 import { Settings, UserCircle2, Calendar, GraduationCap, ClipboardList, Mail, CalendarDays, Bell, FileText, Clock, LogOut, Zap, User, Home, X, ChevronDown } from "lucide-react"
 import { AssignmentsContent } from "../../components/dashboard/assignments-content"
@@ -100,7 +101,7 @@ export default function Dashboard() {
   const handleLogout = async () => {
     try {
       await signOut({ redirect: false })
-      router.push('/auth/signin')
+      router.push('/')
     } catch (error) {
       console.error('שגיאה בהתנתקות:', error)
     }
@@ -116,6 +117,22 @@ export default function Dashboard() {
     return names[0][0] || "משתמש"
   }
 
+  // Get display name for development mode
+  const getDisplayName = () => {
+    if (process.env.NODE_ENV === 'development' && !userSession?.user?.name) {
+      return "אור (דמו)"
+    }
+    return userSession?.user?.name || "משתמש"
+  }
+
+  // Get display email for development mode
+  const getDisplayEmail = () => {
+    if (process.env.NODE_ENV === 'development' && !userSession?.user?.email) {
+      return "demo@bgu.ac.il"
+    }
+    return userSession?.user?.email || "משתמש@example.com"
+  }
+
   // Show loading during hydration
   if (!isMounted) {
     return (
@@ -129,7 +146,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50" dir="rtl" style={{ fontFamily: "Assistant, sans-serif", position: 'relative' }}>
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50" dir="rtl" style={{ fontFamily: "Assistant, sans-serif", position: 'relative' }}>
       {/* New Page Background - Light and gentle gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50"></div>
       
@@ -382,7 +400,7 @@ export default function Dashboard() {
                     >
                       <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showProfileDropdown ? 'rotate-0' : 'rotate-180'}`} />
                       <span className="font-semibold text-gray-900">
-                        {userSession?.user?.name || "משתמש"}
+                        {getDisplayName()}
                       </span>
                       <Avatar className="w-8 h-8 border-2 border-gray-200 hover:border-blue-300 transition-all duration-200">
                         <AvatarImage 
@@ -411,10 +429,10 @@ export default function Dashboard() {
                             </Avatar>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-gray-900 truncate">
-                                {userSession?.user?.name || "משתמש"}
+                                {getDisplayName()}
                               </p>
                               <p className="text-xs text-gray-500 truncate">
-                                {userSession?.user?.email || "משתמש@example.com"}
+                                {getDisplayEmail()}
                               </p>
                             </div>
                           </div>
@@ -461,5 +479,6 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   )
 }

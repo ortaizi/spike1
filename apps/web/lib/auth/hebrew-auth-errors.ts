@@ -67,12 +67,73 @@ export const AUTH_ERRORS_HE = {
     title: 'שגיאה לא ידועה',
     message: 'אירעה שגיאה בלתי צפויה. אנא נסה שוב או פנה לתמיכה.',
     action: 'נסה שוב'
+  },
+
+  // Smart Authentication Specific Errors
+  AutoAuthFailed: {
+    title: 'התחברות אוטומטית נכשלה',
+    message: 'לא הצלחנו להתחבר אוטומטית עם הפרטים השמורים שלך. ייתכן שהסיסמה שונתה באוניברסיטה.',
+    action: 'הזן סיסמה חדשה'
+  },
+
+  CredentialsExpired: {
+    title: 'פרטי ההתחברות פגו',
+    message: 'פרטי ההתחברות השמורים במערכת אינם תקפים יותר.',
+    action: 'עדכן פרטי התחברות'
+  },
+
+  RevalidationRequired: {
+    title: 'נדרש אימות מחדש',
+    message: 'עבר זמן רב מאז האימות האחרון של פרטי ההתחברות. נדרש אימות מחדש למען הביטחון.',
+    action: 'אמת פרטים מחדש'
+  },
+
+  ValidationAttemptsExceeded: {
+    title: 'חרגת ממספר הניסיונות',
+    message: 'ביצעת יותר מדי ניסיונות אימות כושלים. חשבונך נחסם זמנית.',
+    action: 'המתן 15 דקות'
+  },
+
+  UniversityNotSupported: {
+    title: 'אוניברסיטה לא נתמכת',
+    message: 'כרגע אנחנו תומכים רק באוניברסיטת בן-גוריון. תמיכה באוניברסיטאות נוספות תתווסף בקרוב.',
+    action: 'השתמש במייל BGU'
+  },
+
+  PythonValidatorError: {
+    title: 'שגיאה במערכת האימות',
+    message: 'שגיאה טכנית במערכת אימות הפרטים. המערכת לא הצליחה לבדוק את הפרטים שלך.',
+    action: 'נסה שוב מאוחר יותר'
+  },
+
+  EncryptionError: {
+    title: 'שגיאה בהצפנת הנתונים',
+    message: 'שגיאה בהצפנת פרטי ההתחברות. הנתונים שלך לא נשמרו.',
+    action: 'נסה שוב'
+  },
+
+  DatabaseError: {
+    title: 'שגיאה במסד הנתונים',
+    message: 'שגיאה בשמירת או קריאת הנתונים ממסד הנתונים.',
+    action: 'נסה שוב מאוחר יותר'
+  },
+
+  DevelopmentModeError: {
+    title: 'שגיאה במצב פיתוח',
+    message: 'שגיאה שמתרחשת רק במצב פיתוח של המערכת.',
+    action: 'פנה למפתח'
+  },
+
+  SmartFlowError: {
+    title: 'שגיאה בזרימת האימות החכמה',
+    message: 'שגיאה בקביעת צעדי האימות המתאימים לסטטוס שלך.',
+    action: 'התחבר מחדש'
   }
 } as const;
 
 // University Domain Validation
 export const ISRAELI_UNIVERSITIES = {
-  'bgu.ac.il': {
+  'post.bgu.ac.il': {
     name: 'אוניברסיטת בן-גוריון בנגב',
     nameEn: 'Ben-Gurion University of the Negev',
     moodleUrl: 'https://moodle.bgu.ac.il',
@@ -91,7 +152,7 @@ export const ISRAELI_UNIVERSITIES = {
     logoUrl: '/logos/tau.png'
   },
   'mail.huji.ac.il': {
-    name: 'האוניברסיטה העברית בירושלים',
+    name: 'אוניברסיטת בן-גוריון בנגב',
     nameEn: 'The Hebrew University of Jerusalem',
     moodleUrl: 'https://moodle.huji.ac.il',
     logoUrl: '/logos/huji.png'
@@ -198,5 +259,70 @@ export const AUTH_SUCCESS_HE = {
   MoodleSync: 'סנכרון עם מודל הושלם בהצלחה',
   ProfileComplete: 'הפרופיל שלך הושלם בהצלחה',
   Welcome: 'ברוך הבא לפלטפורמת Spike!',
-  DataSynced: 'הנתונים שלך סונכרנו בהצלחה'
+  DataSynced: 'הנתונים שלך סונכרנו בהצלחה',
+  
+  // Smart Authentication Success Messages
+  AutoAuthSuccess: '🚀 התחברות אוטומטית הצליחה!',
+  CredentialsSaved: '💾 פרטי ההתחברות נשמרו בהצלחה',
+  CredentialsUpdated: '🔄 פרטי ההתחברות עודכנו בהצלחה',
+  ValidationSuccess: '✅ פרטי ההתחברות אומתו בהצלחה',
+  NewUserSuccess: '🎉 הרשמה ראשונית הושלמה בהצלחה!',
+  RevalidationSuccess: '🔐 אימות מחדש הושלם בהצלחה',
+  OnboardingComplete: '🎓 ההרשמה הושלמה! מעביר לדשבורד...',
+  SmartFlowComplete: '⚡ תהליך האימות החכם הושלם בהצלחה'
+} as const;
+
+// Progress Messages for Loading States
+export const PROGRESS_MESSAGES_HE = {
+  CheckingStatus: 'בודק סטטוס אימות...',
+  Connecting: 'מתחבר למערכת האוניברסיטה...',
+  AutoConnecting: '🚀 מנסה התחברות אוטומטית...',
+  Validating: '🔍 מאמת פרטי התחברות...',
+  Saving: '💾 שומר פרטי התחברות...',
+  Completing: '✨ משלים הרשמה...',
+  Redirecting: '➡️ מעביר לדשבורד...',
+  Loading: 'טוען...',
+  Processing: 'מעבד נתונים...',
+  Syncing: 'מסנכרן עם האוניברסיטה...',
+  Decrypting: '🔓 מפענח נתונים...',
+  Encrypting: '🔒 מצפין נתונים...'
+} as const;
+
+// Form Validation Messages
+export const FORM_VALIDATION_HE = {
+  RequiredField: 'שדה חובה',
+  InvalidEmail: 'כתובת מייל לא תקפה',
+  EmailNotUniversity: 'נדרש מייל של אוניברסיטת בן-גוריון',
+  PasswordTooShort: 'הסיסמה קצרה מדי (מינימום 8 תווים)',
+  PasswordTooLong: 'הסיסמה ארוכה מדי (מקסימום 128 תווים)',
+  UsernameTooShort: 'שם המשתמש קצר מדי',
+  UsernameTooLong: 'שם המשתמש ארוך מדי',
+  SpecialCharacters: 'אסור להשתמש בתווים מיוחדים',
+  NumericOnly: 'רק מספרים מותרים',
+  InvalidCharacters: 'תווים לא תקפים',
+  FieldEmpty: 'השדה ריק'
+} as const;
+
+// Contextual Messages based on Authentication Flow
+export const FLOW_MESSAGES_HE = {
+  new_user: {
+    title: 'משתמש חדש',
+    subtitle: 'בואו נגדיר את הפרטים שלך',
+    description: 'זוהי הפעם הראשונה שלך במערכת'
+  },
+  existing_user_auto: {
+    title: 'התחברות אוטומטית',
+    subtitle: 'מתחבר אוטומטית עם הפרטים השמורים',
+    description: 'משתמש בפרטי ההתחברות השמורים שלך'
+  },
+  existing_user_manual: {
+    title: 'עדכון פרטי התחברות',
+    subtitle: 'נא להזין את הסיסמה הנוכחית',
+    description: 'נמצאו פרטי התחברות קיימים הזקוקים לעדכון'
+  },
+  existing_user_revalidate: {
+    title: 'אימות פרטים מחדש',
+    subtitle: 'נדרש אימות מחדש למען הביטחון',
+    description: 'פרטי ההתחברות זקוקים לאימות מחדש'
+  }
 } as const;

@@ -4,8 +4,8 @@ export async function GET() {
   const universities = [
     {
       id: "bgu",
-      name: "אוניברסיטת בן-גוריון",
-      domain: "bgu.ac.il",
+      name: "אוניברסיטת בן-גוריון בנגב",
+      domain: "post.bgu.ac.il",
       moodleUrl: "https://moodle.bgu.ac.il",
       apiEndpoint: "https://moodle.bgu.ac.il/login/index.php",
       logo: "/universities/bgu-logo.png",
@@ -29,14 +29,14 @@ export async function GET() {
       logo: "/universities/technion-logo.png",
       activeUsers: 0,
       supportedFeatures: {
-        coursesScraping: true,
-        assignmentTracking: true,
-        gradeMonitoring: true,
-        realTimeSync: true,
-        fileDownloads: true,
-        announcementsSync: true
+        coursesScraping: false,
+        assignmentTracking: false,
+        gradeMonitoring: false,
+        realTimeSync: false,
+        fileDownloads: false,
+        announcementsSync: false
       },
-      status: "active"
+      status: "coming_soon"
     },
     {
       id: "hebrew",
@@ -47,14 +47,14 @@ export async function GET() {
       logo: "/universities/huji-logo.png",
       activeUsers: 0,
       supportedFeatures: {
-        coursesScraping: true,
-        assignmentTracking: true,
-        gradeMonitoring: true,
-        realTimeSync: true,
-        fileDownloads: true,
-        announcementsSync: true
+        coursesScraping: false,
+        assignmentTracking: false,
+        gradeMonitoring: false,
+        realTimeSync: false,
+        fileDownloads: false,
+        announcementsSync: false
       },
-      status: "active"
+      status: "coming_soon"
     },
     {
       id: "tau",
@@ -65,14 +65,14 @@ export async function GET() {
       logo: "/universities/tau-logo.png",
       activeUsers: 0,
       supportedFeatures: {
-        coursesScraping: true,
-        assignmentTracking: true,
-        gradeMonitoring: true,
-        realTimeSync: true,
-        fileDownloads: true,
-        announcementsSync: true
+        coursesScraping: false,
+        assignmentTracking: false,
+        gradeMonitoring: false,
+        realTimeSync: false,
+        fileDownloads: false,
+        announcementsSync: false
       },
-      status: "active"
+      status: "coming_soon"
     }
   ];
   

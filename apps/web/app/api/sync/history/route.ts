@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DualStageSessionManager } from '@/lib/auth/dual-stage-session';
-import { supabase } from '@/lib/db';
+import { DualStageSessionManager } from '../../../../lib/auth/dual-stage-session';
+import { supabase } from '../../../../lib/db';
 
 /**
  * GET /api/sync/history

@@ -98,7 +98,7 @@ export default function HomePage() {
     {
       icon: Users,
       title: "תקשורת משופרת",
-      description: "גישה מהירה למרצים, עמיתים לספסל הלימודים וצוות המחלקה",
+      description: "גישה מהירה לעמיתים לספסל הלימודים וצוות המחלקה",
       color: "text-blue-600",
       bgColor: "bg-blue-50"
     },
@@ -237,7 +237,7 @@ export default function HomePage() {
           
 
           
-          <div className="container mx-auto max-w-7xl relative z-10">
+          <div className="w-full relative z-10">
             <motion.div 
               className="text-center"
               initial={{ opacity: 0, y: 30 }}
@@ -326,7 +326,7 @@ export default function HomePage() {
 
         {/* Features Section */}
         <section id="features" className="py-20 px-4">
-          <div className="container mx-auto max-w-7xl">
+          <div className="w-full">
             {/* Section Header */}
             <motion.div 
               className="text-center mb-16"
@@ -450,9 +450,9 @@ export default function HomePage() {
                   size="lg" 
                   variant="outline" 
                   className="gap-4 border-2 border-blue-600 text-blue-600 hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 hover:text-white transition-all duration-300"
-                  onClick={handleDemoClick}
+                  onClick={() => router.push('/test-login')}
                 >
-                  צפה בדמו <MoveRight className="w-4 h-4" />
+                  🧪 טסט המערכת <MoveRight className="w-4 h-4" />
                 </Button>
               </div>
             </motion.div>
@@ -461,7 +461,7 @@ export default function HomePage() {
 
         {/* Contact Section */}
         <section id="contact" className="py-16 px-4 bg-gray-50/50">
-          <div className="container mx-auto max-w-6xl">
+          <div className="w-full">
             <div className="flex flex-col gap-8 items-center">
               {/* Contact Title */}
               <motion.div
@@ -528,7 +528,7 @@ export default function HomePage() {
 
         {/* Footer */}
         <footer className="bg-gray-50/50 border-t border-gray-200/50 mt-20">
-          <div className="container mx-auto max-w-7xl px-4 py-12">
+          <div className="w-full px-4 py-12">
             <div className="flex flex-col md:flex-row justify-between items-center">
               {/* Logo and Description */}
               <div className="flex flex-col items-center md:items-start mb-8 md:mb-0">

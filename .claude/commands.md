@@ -287,7 +287,7 @@ npm test -- auth/google-oauth.test.ts --verbose
 
 # 2. Test university SSO flows
 echo "Testing university authentications..."
-for university in bgu technion huji tau; do
+for university in bgu; do
   echo "  Testing $university..."
   npm test -- auth/university-auth.test.ts --verbose --testNamePattern="$university"
 done
@@ -312,7 +312,7 @@ cat > auth-test-report.md << 'EOF'
 
 ## Test Results:
 - Google OAuth: $(npm test -- auth/google-oauth.test.ts 2>&1 | grep -c "PASS" || echo "FAIL")
-- University SSO: $(for u in bgu technion huji tau; do npm test -- auth/university-auth.test.ts --testNamePattern="$u" 2>&1 | grep -c "PASS"; done | paste -sd+ | bc)
+- University SSO: $(for u in bgu; do npm test -- auth/university-auth.test.ts --testNamePattern="$u" 2>&1 | grep -c "PASS"; done | paste -sd+ | bc)
 - Session Management: $(npm test -- auth/session.test.ts 2>&1 | grep -c "PASS" || echo "FAIL")
 - API Routes: $(curl -s http://localhost:3000/api/health | jq -r '.status' || echo "FAIL")
 
@@ -364,7 +364,7 @@ echo "✅ Authentication state reset complete"
 university="$1"
 if [ -z "$university" ]; then
   echo "Usage: /sync-moodle [university]"
-  echo "Available: bgu, technion, huji, tau"
+  echo "Available: bgu (other universities coming soon)"
   exit 1
 fi
 

@@ -3,13 +3,23 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { CheckCircle, User, Mail, GraduationCap, ArrowRight, Lock, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { validateUniversityEmail, getHebrewErrorMessage, FORM_VALIDATION_HE } from '../../lib/auth/hebrew-auth-errors';
 
 export default function OnboardingPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [universityPassword, setUniversityPassword] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -20,11 +30,11 @@ export default function OnboardingPage() {
     if (status === 'loading') return;
     
     if (!session) {
-      router.push('/auth/signin');
+      router.push('/');
       return;
     }
 
-    // Check if user already completed onboarding
+    // Check if onboarding is already completed
     const checkOnboardingStatus = async () => {
       try {
         const response = await fetch('/api/user/onboarding');
@@ -33,257 +43,312 @@ export default function OnboardingPage() {
           if (data.onboardingCompleted) {
             console.log('User already completed onboarding, redirecting to dashboard');
             router.push('/dashboard');
+            return;
           }
         }
       } catch (error) {
         console.error('Error checking onboarding status:', error);
-        // Continue with onboarding if API fails
       }
     };
 
     checkOnboardingStatus();
   }, [session, status, router, mounted]);
 
-  const steps = [
-    {
-      title: 'ברוכים הבאים ל-spike!',
-      subtitle: 'פלטפורמת ניהול אקדמי לסטודנטי אוניברסיטת בן גוריון',
-      content: (
-        <div className="text-center space-y-6">
-          <div className="mx-auto w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center">
-            <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              שלום, {session?.user?.name}!
-            </h2>
-            <p className="text-gray-600">
-              אנחנו שמחים לראות אותך כאן. בואו נכיר לך את הפלטפורמה
-            </p>
-          </div>
-        </div>
-      )
-    },
-    {
-      title: 'מה תוכל לעשות כאן?',
-      subtitle: 'כל הכלים שתצטרך ללימודים שלך במקום אחד',
-      content: (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-center mb-2">
-                <svg className="w-6 h-6 text-blue-600 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                <h3 className="font-semibold text-gray-900">ניהול קורסים</h3>
-              </div>
-              <p className="text-sm text-gray-600">צפה בכל הקורסים שלך, מטלות וציונים</p>
-            </div>
-            
-            <div className="p-4 bg-green-50 rounded-lg">
-              <div className="flex items-center mb-2">
-                <svg className="w-6 h-6 text-green-600 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                <h3 className="font-semibold text-gray-900">מעקב מטלות</h3>
-              </div>
-              <p className="text-sm text-gray-600">עקב אחר תאריכי הגשה וסטטוס מטלות</p>
-            </div>
-            
-            <div className="p-4 bg-purple-50 rounded-lg">
-              <div className="flex items-center mb-2">
-                <svg className="w-6 h-6 text-purple-600 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <h3 className="font-semibold text-gray-900">עבודת צוות</h3>
-              </div>
-              <p className="text-sm text-gray-600">שתף פעולה עם חברים לקבוצה</p>
-            </div>
-            
-            <div className="p-4 bg-orange-50 rounded-lg">
-              <div className="flex items-center mb-2">
-                <svg className="w-6 h-6 text-orange-600 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <h3 className="font-semibold text-gray-900">לוח שנה</h3>
-              </div>
-              <p className="text-sm text-gray-600">לוח שנה אקדמי עם תזכורות</p>
-            </div>
-          </div>
-        </div>
-      )
-    },
-    {
-      title: 'הנתונים שלך',
-      subtitle: 'אנחנו מסונכרנים עם Moodle ומעדכנים אוטומטית',
-      content: (
-        <div className="space-y-4">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-gray-900 mb-2">מידע אישי</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">שם:</span>
-                <span className="font-medium">{session?.user?.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">מייל:</span>
-                <span className="font-medium">{session?.user?.email}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">שם משתמש:</span>
-                <span className="font-medium">{session?.user?.studentId}</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              </div>
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-2 text-center">כרגע עובדים רק עם אוניברסיטת בן גוריון</h3>
-            <p className="text-sm text-gray-700 text-center mb-4">
-              אנחנו מתמקדים כרגע בסטודנטים של אוניברסיטת בן גוריון. בקרוב נרחיב לתמיכה באוניברסיטאות נוספות.
-            </p>
-            <div className="flex justify-center">
-              <div className="bg-white p-4 rounded-lg shadow-sm">
-                <img 
-                  src="/bgu-logo.svg" 
-                  alt="אוניברסיטת בן-גוריון בנגב" 
-                  className="h-12 w-auto"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )
-    }
-  ];
-
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+  // Extract user info from email
+  const extractUserInfoFromEmail = (email: string) => {
+    const [username, domain] = email.split('@');
+    
+    // Identify university by domain
+    let university = '';
+    let universityName = '';
+    
+    if (domain.includes('post.bgu.ac.il')) {
+      university = 'bgu';
+      universityName = 'אוניברסיטת בן-גוריון בנגב';
+    } else if (domain.includes('technion.ac.il')) {
+      university = 'technion';
+      universityName = 'הטכניון';
+    } else if (domain.includes('huji.ac.il')) {
+      university = 'huji';
+      universityName = 'האוניברסיטה העברית';
+    } else if (domain.includes('tau.ac.il')) {
+      university = 'tau';
+      universityName = 'אוניברסיטת תל אביב';
     } else {
-      handleComplete();
+      university = 'unknown';
+      universityName = 'אוניברסיטה לא מוכרת';
     }
+    
+    return { username, university, universityName };
   };
 
-  const handleComplete = async () => {
-    setIsLoading(true);
-    
+  // Test university connection
+  const testUniversityConnection = async (): Promise<boolean> => {
+    if (!universityPassword.trim()) {
+      toast.error(FORM_VALIDATION_HE.FieldEmpty);
+      return false;
+    }
+
+    if (universityPassword.length < 4) {
+      toast.error(FORM_VALIDATION_HE.PasswordTooShort);
+      return false;
+    }
+
+    setIsConnecting(true);
+    setConnectionStatus('idle');
+
     try {
-      // Mark user as onboarded
-      const response = await fetch('/api/user/onboarding', {
+      const userInfo = extractUserInfoFromEmail(session?.user?.email || '');
+      
+      // Validate email domain first
+      const emailValidation = validateUniversityEmail(session?.user?.email || '');
+      if (!emailValidation.isValid) {
+        setConnectionStatus('error');
+        toast.error(emailValidation.error || 'כתובת מייל לא תקפה');
+        return false;
+      }
+      
+      console.log(`🔐 Testing connection for ${userInfo.username}`);
+      
+      const response = await fetch('/api/moodle/validate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          onboardingCompleted: true
+          password: universityPassword,
         }),
       });
 
-      if (response.ok) {
-        router.push('/dashboard');
+      const result = await response.json();
+
+      if (result.success) {
+        setConnectionStatus('success');
+        setIsRedirecting(true);
+        toast.success('התחברות למערכת האוניברסיטה הצליחה! מעביר לדשבורד...');
+        
+        // Force session update to refresh the JWT token with new dual-stage status
+        try {
+          console.log('🔄 Forcing session update after successful authentication...');
+          await update(); // This should trigger JWT callback with trigger='update'
+          
+          // Additional delay to ensure session update is processed
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          console.log('✅ Session updated with dual-stage completion');
+        } catch (updateError) {
+          console.error('❌ Error updating session:', updateError);
+        }
+        
+        // Redirect to dashboard immediately after successful authentication
+        setTimeout(() => {
+          console.log('🚀 Redirecting to dashboard after successful authentication');
+          router.push('/dashboard');
+        }, 1000); // Quick redirect to dashboard
+        
+        return true;
       } else {
-        throw new Error('שגיאה בסיום ההרשמה');
+        setConnectionStatus('error');
+        const hebrewError = getHebrewErrorMessage(result.errorCode || 'MoodleAuthFailed');
+        toast.error(result.error || hebrewError.message);
+        return false;
       }
     } catch (error) {
-      console.error('Onboarding completion error:', error);
-      // Even if API fails, redirect to dashboard
-      router.push('/dashboard');
+      console.error('Connection test error:', error);
+      setConnectionStatus('error');
+      const hebrewError = getHebrewErrorMessage('NetworkError');
+      toast.error(hebrewError.message);
+      return false;
     } finally {
-      setIsLoading(false);
+      setIsConnecting(false);
     }
+  };
+
+  const handleComplete = async () => {
+    if (!session?.user?.email) return;
+
+    // Test university connection first
+    const isConnectionSuccessful = await testUniversityConnection();
+    
+    if (!isConnectionSuccessful) {
+      return; // Don't proceed if connection failed
+    }
+
+    // Since testUniversityConnection() already handles the redirect and onboarding completion
+    // via the /api/moodle/validate endpoint, we don't need to do anything else here.
+    // The user will be automatically redirected to the dashboard.
   };
 
   // Show loading state while session is loading or component is not mounted
   if (status === 'loading' || !mounted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">טוען נתונים...</p>
         </div>
       </div>
     );
   }
 
-  // Redirect to signin if not authenticated
+  // Redirect to landing page if not authenticated
   if (!session) {
     return null; // Will redirect in useEffect
   }
 
-  const currentStepData = steps[currentStep];
+  const userInfo = extractUserInfoFromEmail(session.user.email || '');
 
   return (
-    <div dir="rtl" className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-600">שלב {currentStep + 1} מתוך {steps.length}</span>
-            <span className="text-sm text-gray-600">{Math.round(((currentStep + 1) / steps.length) * 100)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
-            ></div>
-          </div>
+    <div dir="rtl" className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            ברוכים הבאים ל-Spike
+          </h1>
+          <p className="text-gray-600">
+            פלטפורמת ניהול אקדמי חכמה לסטודנטים ישראלים
+          </p>
         </div>
 
-        {/* Step Content */}
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {currentStepData.title}
-            </h1>
-            <p className="text-gray-600">
-              {currentStepData.subtitle}
-            </p>
-          </div>
+        {/* Main Card */}
+        <Card className="w-full shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="text-center pb-6">
+            <CardTitle className="text-xl font-semibold text-gray-900">
+              פרטי החשבון שלך
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              המידע הבא זוהה אוטומטית מהמייל שלך
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="space-y-6">
+            {/* Username */}
+            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-600 mb-1">שם משתמש</p>
+                <p className="font-semibold text-gray-900">{userInfo.username}</p>
+              </div>
+              <CheckCircle className="w-5 h-5 text-green-500" />
+            </div>
 
-          <div className="mb-8">
-            {currentStepData.content}
-          </div>
+            {/* Email */}
+            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <Mail className="w-5 h-5 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-600 mb-1">כתובת מייל</p>
+                <p className="font-semibold text-gray-900 text-sm">{session.user.email}</p>
+              </div>
+              <CheckCircle className="w-5 h-5 text-green-500" />
+            </div>
 
-          {/* Navigation */}
-          <div className="flex justify-between">
-            <button
-              onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-              disabled={currentStep === 0}
-              className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              חזור
-            </button>
-            
-            <button
-              onClick={handleNext}
-              disabled={isLoading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <div className="flex items-center">
-                  <svg className="animate-spin -ms-1 me-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  מעביר לדשבורד...
+            {/* University */}
+            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                <GraduationCap className="w-5 h-5 text-purple-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-600 mb-1">מוסד לימודים</p>
+                <p className="font-semibold text-gray-900">{userInfo.universityName}</p>
+              </div>
+              <CheckCircle className="w-5 h-5 text-green-500" />
+            </div>
+
+            {/* Password Field */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                  <Lock className="w-5 h-5 text-orange-600" />
                 </div>
-              ) : currentStep === steps.length - 1 ? (
-                'התחל להשתמש ב-spike'
-              ) : (
-                'המשך'
+                <div className="flex-1">
+                  <Label htmlFor="university-password" className="text-sm text-gray-600">
+                    סיסמת מערכת האוניברסיטה
+                  </Label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    נדרשת להתחברות למודל ומערכות האוניברסיטה
+                  </p>
+                </div>
+              </div>
+              
+              <Input
+                id="university-password"
+                type="password"
+                placeholder="הזן את הסיסמה שלך למערכת האוניברסיטה"
+                value={universityPassword}
+                onChange={(e) => setUniversityPassword(e.target.value)}
+                disabled={isConnecting}
+                className="w-full text-right"
+                dir="rtl"
+              />
+
+              {/* Connection Status */}
+              {connectionStatus === 'success' && (
+                <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span className="text-sm text-green-800">
+                    {isRedirecting ? 'התחברות הצליחה! מעביר לדשבורד...' : 'התחברות למערכת האוניברסיטה הצליחה!'}
+                  </span>
+                </div>
               )}
-            </button>
-          </div>
-        </div>
+
+              {connectionStatus === 'error' && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                  <span className="text-sm text-red-800">שגיאה בהתחברות. אנא בדוק את הסיסמה ונסה שוב.</span>
+                </div>
+              )}
+
+              {/* Security Info */}
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-800">
+                  🔒 הסיסמה שלך נשמרת באופן מאובטח ואיננה נשמרת במערכת שלנו. 
+                  היא משמשת רק להתחברות למערכות האוניברסיטה שלך.
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3 pt-4">
+              <Button 
+                onClick={handleComplete}
+                disabled={isLoading || isConnecting || isRedirecting || !universityPassword.trim()}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-base font-medium rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading || isConnecting || isRedirecting ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white me-2"></div>
+                    {isRedirecting ? 'מעביר לדשבורד...' : isConnecting ? 'בודק התחברות...' : 'טוען...'}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center" dir="rtl">
+                    התחל להשתמש ב-Spike
+                    <ArrowRight className="w-4 h-4 ms-2 transform scale-x-[-1]" />
+                  </div>
+                )}
+              </Button>
+              
+              <Button 
+                variant="outline"
+                onClick={() => router.push('/')}
+                className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 py-3 text-base font-medium rounded-lg"
+              >
+                אעשה זאת מאוחר יותר
+              </Button>
+            </div>
+
+            {/* Info Text */}
+            <div className="text-center pt-4">
+              <p className="text-xs text-gray-500">
+                על ידי המשך, אתה מסכים לתנאי השימוש ומדיניות הפרטיות שלנו
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

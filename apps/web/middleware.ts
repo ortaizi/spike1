@@ -13,6 +13,12 @@ export default async function middleware(request: NextRequest) {
   
   console.log(`🛡️ Smart Middleware: ENABLED - Processing ${pathname}`);
   
+  // DEV MODE: Skip auth for dashboard in development
+  if (process.env.NODE_ENV === 'development' && pathname.startsWith('/dashboard')) {
+    console.log(`🔧 DEV MODE: Bypassing auth for dashboard - ${pathname}`);
+    return NextResponse.next();
+  }
+  
   // Skip middleware for public routes and static files
   const publicRoutes = [
     '/api', // All API routes handle their own auth
@@ -52,13 +58,13 @@ export default async function middleware(request: NextRequest) {
       console.log(`🚫 No token found - this might be the cause of auth issues`);
     }
     
-    // Enhanced token analysis for smart authentication
-    const isDualStageComplete = token['isDualStageComplete'] === true;
-    const isGoogleProvider = token.provider === 'google';
-    const isDualStageProvider = token.provider === 'university-credentials';
-    const hasValidCredentials = token['credentialsValid'] !== false;
-    const authenticationFlow = token['authenticationFlow'] as string || 'unknown';
-    const lastValidation = token['lastValidation'] as string;
+    // Enhanced token analysis for smart authentication (with null safety)
+    const isDualStageComplete = token?.['isDualStageComplete'] === true;
+    const isGoogleProvider = token?.provider === 'google';
+    const isDualStageProvider = token?.provider === 'university-credentials';
+    const hasValidCredentials = token?.['credentialsValid'] !== false;
+    const authenticationFlow = token?.['authenticationFlow'] as string || 'unknown';
+    const lastValidation = token?.['lastValidation'] as string;
     
     console.log('🧠 Smart middleware token analysis:', {
       isDualStageComplete,
@@ -67,7 +73,7 @@ export default async function middleware(request: NextRequest) {
       hasValidCredentials,
       authenticationFlow,
       lastValidation,
-      provider: token.provider,
+      provider: token?.provider,
       pathname
     });
 

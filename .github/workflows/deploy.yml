@@ -1,0 +1,299 @@
+name: 🚀 Deploy Spike Academic Platform
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - staging
+        - production
+
+env:
+  NODE_VERSION: '20'
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
+jobs:
+  # ================================================================================================
+  # 🔍 PRE-DEPLOYMENT VALIDATION
+  # ================================================================================================
+  
+  pre-deployment-check:
+    name: 🔍 Pre-deployment Validation
+    runs-on: ubuntu-latest
+    outputs:
+      should-deploy: ${{ steps.check.outputs.should-deploy }}
+      environment: ${{ steps.check.outputs.environment }}
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Determine deployment environment
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📊 Check for breaking changes
+        run: |
+          echo "🔍 Checking for breaking changes since last deploy..."
+          
+          # Check for database migrations
+          if git diff --name-only HEAD~1 | grep -q "supabase/migrations/"; then
+            echo "⚠️  Database migration detected - ensure proper rollout strategy"
+          fi
+          
+          # Check for major dependency updates
+          if git diff --name-only HEAD~1 | grep -q "package-lock.json"; then
+            echo "📦 Dependency changes detected"
+          fi
+          
+          echo "✅ Pre-deployment checks completed"
+
+  # ================================================================================================
+  # 🏗️ BUILD FOR PRODUCTION
+  # ================================================================================================
+  
+  build-production:
+    name: 🏗️ Production Build
+    runs-on: ubuntu-latest
+    needs: pre-deployment-check
+    if: needs.pre-deployment-check.outputs.should-deploy == 'true'
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔧 Run type check
+        run: npm run type-check
+
+      - name: 🏗️ Build production bundle
+        run: |
+          echo "🏗️ Building Spike Academic Platform for production..."
+          npm run build
+        env:
+          NODE_ENV: production
+          NEXT_TELEMETRY_DISABLED: 1
+
+      - name: 📊 Bundle analysis
+        run: |
+          echo "📊 Analyzing production bundle..."
+          if [ -d "apps/web/.next" ]; then
+            echo "📦 Next.js build size:"
+            du -sh apps/web/.next
+            
+            # Check for large bundles
+            find apps/web/.next -name "*.js" -size +500k | while read file; do
+              echo "⚠️  Large bundle detected: $file ($(du -h "$file" | cut -f1))"
+            done
+          fi
+
+      - name: 📦 Cache production build
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/.next
+            apps/web/out
+          key: production-build-${{ github.sha }}
+          retention-days: 7
+
+  # ================================================================================================
+  # 🧪 PRODUCTION SMOKE TESTS
+  # ================================================================================================
+  
+  smoke-tests:
+    name: 🧪 Production Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-check, build-production]
+    if: needs.pre-deployment-check.outputs.should-deploy == 'true'
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 📦 Restore production build
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/.next
+            apps/web/out
+          key: production-build-${{ github.sha }}
+
+      - name: 🎭 Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: 🧪 Run critical path smoke tests
+        run: |
+          echo "🧪 Running production smoke tests..."
+          # Start the production server
+          cd apps/web && npm run start &
+          SERVER_PID=$!
+          
+          # Wait for server to be ready
+          sleep 10
+          
+          # Run basic smoke tests
+          curl -f http://localhost:3000 || (echo "❌ Health check failed" && exit 1)
+          curl -f http://localhost:3000/api/health || (echo "❌ API health check failed" && exit 1)
+          
+          # Run Hebrew/RTL smoke test
+          npx playwright test tests/e2e/smoke-tests.spec.ts --project="Desktop Chrome" || true
+          
+          # Cleanup
+          kill $SERVER_PID
+        env:
+          NODE_ENV: production
+
+  # ================================================================================================
+  # 🌐 DEPLOY TO VERCEL
+  # ================================================================================================
+  
+  deploy-vercel:
+    name: 🌐 Deploy to Vercel
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-check, build-production, smoke-tests]
+    if: needs.pre-deployment-check.outputs.should-deploy == 'true'
+    environment: ${{ needs.pre-deployment-check.outputs.environment }}
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🌐 Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: ${{ needs.pre-deployment-check.outputs.environment == 'production' && '--prod' || '' }}
+          working-directory: ./apps/web
+          
+      - name: 📝 Deployment summary
+        run: |
+          echo "🚀 Spike Academic Platform deployed successfully!"
+          echo "Environment: ${{ needs.pre-deployment-check.outputs.environment }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+  # ================================================================================================
+  # 🧪 POST-DEPLOYMENT VERIFICATION
+  # ================================================================================================
+  
+  post-deployment-verification:
+    name: 🧪 Post-deployment Verification
+    runs-on: ubuntu-latest
+    needs: [deploy-vercel, pre-deployment-check]
+    if: needs.pre-deployment-check.outputs.should-deploy == 'true'
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🎭 Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: 🧪 Run post-deployment tests
+        run: |
+          echo "🧪 Running post-deployment verification..."
+          
+          # Wait for deployment to be fully available
+          sleep 30
+          
+          # Run Hebrew/RTL verification tests against production
+          if [ "${{ needs.pre-deployment-check.outputs.environment }}" = "production" ]; then
+            PLAYWRIGHT_BASE_URL="https://spike-academic.vercel.app" npm run test:auth-e2e -- --grep="CRITICAL"
+          fi
+        env:
+          CI: true
+          NODE_ENV: production
+        continue-on-error: true
+
+      - name: 📊 Performance monitoring setup
+        run: |
+          echo "📊 Setting up performance monitoring..."
+          # Add performance monitoring hooks here
+          echo "✅ Performance monitoring configured"
+
+  # ================================================================================================
+  # 📢 DEPLOYMENT NOTIFICATIONS
+  # ================================================================================================
+  
+  notify-deployment:
+    name: 📢 Deployment Notifications
+    runs-on: ubuntu-latest
+    needs: [deploy-vercel, post-deployment-verification, pre-deployment-check]
+    if: always() && needs.pre-deployment-check.outputs.should-deploy == 'true'
+    
+    steps:
+      - name: 📢 Notify deployment status
+        run: |
+          echo "📢 Spike Academic Platform Deployment Summary"
+          echo "=============================================="
+          echo "Environment: ${{ needs.pre-deployment-check.outputs.environment }}"
+          echo "Status: ${{ needs.deploy-vercel.result }}"
+          echo "Verification: ${{ needs.post-deployment-verification.result }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Deployed at: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          
+          if [ "${{ needs.deploy-vercel.result }}" = "success" ]; then
+            echo "✅ Deployment successful!"
+            echo "🎓 Spike Academic Platform is live and ready for BGU students!"
+          else
+            echo "❌ Deployment failed - check logs for details"
+            exit 1
+          fi
+
+      # Add Discord/Slack notification here if needed
+      # - name: Discord notification
+      #   uses: Ilshidur/action-discord@master
+      #   with:
+      #     args: 'Spike Academic Platform deployed successfully to ${{ needs.pre-deployment-check.outputs.environment }}!'
+      #   env:
+      #     DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}

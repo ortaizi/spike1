@@ -13,28 +13,28 @@ function Hero({ onLoginClick }: HeroProps) {
   return (
     <div className="w-full relative overflow-hidden">
       {/* Content */}
-      <div className="container mx-auto relative z-10">
-        <div className="flex gap-8 py-20 lg:py-32 items-center justify-center flex-col">
+      <div className="w-full relative z-10">
+        <div className="flex gap-12 py-16 lg:py-24 items-center justify-center flex-col">
           <motion.div
-            className="flex gap-4 flex-col"
+            className="flex gap-6 flex-col"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            <h1 className="text-5xl md:text-7xl max-w-4xl tracking-tighter text-center font-regular mx-auto text-gray-900">
+            <h1 className="text-5xl md:text-7xl w-full tracking-tighter text-center font-regular text-gray-900 leading-tight">
               הפלטפורמה שסטודנטים<br /><span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">באמת צריכים.</span>
             </h1>
             <motion.p
-              className="text-lg md:text-xl leading-relaxed tracking-tight text-gray-700 max-w-3xl text-center mx-auto"
+              className="text-lg md:text-xl leading-relaxed tracking-tight text-gray-700 w-full text-center"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
             >
-              גם לכם נמאס ממערכות מסורבלות? spike מחברת את כל מה שסטודנט צריך – לקורסים, דדליינים, ציונים, מיילים ומערכת שעות – בפלטפורמה אחת פשוטה ומדויקת.
+              Spike מחברת את כל המערכות האקדמיות שלך – מודל, מנהל תלמידים, פורטל הסטודנטים<br />ומרכזת הכל במקום אחד, בעיצוב מודרני ופשוט.
             </motion.p>
           </motion.div>
           <motion.div
-            className="flex flex-row gap-3"
+            className="flex flex-row gap-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.8 }}

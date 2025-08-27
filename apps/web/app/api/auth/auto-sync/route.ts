@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // בדיקת הרשאות משתמש
     const session = await getSession();
@@ -148,9 +148,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user_id = `user_${session.user.email.replace('@', '_').replace('.', '_')}`;
-    const syncApiUrl = env.SYNC_API_URL || 'http://localhost:8000';
-    const analyzerApiUrl = env.COURSE_ANALYZER_API_URL || 'http://localhost:8000';
-
+    
     // בדיקת סטטוס סנכרון - נחזיר נתונים מדומים כרגע
     const syncStatus = {
       status: 'completed',

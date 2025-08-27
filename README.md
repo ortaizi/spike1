@@ -1,6 +1,6 @@
 # Spike - Academic Management Platform
 
-A comprehensive academic management platform designed specifically for Israeli university students, starting with Ben Gurion University.
+A comprehensive academic management platform designed specifically for Ben Gurion University students.
 
 ## 🎯 Overview
 
@@ -129,7 +129,7 @@ Key environment variables (see `env.example` for full list):
 The platform uses PostgreSQL with Prisma ORM. Key models include:
 
 - **User** - Student profiles and preferences
-- **Course** - Academic courses with BGU codes
+- **Course** - Academic courses with BGU course codes
 - **Assignment** - Course assignments with tracking
 - **Team** - Student collaboration groups
 - **Grade** - Academic performance tracking

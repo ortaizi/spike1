@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { X, Loader2, CheckCircle, AlertCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "../ui/button"
+import { getHebrewErrorMessage } from "../../lib/auth/hebrew-auth-errors"
 
 interface LoginPopupProps {
   isOpen: boolean
@@ -35,19 +36,21 @@ export function LoginPopup({ isOpen, onClose }: LoginPopupProps) {
       setError(null)
       
       const result = await signIn("google", { 
-        callbackUrl: "/dashboard",
+        callbackUrl: "/onboarding",
         redirect: false 
       })
 
       if (result?.error) {
-        setError("שגיאה בהתחברות עם Google")
+        const hebrewError = getHebrewErrorMessage(result.error)
+        setError(hebrewError.message)
       } else if (result?.ok) {
         setShowSuccess(true)
         // Redirect will be handled by useEffect
       }
     } catch (error) {
       console.error('Google sign in error:', error)
-      setError("שגיאה בהתחברות עם Google")
+      const hebrewError = getHebrewErrorMessage('UnknownError')
+      setError(hebrewError.message)
     } finally {
       setIsLoading(false)
     }
@@ -98,10 +101,10 @@ export function LoginPopup({ isOpen, onClose }: LoginPopupProps) {
               style={{ fontFamily: "Assistant, sans-serif" }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close Button */}
+              {/* Close Button - RTL positioned */}
               <button
                 onClick={onClose}
-                className="absolute top-4 left-4 p-2 text-gray-400 hover:text-gray-600 transition-colors z-10"
+                className="absolute top-4 end-4 p-2 text-gray-400 hover:text-gray-600 transition-colors z-10"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -146,7 +149,7 @@ export function LoginPopup({ isOpen, onClose }: LoginPopupProps) {
                     exit={{ opacity: 0 }}
                     className="absolute inset-0 bg-white/95 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg"
                   >
-                    <div className="text-center">
+                    <div className="text-center" dir="rtl">
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
@@ -196,6 +199,7 @@ export function LoginPopup({ isOpen, onClose }: LoginPopupProps) {
                     onClick={handleGoogleSignIn}
                     disabled={isLoading}
                     className="w-full bg-white hover:bg-gray-50 text-gray-900 py-3.5 rounded-lg font-medium transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl border border-gray-300 flex items-center justify-center gap-3"
+                    dir="rtl"
                   >
                     {isLoading ? (
                       <>

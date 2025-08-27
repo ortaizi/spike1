@@ -1,175 +1,93 @@
+import { chromium, FullConfig } from '@playwright/test';
+
 /**
- * 🌍 GLOBAL E2E TEST SETUP
+ * 🌍 GLOBAL SETUP - Spike Academic Platform E2E Tests
  * 
- * Setup Hebrew/RTL environment for Playwright E2E tests
+ * Prepares the testing environment for Hebrew/RTL academic platform testing
  */
 
-import { chromium, FullConfig } from '@playwright/test';
-import hebrewData from '../fixtures/hebrew-data';
-
 async function globalSetup(config: FullConfig) {
-  console.log('🎓 Setting up Spike Hebrew E2E testing environment...');
+  console.log('🎓 Setting up Spike Academic Platform E2E testing environment...');
   
-  // ================================================================================================
-  // 🗄️ DATABASE SETUP
-  // ================================================================================================
+  const { baseURL } = config.projects[0].use;
   
-  // Create test database with Hebrew data
-  console.log('📊 Seeding Hebrew test data...');
+  // Launch browser for setup
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
   
   try {
-    // In real implementation, would seed actual test database
-    // For now, just verify Hebrew data integrity
-    const hebrewCourses = Object.values(hebrewData.courses);
-    const hebrewUsers = Object.values(hebrewData.users);
+    console.log('🌐 Checking application availability...');
     
-    console.log(`✅ Loaded ${hebrewCourses.length} Hebrew courses for testing`);
-    console.log(`✅ Loaded ${hebrewUsers.length} Hebrew test users`);
+    // Wait for the application to be ready
+    let retries = 0;
+    const maxRetries = 30; // 30 seconds
     
-    // Verify Hebrew text integrity
-    const hasHebrewContent = hebrewCourses.some(course => 
-      /[\u0590-\u05FF]/.test(course.name || '')
-    );
-    
-    if (!hasHebrewContent) {
-      throw new Error('Hebrew test data missing Hebrew characters');
+    while (retries < maxRetries) {
+      try {
+        const response = await page.goto(baseURL || 'http://localhost:3000', {
+          waitUntil: 'networkidle',
+          timeout: 2000
+        });
+        
+        if (response && response.ok()) {
+          console.log('✅ Application is ready');
+          break;
+        }
+      } catch (error) {
+        retries++;
+        console.log(`⏳ Waiting for application... (${retries}/${maxRetries})`);
+        await page.waitForTimeout(1000);
+      }
     }
+    
+    if (retries >= maxRetries) {
+      throw new Error('❌ Application did not become available in time');
+    }
+    
+    // Verify Hebrew/RTL support
+    console.log('🌍 Verifying Hebrew/RTL support...');
+    const htmlElement = await page.locator('html');
+    const lang = await htmlElement.getAttribute('lang');
+    
+    if (lang && lang.includes('he')) {
+      console.log('✅ Hebrew language support confirmed');
+    } else {
+      console.log('⚠️  Hebrew language support not detected');
+    }
+    
+    // Check if authentication system is responding
+    console.log('🔐 Testing authentication system...');
+    try {
+      await page.goto('/api/auth/signin', { timeout: 5000 });
+      console.log('✅ Authentication system responding');
+    } catch (error) {
+      console.log('⚠️  Authentication system check failed:', error);
+    }
+    
+    // Verify academic year context
+    console.log('📚 Checking academic context...');
+    await page.goto('/');
+    
+    // Check for Hebrew academic terms
+    const hebrewContent = await page.locator('text=/[א-ת]|BGU|בן גוריון/').count();
+    if (hebrewContent > 0) {
+      console.log('✅ Academic Hebrew content detected');
+    }
+    
+    // Set up test data if needed
+    console.log('📊 Setting up test environment data...');
+    
+    // Store authentication state for tests (if available)
+    await page.context().storageState({ path: 'tests/e2e/auth.json' });
+    
+    console.log('🎯 Global setup completed successfully');
     
   } catch (error) {
-    console.error('❌ Failed to setup Hebrew test data:', error);
+    console.error('❌ Global setup failed:', error);
     throw error;
+  } finally {
+    await browser.close();
   }
-  
-  // ================================================================================================
-  // 🌍 BROWSER SETUP FOR HEBREW
-  // ================================================================================================
-  
-  console.log('🌐 Configuring browser for Hebrew/RTL...');
-  
-  const browser = await chromium.launch();
-  const context = await browser.newContext({
-    // Hebrew locale settings
-    locale: 'he-IL',
-    timezoneId: 'Asia/Jerusalem',
-    
-    // RTL viewport
-    viewport: { width: 1280, height: 720 },
-    
-    // Hebrew-friendly user agent
-    userAgent: 'Spike-E2E-Hebrew Mozilla/5.0 (compatible; Hebrew/RTL)',
-    
-    // Hebrew language preferences
-    extraHTTPHeaders: {
-      'Accept-Language': 'he-IL,he;q=0.9,en;q=0.8',
-      'X-Test-Environment': 'hebrew-e2e'
-    }
-  });
-
-  // ================================================================================================
-  # 🎨 INJECT HEBREW FONTS AND RTL STYLES
-  // ================================================================================================
-  
-  const page = await context.newPage();
-  
-  // Add Hebrew fonts
-  await page.addStyleTag({
-    content: `
-      @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap');
-      @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;700&display=swap');
-      
-      html, body {
-        font-family: 'Heebo', 'Assistant', Arial, sans-serif !important;
-        direction: rtl !important;
-        text-align: right !important;
-      }
-      
-      * {
-        box-sizing: border-box;
-      }
-      
-      /* Hebrew typography improvements */
-      .hebrew-text, [lang="he"], [dir="rtl"] {
-        font-family: 'Heebo', 'Assistant', Arial, sans-serif;
-        line-height: 1.6;
-        text-align: right;
-        direction: rtl;
-      }
-      
-      /* Academic platform specific styles */
-      .course-card, .assignment-item, .grade-display {
-        direction: rtl;
-        text-align: right;
-      }
-    `
-  });
-
-  // Set RTL direction globally
-  await page.addInitScript(() => {
-    // Set document direction
-    document.documentElement.dir = 'rtl';
-    document.documentElement.lang = 'he';
-    
-    // Override navigator language for Hebrew
-    Object.defineProperty(navigator, 'language', {
-      get: () => 'he-IL'
-    });
-    Object.defineProperty(navigator, 'languages', {
-      get: () => ['he-IL', 'he', 'en-US', 'en']
-    });
-    
-    // Set academic context
-    window.ACADEMIC_CONTEXT = {
-      year: 2024,
-      semester: 'א',
-      locale: 'he-IL',
-      university: 'bgu'
-    };
-  });
-
-  await page.close();
-  await context.close();
-  await browser.close();
-
-  // ================================================================================================
-  # 📊 HEBREW TEST DATA VALIDATION
-  // ================================================================================================
-  
-  console.log('🔍 Validating Hebrew test data...');
-  
-  // Check Hebrew course names
-  const invalidCourses = hebrewCourses.filter(course => 
-    !course.name || !/[\u0590-\u05FF]/.test(course.name)
-  );
-  
-  if (invalidCourses.length > 0) {
-    console.warn(`⚠️  ${invalidCourses.length} courses missing Hebrew names`);
-  }
-  
-  // Check Hebrew user names
-  const invalidUsers = hebrewUsers.filter(user => 
-    !user.name || !/[\u0590-\u05FF]/.test(user.name)
-  );
-  
-  if (invalidUsers.length > 0) {
-    console.warn(`⚠️  ${invalidUsers.length} users missing Hebrew names`);
-  }
-  
-  // ================================================================================================
-  # 🎓 ACADEMIC YEAR CONTEXT
-  # ================================================================================================
-  
-  const currentAcademicYear = hebrewData.calendar.academicYear2024;
-  const fallSemester = currentAcademicYear.semesters.fall;
-  
-  console.log(`📅 Academic context: ${currentAcademicYear.year} ${fallSemester.name}`);
-  console.log(`📚 Semester dates: ${fallSemester.startDate.toLocaleDateString('he-IL')} - ${fallSemester.endDate.toLocaleDateString('he-IL')}`);
-  
-  // ================================================================================================
-  # ✅ SETUP COMPLETE
-  # ================================================================================================
-  
-  console.log('✅ Hebrew E2E environment setup complete!');
-  console.log('🎯 Ready to test Hebrew/RTL academic platform features');
 }
 
 export default globalSetup;

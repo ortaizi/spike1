@@ -436,6 +436,95 @@ When starting server, ALWAYS follow this sequence:
 - [ ] Verify server responds on http://localhost:3000
 - [ ] Check for Hebrew/RTL support in browser
 
+## 🔧 Git Best Practices & Workflow
+
+### Git Workflow Protocol - CRITICAL
+- **ALWAYS** check git status before making changes: `git status`
+- **ALWAYS** create meaningful commit messages using conventional commits
+- **ALWAYS** stage files logically and commit related changes together
+- **ALWAYS** push changes after successful testing
+- **NEVER** commit broken code or failing tests
+- **ALWAYS** ask for user approval before ANY git operation (commit, push, pull, merge, etc.)
+- **NEVER** execute git commands without explicit user permission
+
+### When to Commit (Git Best Practices):
+1. **Feature Complete**: When a feature is fully implemented and tested
+2. **Bug Fix**: When a bug is fixed and verified
+3. **Refactoring**: When code is cleaned up without changing functionality
+4. **Documentation**: When docs are updated or improved
+5. **Dependencies**: When package.json or dependencies are updated
+6. **Configuration**: When config files are modified
+
+### When NOT to Commit:
+- ❌ Broken code that doesn't compile
+- ❌ Failing tests
+- ❌ Temporary debugging code
+- ❌ Large unrelated changes in one commit
+- ❌ Sensitive data (passwords, API keys)
+- ❌ Generated files (node_modules, .next, etc.)
+
+### Commit Message Standards (Conventional Commits):
+```bash
+# Format: type(scope): description
+# Examples:
+feat(auth): add dual-stage authentication for Israeli universities
+fix(rtl): resolve Hebrew text alignment in course cards
+docs(readme): update installation instructions for Hebrew support
+refactor(api): simplify university authentication logic
+test(e2e): add Hebrew course management tests
+chore(deps): update Next.js to version 14.1.0
+```
+
+### Git Workflow Commands (REQUIRE USER APPROVAL):
+```bash
+# Daily workflow (ALWAYS ask for permission first):
+git status                    # Check current state
+git add .                     # Stage all changes (or specific files) - ASK FIRST
+git commit -m "type(scope): description" - ASK FIRST
+git push origin main          # Push to remote - ASK FIRST
+
+# Before starting work (ASK FIRST):
+git pull origin main          # Get latest changes
+git status                    # Ensure clean working directory
+
+# When working on features (ASK FIRST):
+git checkout -b feature/name  # Create feature branch
+# ... make changes ...
+git add .                     # ASK FIRST
+git commit -m "feat(scope): description" - ASK FIRST
+git push origin feature/name  # Push feature branch - ASK FIRST
+# Create PR and merge to main
+
+# Emergency fixes (ASK FIRST):
+git stash                     # Save current work
+git checkout main             # Switch to main
+git pull origin main          # Get latest
+# ... fix issue ...
+git add .                     # ASK FIRST
+git commit -m "fix(scope): emergency fix description" - ASK FIRST
+git push origin main          # ASK FIRST
+git stash pop                 # Restore previous work - ASK FIRST
+```
+
+### Git Permission Protocol:
+- **BEFORE** any git command: "Would you like me to [git command]?"
+- **WAIT** for explicit "yes" or "no" from user
+- **EXPLAIN** what the command will do before asking
+- **SHOW** git status and changes before suggesting commits
+- **NEVER** assume permission - always ask explicitly
+
+### Current Repository Status:
+- **Branch**: main
+- **Remote**: https://github.com/ortaizi/spike.git
+- **Status**: 1 commit ahead of origin/main, 32 files staged
+- **Last Commit**: "fix(auth): resolve Google OAuth AccessDenied error for Israeli universities"
+
+### Recommended Next Actions:
+1. Review staged changes: `git diff --cached`
+2. Test all changes thoroughly
+3. Commit with appropriate message
+4. Push to remote: `git push origin main`
+
 ---
 
 **Remember**: When in doubt, always prioritize Hebrew/RTL support. This is an Israeli platform for Israeli students - Hebrew is not optional, it's mandatory.

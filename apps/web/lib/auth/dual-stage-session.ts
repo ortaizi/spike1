@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth';
 import { unifiedAuthOptions } from './unified-auth';
 import { CredentialsEncryption } from './encryption';
 import { supabase } from '../db';
-import { UNIVERSITIES, authenticateWithUniversity } from './auth-provider';
+import { UNIVERSITIES, authenticateWithUniversity } from './university-auth';
 import type { UniversityConfig } from './types';
 
 // Enhanced session interface for dual-stage authentication
@@ -143,8 +143,8 @@ export class DualStageSessionManager {
       await supabase
         .from('university_credentials')
         .update({
-          is_valid: testResult.success,
-          updated_at: new Date().toISOString()
+          is_valid: testResult.success
+          // Note: updated_at will be handled by database trigger
         })
         .eq('user_id', userId);
         
@@ -158,8 +158,8 @@ export class DualStageSessionManager {
         await supabase
           .from('university_credentials')
           .update({
-            is_valid: false,
-            updated_at: new Date().toISOString()
+            is_valid: false
+            // Note: updated_at will be handled by database trigger
           })
           .eq('user_id', userId);
       } catch (updateError) {
@@ -319,8 +319,8 @@ export class DualStageSessionManager {
       await supabase
         .from('university_credentials')
         .update({
-          last_sync: syncTime || new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          last_sync: syncTime || new Date().toISOString()
+          // Note: updated_at will be handled by database trigger
         })
         .eq('user_id', userId);
     } catch (error) {
@@ -337,8 +337,8 @@ export class DualStageSessionManager {
       await supabase
         .from('users')
         .update({
-          is_setup_complete: true,
-          updated_at: new Date().toISOString()
+          is_setup_complete: true
+          // Note: updated_at will be handled by database trigger
         })
         .eq('id', userId);
     } catch (error) {
@@ -360,8 +360,8 @@ export class DualStageSessionManager {
       await supabase
         .from('users')
         .update({
-          is_setup_complete: false,
-          updated_at: new Date().toISOString()
+          is_setup_complete: false
+          // Note: updated_at will be handled by database trigger
         })
         .eq('id', userId);
         

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DualStageSessionManager } from '../../../../lib/auth/dual-stage-session';
+import { DualStageSessionManager } from '../../../../../lib/auth/dual-stage-session';
 
 /**
  * GET /api/auth/dual-stage/status
  * Get current authentication status in dual-stage flow
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await DualStageSessionManager.getDualStageSession();
     
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         authenticated: false,
         stage: 'not_authenticated',
-        nextStep: '/auth/signin',
+        nextStep: '/',
         message: 'לא מחובר למערכת'
       });
     }
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
         message = 'מחובר עם Google, נדרש חיבור לאוניברסיטה';
       } else {
         stage = 'not_authenticated';
-        nextStep = '/auth/signin';
+        nextStep = '/';
         message = 'נדרש אימות מחדש';
       }
     } else {
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
         error: 'שגיאה פנימית בשרת',
         authenticated: false,
         stage: 'error',
-        nextStep: '/auth/signin'
+        nextStep: '/'
       },
       { status: 500 }
     );

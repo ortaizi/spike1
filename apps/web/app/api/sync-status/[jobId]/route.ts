@@ -3,7 +3,7 @@ import { auth } from '../../../../lib/auth/auth-provider';
 import { getSyncJobStatus } from '../../../../lib/database/sync-jobs';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { jobId: string } }
 ) {
   try {
@@ -37,7 +37,7 @@ export async function GET(
     }
 
     // בדיקה שהמשתמש מורשה לראות את ה-job הזה
-    if (jobStatus.userId !== session.user.id) {
+    if (jobStatus.user_id !== session.user.id) {
       return NextResponse.json(
         { success: false, error: 'אין הרשאה לצפות ב-job זה' },
         { status: 403 }
@@ -51,8 +51,8 @@ export async function GET(
       progress: jobStatus.progress,
       message: jobStatus.message,
       data: jobStatus.data,
-      createdAt: jobStatus.createdAt,
-      updatedAt: jobStatus.updatedAt
+      createdAt: jobStatus.created_at,
+      updatedAt: jobStatus.updated_at
     });
 
   } catch (error) {

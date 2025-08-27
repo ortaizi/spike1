@@ -1,170 +1,103 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { unifiedAuthOptions } from '@/lib/auth/unified-auth';
-import { authenticateWithUniversity } from '@/lib/auth/auth-provider';
-import { CredentialsEncryption, SecurityLimiter } from '@/lib/auth/encryption';
-import { DualStageSessionManager } from '@/lib/auth/dual-stage-session';
-import { supabase } from '@/lib/db';
+import { authOptions } from '../../../../../lib/auth/server-auth';
 
-/**
- * POST /api/auth/credentials/save
- * Save encrypted university credentials after validation
- */
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting for save operations
-    const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-    const rateLimitResult = SecurityLimiter.checkRateLimit(`save_${clientIP}`, 3, 5 * 60 * 1000); // 3 attempts per 5 minutes
+    // בדיקת הרשאות משתמש
+    const session = await getServerSession(authOptions);
     
-    if (!rateLimitResult.allowed) {
+    if (!session?.user?.email) {
       return NextResponse.json(
-        { error: 'יותר מדי ניסיונות שמירה. נסה שוב בעוד כמה דקות.' },
-        { status: 429 }
-      );
-    }
-    
-    // Check authentication
-    const session = await getServerSession(unifiedAuthOptions);
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'נדרש אימות Google קודם' },
+        { success: false, error: 'לא מורשה' },
         { status: 401 }
       );
     }
-    
-    // Parse request body
+
     const body = await request.json();
-    const { username, password, universityId, skipValidation = false } = body;
-    
-    if (!username || !password || !universityId) {
+    const { university, username, password } = body;
+
+    if (!university || !username || !password) {
       return NextResponse.json(
-        { error: 'חסרים פרטים נדרשים' },
+        { success: false, error: 'חסרים פרטי התחברות' },
         { status: 400 }
       );
     }
-    
-    console.log(`💾 Saving credentials for user ${session.user.email} at university ${universityId}`);
-    
-    // Validate credentials first (unless explicitly skipped)
-    if (!skipValidation) {
-      console.log('🔐 Validating credentials before saving...');
-      const authResult = await authenticateWithUniversity(username, password, universityId);
-      
-      if (!authResult.success) {
-        return NextResponse.json(
-          { error: 'פרטי הכניסה אינם תקינים - לא ניתן לשמור' },
-          { status: 401 }
-        );
-      }
-      
-      console.log('✅ Credentials validated successfully');
-    }
-    
-    // Encrypt credentials
-    console.log('🔒 Encrypting credentials...');
-    const encrypted = CredentialsEncryption.encryptCredentials(username, password);
-    
-    // Save to database
-    console.log('💾 Saving encrypted credentials to database...');
-    const { error: saveError } = await supabase
-      .from('university_credentials')
-      .upsert({
-        user_id: session.user.id,
-        university_id: universityId,
-        encrypted_username: encrypted.encryptedUsername,
-        encrypted_password: encrypted.encryptedPassword,
-        auth_tag: encrypted.authTag,
-        iv: encrypted.iv,
-        is_valid: true,
-        credentials_expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-        last_sync: null,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id,university_id'
-      });
-      
-    if (saveError) {
-      console.error('Error saving credentials:', saveError);
+
+    // בדיקת תקינות האוניברסיטה
+    const validUniversities = ['bgu', 'technion', 'huji', 'tau'];
+    if (!validUniversities.includes(university)) {
       return NextResponse.json(
-        { error: 'שגיאה בשמירת פרטי הכניסה' },
-        { status: 500 }
+        { success: false, error: 'אוניברסיטה לא נתמכת' },
+        { status: 400 }
       );
     }
+
+    // שמירת פרטי התחברות באמצעות MoodleConnector
+    const { moodleConnector } = await import('../../../../../lib/moodle-connector.js');
     
-    // Mark user setup as complete
-    await DualStageSessionManager.markSetupComplete(session.user.id);
-    
-    // Log successful save
-    try {
-      await supabase.from('auth_attempts').insert({
-        user_identifier: session.user.email,
-        attempt_type: 'moodle',
-        university_id: universityId,
-        success: true,
-        error_message: 'credentials_saved',
-        ip_address: clientIP,
-        created_at: new Date().toISOString()
-      });
-    } catch (logError) {
-      console.warn('Failed to log credential save:', logError);
+    // בדיקת התחברות תחילה
+    const testResult = await moodleConnector.testConnection({
+      username,
+      password,
+      university: university as 'bgu' | 'technion' | 'huji' | 'tau'
+    });
+
+    if (!testResult.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: testResult.error || 'שגיאה בבדיקת פרטי התחברות' 
+        },
+        { status: 400 }
+      );
     }
-    
-    // Start background sync
-    let syncJobId = null;
+
+    // שמירת הפרטים לדאטהבייס
+    await moodleConnector.saveCredentials(session.user.id, {
+      username,
+      password,
+      university: university as 'bgu' | 'technion' | 'huji' | 'tau'
+    });
+
+    console.log('✅ פרטי התחברות למודל נשמרו בהצלחה');
+
+    // עדכון סטטוס המשתמש במסד הנתונים
     try {
-      console.log('🔄 Starting background sync...');
-      const { startBackgroundSync } = await import('@/lib/background-sync');
-      const syncResult = await startBackgroundSync(session.user.id, {
-        moodle_username: username,
-        moodle_password: password,
-        university_id: universityId
+      const updateResponse = await fetch('/api/user/onboarding', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          universityCredentialsSaved: true,
+          university: university,
+          lastCredentialsUpdate: new Date().toISOString()
+        }),
       });
-      
-      if (syncResult.success) {
-        syncJobId = syncResult.jobId;
-        console.log('✅ Background sync started:', syncJobId);
-      } else {
-        console.warn('⚠️ Background sync failed to start:', syncResult.message);
+
+      if (!updateResponse.ok) {
+        console.error('Failed to update user onboarding status');
       }
-    } catch (syncError) {
-      console.warn('⚠️ Background sync error:', syncError);
+    } catch (error) {
+      console.error('Error updating user status:', error);
     }
-    
-    console.log(`✅ Credentials saved successfully for user ${session.user.email}`);
-    
+
     return NextResponse.json({
       success: true,
-      message: 'פרטי הכניסה נשמרו בהצלחה והצפנו במאגר מאובטח',
-      syncJobId,
-      university: {
-        id: universityId,
-        name: universityId // Will be enriched by frontend
+      message: 'פרטי ההתחברות נשמרו בהצלחה',
+      data: {
+        userId: session.user.id,
+        university,
+        username,
+        savedAt: new Date().toISOString()
       }
     });
-    
+
   } catch (error) {
-    console.error('Credential save error:', error);
-    
-    // Log error
-    try {
-      const session = await getServerSession(unifiedAuthOptions);
-      const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-      
-      await supabase.from('auth_attempts').insert({
-        user_identifier: session?.user?.email || 'unknown',
-        attempt_type: 'moodle',
-        university_id: null,
-        success: false,
-        error_message: 'save_error',
-        ip_address: clientIP,
-        created_at: new Date().toISOString()
-      });
-    } catch (logError) {
-      console.warn('Failed to log save error:', logError);
-    }
-    
+    console.error('שגיאה בשמירת פרטי התחברות:', error);
     return NextResponse.json(
-      { error: 'שגיאה פנימית בשרת' },
+      { success: false, error: 'שגיאה פנימית בשרת' },
       { status: 500 }
     );
   }

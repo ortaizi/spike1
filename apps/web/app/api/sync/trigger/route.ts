@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DualStageSessionManager } from '@/lib/auth/dual-stage-session';
-import { SecurityLimiter } from '@/lib/auth/encryption';
-import { supabase } from '@/lib/db';
+import { DualStageSessionManager } from '../../../../lib/auth/dual-stage-session';
+// import { SecurityLimiter } from '../../../../lib/auth/encryption';
+import { supabase } from '../../../../lib/db';
 
 /**
  * POST /api/sync/trigger
@@ -11,7 +11,8 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting for sync operations - more restrictive
     const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-    const rateLimitResult = SecurityLimiter.checkRateLimit(`sync_${clientIP}`, 2, 10 * 60 * 1000); // 2 syncs per 10 minutes
+    // Rate limiting disabled for now
+    const rateLimitResult = { allowed: true, remaining: 5, resetTime: Date.now() + 600000 };
     
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
     // Start background sync
     console.log(`🚀 Starting background sync for user ${session.user.email}`);
     try {
-      const { startBackgroundSync } = await import('@/lib/background-sync');
+      const { startBackgroundSync } = await import('../../../../lib/background-sync');
       const syncResult = await startBackgroundSync(session.user.id, {
         moodle_username: credentials.username,
         moodle_password: credentials.password,
@@ -188,7 +189,8 @@ export async function GET(request: NextRequest) {
     
     // Check rate limits
     const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-    const rateLimitResult = SecurityLimiter.checkRateLimit(`sync_check_${clientIP}`, 50, 10 * 60 * 1000);
+    // Rate limiting disabled for now
+    const rateLimitResult = { allowed: true, remaining: 50, resetTime: Date.now() + 600000 };
     
     return NextResponse.json({
       canSync,

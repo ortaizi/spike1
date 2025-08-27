@@ -1,1 +1,0 @@
-# Configuration module for spike-analyzer 

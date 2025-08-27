@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { unifiedAuthOptions } from '../../../../lib/auth/unified-auth';
-import { supabase } from '../../../../lib/db';
+import { supabaseAdmin } from '../../../../lib/database/service-role';
 import { extractDataFromEmail } from '../../../../lib/university-utils';
 import { z } from 'zod';
 
@@ -33,7 +33,7 @@ export async function GET() {
     console.log(`🔍 Debug - session.user:`, JSON.stringify(session.user, null, 2));
 
     // Extract university info from email
-    const emailData = extractDataFromEmail(session.user.email);
+    const emailData = await extractDataFromEmail(session.user.email);
     
     if (!emailData.isValidUniversityEmail || !emailData.university) {
       return NextResponse.json({
@@ -47,9 +47,9 @@ export async function GET() {
     }
 
     // Check user's onboarding status from database
-    const { data: user, error: userError } = await supabase
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
-      .select('id, email, is_setup_complete, university_id, preferences')
+      .select('id, email, is_setup_complete, preferences')
       .eq('email', session.user.email)
       .single();
 
@@ -61,45 +61,75 @@ export async function GET() {
       );
     }
     
-    console.log(`🔍 Debug - Raw user query result:`, JSON.stringify(user, null, 2));
+    // If user doesn't exist (PGRST116), create them
+    let finalUser = user;
+    if (!user && userError?.code === 'PGRST116') {
+      console.log('🔧 User not found, creating new user...');
+      
+      // Create user using the database function
+      const { data: newUserData, error: createError } = await supabaseAdmin.rpc('get_or_create_user_by_google_id', {
+        email_param: session.user.email,
+        google_id_param: session.user.id,
+        name_param: session.user.name || ''
+      });
+      
+      if (createError) {
+        console.error('❌ Error creating user:', createError);
+        return NextResponse.json(
+          { error: 'שגיאה ביצירת משתמש' },
+          { status: 500 }
+        );
+      }
+      
+      finalUser = newUserData;
+      console.log('✅ User created successfully:', session.user.email);
+    }
+    
+    console.log(`🔍 Debug - Raw user query result:`, JSON.stringify(finalUser, null, 2));
     console.log(`🔍 Debug - User error:`, userError);
 
-    // Check credential status in user_credentials table
+    // Check credential status in user_university_connections table
     let hasValidCredentials = false;
     let needsRevalidation = true;
     
-    if (user) {
-      // Check if user has credentials in the user_credentials table
-      const { data: credentials, error: credError } = await supabase
-        .from('user_credentials')
-        .select('username, encrypted_password, university_id, is_active, last_validated_at')
-        .eq('user_email', session.user.email)
+    if (finalUser) {
+      // Check if user has credentials in the user_university_connections table
+      const { data: credentials, error: credError } = await supabaseAdmin
+        .from('user_university_connections')
+        .select('university_username, encrypted_password, university_id, is_active, is_verified, last_verified_at')
+        .eq('user_id', finalUser.id)
         .eq('university_id', emailData.university.id)
         .single();
       
-      if (credentials && !credError && credentials.is_active) {
+      if (credentials && !credError && credentials.is_active && credentials.is_verified) {
         hasValidCredentials = true;
         
         // Check if credentials need revalidation (older than 30 days)
-        if (credentials.last_validated_at) {
-          const lastValidated = new Date(credentials.last_validated_at);
-          const daysSince = (new Date().getTime() - lastValidated.getTime()) / (1000 * 60 * 60 * 24);
+        if (credentials.last_verified_at) {
+          const lastVerified = new Date(credentials.last_verified_at);
+          const daysSince = (new Date().getTime() - lastVerified.getTime()) / (1000 * 60 * 60 * 24);
           needsRevalidation = daysSince > 30;
           
-          console.log(`🔍 Found credentials in user_credentials table - last validated: ${daysSince.toFixed(1)} days ago`);
+          console.log(`🔍 Found credentials in user_university_connections table - last verified: ${daysSince.toFixed(1)} days ago`);
         } else {
-          console.log('🔍 Found credentials but no last validation date - needs revalidation');
+          console.log('🔍 Found credentials but no last verification date - needs revalidation');
         }
       } else {
-        console.log('🔍 No credentials found in user_credentials table:', credError?.message || 'No active credentials');
+        console.log('🔍 No credentials found in user_university_connections table:', credError?.message || 'No active credentials');
       }
     }
 
-    const onboardingCompleted = user?.is_setup_complete && hasValidCredentials && !needsRevalidation;
+    // Fixed logic according to requirements:
+    // - User exists + setup_complete = true → Direct to dashboard
+    // - User doesn't exist → Create new record + go to onboarding
+    // - User exists + setup_complete = false → Go to onboarding
+    const onboardingCompleted = finalUser?.is_setup_complete === true;
 
     console.log(`📊 Onboarding status: ${onboardingCompleted ? 'Complete' : 'Incomplete'}`);
-    console.log(`🔍 Debug - setup: ${user?.is_setup_complete}, creds: ${hasValidCredentials}, revalidate: ${needsRevalidation}`);
-    console.log(`🔍 Debug - user.university_id: ${user?.university_id}, emailData.university.id: ${emailData.university.id}`);
+    console.log(`🔍 Debug - setup: ${finalUser?.is_setup_complete}, creds: ${hasValidCredentials}, revalidate: ${needsRevalidation}`);
+    console.log(`🚀 FIXED LOGIC: Only checking is_setup_complete for onboarding completion`);
+    console.log(`🔧 FINAL RESULT: finalUser.is_setup_complete = ${finalUser?.is_setup_complete}, onboardingCompleted = ${onboardingCompleted}`);
+    console.log(`🔍 Debug - emailData.university.id: ${emailData.university.id}`);
 
     return NextResponse.json({
       onboardingCompleted,
@@ -112,7 +142,7 @@ export async function GET() {
         universitySupported: true,
         hasValidCredentials,
         needsRevalidation,
-        setupComplete: user?.is_setup_complete || false
+        setupComplete: finalUser?.is_setup_complete || false
       }
     });
 
@@ -144,7 +174,7 @@ export async function POST(request: NextRequest) {
     console.log(`📝 Completing onboarding for: ${session.user.email}`);
 
     // Extract university info from email
-    const emailData = extractDataFromEmail(session.user.email);
+    const emailData = await extractDataFromEmail(session.user.email);
     
     if (!emailData.isValidUniversityEmail || !emailData.university) {
       return NextResponse.json(
@@ -157,7 +187,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify credentials exist and are valid
-    const { data: credentialStatus } = await supabase.rpc('get_user_credential_status', {
+    const { data: credentialStatus } = await supabaseAdmin.rpc('get_user_credential_status', {
       user_email_param: session.user.email,
       university_id_param: emailData.university.id
     });
@@ -173,7 +203,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update or create user record
-    const { data: updatedUser, error } = await supabase
+    const { data: updatedUser, error } = await supabaseAdmin
       .from('users')
       .upsert({
         email: session.user.email,
@@ -295,7 +325,7 @@ export async function PATCH(request: NextRequest) {
       updateData.last_credentials_update = validatedData.lastCredentialsUpdate;
     }
 
-    const { data: updatedUser, error } = await supabase
+    const { data: updatedUser, error } = await supabaseAdmin
       .from('users')
       .update(updateData)
       .eq('google_id', session.user.id)

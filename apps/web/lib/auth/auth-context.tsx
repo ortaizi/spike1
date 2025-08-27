@@ -63,8 +63,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Check for dual-stage authentication completion
+  const isDualStageComplete = session?.user?.isDualStageComplete === true;
+  
   const value: AuthContextType = {
-    isAuthenticated: isClient ? !!session : false,
+    isAuthenticated: isClient ? !!session && isDualStageComplete : false,
     isLoading: isLoading,
     isInitializing: status === 'loading' || !isClient,
     user: session?.user,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../lib/auth/auth-provider';
 import { getActiveSyncJob } from '../../../../lib/database/sync-jobs';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // בדיקת הרשאות משתמש
     const session = await auth();
@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
       progress: activeJob.progress,
       message: activeJob.message,
       data: activeJob.data,
-      createdAt: activeJob.createdAt,
-      updatedAt: activeJob.updatedAt
+      createdAt: activeJob.created_at,
+      updatedAt: activeJob.updated_at
     });
 
   } catch (error) {

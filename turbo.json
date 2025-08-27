@@ -1,23 +1,124 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["**/.env.*local"],
+  "globalDependencies": [
+    "**/.env.*local",
+    "**/.env",
+    "**/tsconfig.json",
+    "**/next.config.js",
+    "**/tailwind.config.js",
+    "**/postcss.config.js"
+  ],
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
-    },
-    "lint": {
-      "dependsOn": ["^lint"]
-    },
-    "type-check": {
-      "dependsOn": ["^type-check"]
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "dist/**",
+        "build/**",
+        "out/**"
+      ],
+      "env": [
+        "NODE_ENV",
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "NEXTAUTH_URL",
+        "NEXTAUTH_SECRET"
+      ]
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "dependsOn": ["^build"]
+    },
+    "lint": {
+      "dependsOn": ["^lint"],
+      "outputs": []
+    },
+    "lint:fix": {
+      "dependsOn": ["^lint:fix"],
+      "outputs": []
+    },
+    "type-check": {
+      "dependsOn": ["^type-check"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "coverage/**",
+        "test-results/**",
+        "playwright-report/**"
+      ],
+      "env": [
+        "NODE_ENV",
+        "E2E_BASE_URL",
+        "PLAYWRIGHT_BASE_URL"
+      ]
+    },
+    "test:unit": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "coverage/**",
+        "test-results/**"
+      ]
+    },
+    "test:e2e": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "test-results/**",
+        "playwright-report/**"
+      ],
+      "env": [
+        "NODE_ENV",
+        "E2E_BASE_URL",
+        "PLAYWRIGHT_BASE_URL"
+      ]
+    },
+    "test:visual": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "test-results/**",
+        "playwright-report/**"
+      ]
+    },
+    "test:coverage": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "coverage/**"
+      ]
     },
     "clean": {
-      "cache": false
+      "cache": false,
+      "outputs": []
+    },
+    "db:generate": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "packages/database/types/**",
+        "apps/web/types/database.d.ts"
+      ]
+    },
+    "db:push": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "db:migrate": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "db:seed": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "db:studio": {
+      "cache": false,
+      "persistent": true,
+      "outputs": []
+    },
+    "db:reset": {
+      "cache": false,
+      "outputs": []
     }
   }
-} 
+}

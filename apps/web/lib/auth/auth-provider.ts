@@ -9,36 +9,37 @@ import { env } from "../env"
 export const UNIVERSITIES: UniversityConfig[] = [
   {
     id: 'bgu',
-    name: 'אוניברסיטת בן-גוריון',
-    domain: 'bgu.ac.il',
+    name: 'אוניברסיטת בן-גוריון בנגב',
+    domain: 'post.bgu.ac.il',
     moodleUrl: env.BGU_MOODLE_URL || 'https://moodle.bgu.ac.il',
     apiEndpoint: `${env.BGU_MOODLE_URL || 'https://moodle.bgu.ac.il'}/login/index.php`,
     logo: '/universities/bgu-logo.png'
-  },
-  {
-    id: 'technion',
-    name: 'הטכניון',
-    domain: 'technion.ac.il',
-    moodleUrl: env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il',
-    apiEndpoint: `${env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il'}/login/index.php`,
-    logo: '/universities/technion-logo.png'
-  },
-  {
-    id: 'hebrew',
-    name: 'האוניברסיטה העברית',
-    domain: 'mail.huji.ac.il',
-    moodleUrl: env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il',
-    apiEndpoint: `${env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il'}/login/index.php`,
-    logo: '/universities/huji-logo.png'
-  },
-  {
-    id: 'tau',
-    name: 'אוניברסיטת תל אביב',
-    domain: 'post.tau.ac.il',
-    moodleUrl: env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il',
-    apiEndpoint: `${env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il'}/login/index.php`,
-    logo: '/universities/tau-logo.png'
   }
+  // Other universities coming soon:
+  // {
+  //   id: 'technion',
+  //   name: 'הטכניון',
+  //   domain: 'technion.ac.il',
+  //   moodleUrl: env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il',
+  //   apiEndpoint: `${env.TECHNION_MOODLE_URL || 'https://moodle.technion.ac.il'}/login/index.php`,
+  //   logo: '/universities/technion-logo.png'
+  // },
+  // {
+  //   id: 'hebrew',
+  //   name: 'האוניברסיטה העברית',
+  //   domain: 'mail.huji.ac.il',
+  //   moodleUrl: env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il',
+  //   apiEndpoint: `${env.HUJI_MOODLE_URL || 'https://moodle.huji.ac.il'}/login/index.php`,
+  //   logo: '/universities/huji-logo.png'
+  // },
+  // {
+  //   id: 'tau',
+  //   name: 'אוניברסיטת תל אביב',
+  //   domain: 'post.tau.ac.il',
+  //   moodleUrl: env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il',
+  //   apiEndpoint: `${env.TAU_MOODLE_URL || 'https://moodle.tau.ac.il'}/login/index.php`,
+  //   logo: '/universities/tau-logo.png'
+  // }
 ];
 
 // Function to scrape data from Moodle
@@ -272,7 +273,7 @@ export const authOptions = {
             await supabase
               .from('users')
               .update({
-                moodlelastsync: new Date().toISOString(),
+                moodleLastSync: new Date().toISOString(),
                 updatedat: new Date().toISOString(),
                 preferences: {
                   ...(existingUser.preferences as object || {}),

@@ -368,8 +368,8 @@ export class CourseCollector {
             isactive: course.isActive,
             moodleid: course.moodleId,
             moodleurl: course.moodleUrl,
-            createdat: new Date().toISOString(),
-            updatedat: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           }, {
             onConflict: 'id'
           });
@@ -387,7 +387,7 @@ export class CourseCollector {
             courseid: course.id,
             status: 'ACTIVE',
             enrolledat: new Date().toISOString(),
-            updatedat: new Date().toISOString()
+            updated_at: new Date().toISOString()
           }, {
             onConflict: 'userid,courseid'
           });

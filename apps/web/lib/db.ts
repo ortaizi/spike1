@@ -2,8 +2,15 @@ import { createClient } from '@supabase/supabase-js'
 import { env } from "./env"
 
 // Supabase client configuration
+// Always use remote Supabase URLs from environment variables
 const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+
+console.log('🔧 Supabase client configuration:', {
+  url: supabaseUrl,
+  isLocalDB: supabaseUrl.includes('127.0.0.1') || supabaseUrl.includes('localhost'),
+  isRemoteDB: !supabaseUrl.includes('127.0.0.1') && !supabaseUrl.includes('localhost')
+})
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
@@ -29,17 +36,17 @@ export interface User {
   id: string
   email: string
   name: string
-  studentid: string | null
+  studentId: string | null
   faculty: string | null
   department: string | null
-  yearofstudy: number | null
+  yearOfStudy: number | null
   avatar: string | null
   preferences: any
-  moodleusername: string | null
-  moodlepassword: string | null
-  moodlelastsync?: string | null
-  createdat: string
-  updatedat: string
+  moodleUsername: string | null
+  moodlePassword: string | null
+  moodleLastSync?: string | null
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Course {

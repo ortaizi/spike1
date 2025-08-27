@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth"
-import { unifiedAuthOptions as authOptions } from "./unified-auth"
+import { unifiedAuthOptions } from "./unified-auth"
 
-export { authOptions }
+// Export as authOptions for backward compatibility
+export const authOptions = unifiedAuthOptions
 
 export async function getAuthSession() {
   return await getServerSession(authOptions)

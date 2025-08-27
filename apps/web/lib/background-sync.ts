@@ -567,8 +567,8 @@ async function saveToDatabase(userId: string, classifiedData: any): Promise<void
           department: course.department || 'מדעי המחשב',
           instructor: course.instructor,
           isactive: true,
-          createdat: new Date().toISOString(),
-          updatedat: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
           moodle_course_id: course.moodleId || course.id,
           last_sync: new Date().toISOString(),
           sync_enabled: true,
@@ -594,8 +594,8 @@ async function saveToDatabase(userId: string, classifiedData: any): Promise<void
           courseid: course.id,
           status: 'ACTIVE',
           enrolledat: new Date().toISOString(),
-          createdat: new Date().toISOString(),
-          updatedat: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         };
         
         const enrollmentResult = await saveWithServiceRole('course_enrollments', enrollmentData, 'upsert');
@@ -618,8 +618,8 @@ async function saveToDatabase(userId: string, classifiedData: any): Promise<void
               description: section.description,
               orderindex: section.orderIndex || 0,
               isactive: true,
-              createdat: new Date().toISOString(),
-              updatedat: new Date().toISOString()
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             };
             
             const sectionResult = await saveWithServiceRole('course_sections', sectionData, 'upsert');
@@ -646,8 +646,8 @@ async function saveToDatabase(userId: string, classifiedData: any): Promise<void
                   filetype: item.fileType,
                   isactive: true,
                   orderindex: item.orderIndex || 0,
-                  createdat: new Date().toISOString(),
-                  updatedat: new Date().toISOString(),
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
                   moodle_id: item.moodleId || item.id,
                   last_modified: item.lastModified ? new Date(item.lastModified).toISOString() : null,
                   sync_status: 'completed',
@@ -815,8 +815,8 @@ async function saveToDatabase(userId: string, classifiedData: any): Promise<void
                 instructions: exam.instructions,
                 weight: exam.weight,
                 isactive: true,
-                createdat: new Date().toISOString(),
-                updatedat: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
               }, {
                 onConflict: 'id'
               });
@@ -878,8 +878,8 @@ async function saveToDatabase(userId: string, classifiedData: any): Promise<void
     // עדכון סטטוס המשתמש
     try {
       const userUpdateData = {
-        moodlelastsync: new Date().toISOString(),
-        updatedat: new Date().toISOString()
+        moodleLastSync: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
       
       const userResult = await saveWithServiceRole('users', userUpdateData, 'update');

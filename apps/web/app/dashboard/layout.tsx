@@ -1,5 +1,4 @@
 import { ProtectedRoute } from '../../components/auth/protected-route';
-import './globals-dashboard.css';
 
 export default function DashboardLayout({
   children,
