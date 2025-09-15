@@ -38,7 +38,7 @@ module.exports = {
   // ================================================================================================
   
   // Hebrew content files (special handling)
-  '**/*.{json}': (filenames) => {
+  '**/*.json': (filenames) => {
     const hebrewFiles = filenames.filter(file => 
       file.includes('hebrew') || 
       file.includes('he-IL') || 

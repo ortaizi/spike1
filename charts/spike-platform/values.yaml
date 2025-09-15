@@ -1,0 +1,305 @@
+# Spike Platform Helm Chart Values
+global:
+  imageRegistry: registry.spike-platform.com
+  imagePullPolicy: IfNotPresent
+  storageClass: fast-ssd
+
+  # Hebrew/RTL Configuration
+  locale: he-IL
+  timezone: Asia/Jerusalem
+  rtl: true
+
+  # Multi-tenant configuration
+  defaultTenants:
+    - id: bgu
+      name: "Ben-Gurion University of the Negev"
+      domain: "bgu.ac.il"
+      subdomain: "bgu"
+    - id: tau
+      name: "Tel Aviv University"
+      domain: "tau.ac.il"
+      subdomain: "tau"
+    - id: huji
+      name: "Hebrew University of Jerusalem"
+      domain: "huji.ac.il"
+      subdomain: "huji"
+
+# Auth Service Configuration
+authService:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: auth-service
+    tag: "1.0.0"
+  service:
+    type: ClusterIP
+    port: 8001
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilization: 70
+    targetMemoryUtilization: 80
+  env:
+    NODE_ENV: production
+    JWT_SECRET: "your-jwt-secret-key-here"
+    JWT_REFRESH_SECRET: "your-jwt-refresh-secret-here"
+    JWT_ACCESS_EXPIRE: "1h"
+    JWT_REFRESH_EXPIRE: "7d"
+    GOOGLE_CLIENT_ID: "your-google-client-id"
+    ENCRYPTION_KEY: "your-encryption-key-32-chars-long"
+  probes:
+    liveness:
+      httpGet:
+        path: /health
+        port: 8001
+      initialDelaySeconds: 30
+      periodSeconds: 10
+    readiness:
+      httpGet:
+        path: /health
+        port: 8001
+      initialDelaySeconds: 5
+      periodSeconds: 5
+
+# Tenant Service Configuration
+tenantService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: tenant-service
+    tag: "1.0.0"
+  service:
+    type: ClusterIP
+    port: 8002
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilization: 70
+  env:
+    NODE_ENV: production
+  probes:
+    liveness:
+      httpGet:
+        path: /health
+        port: 8002
+      initialDelaySeconds: 30
+      periodSeconds: 10
+    readiness:
+      httpGet:
+        path: /health
+        port: 8002
+      initialDelaySeconds: 5
+      periodSeconds: 5
+  rbac:
+    create: true
+    rules:
+      - apiGroups: [""]
+        resources: ["namespaces", "services", "configmaps", "secrets"]
+        verbs: ["get", "list", "create", "update", "patch", "delete"]
+      - apiGroups: ["apps"]
+        resources: ["deployments"]
+        verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+# Database Configuration
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "spike-postgres-password"
+    username: "spike_user"
+    password: "spike_password123"
+    database: "spike_platform"
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+
+# Redis Configuration
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: "redis_password123"
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 250m
+
+# RabbitMQ Configuration
+rabbitmq:
+  enabled: true
+  auth:
+    username: "spike_user"
+    password: "rabbitmq_password123"
+  persistence:
+    enabled: true
+    size: 10Gi
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+
+# API Gateway Configuration
+apiGateway:
+  enabled: true
+  type: istio # or kong, nginx
+  hosts:
+    - spike-platform.com
+    - "*.spike-platform.com"
+  tls:
+    enabled: true
+    secretName: spike-platform-tls
+  rateLimiting:
+    enabled: true
+    requestsPerMinute: 1000
+  cors:
+    enabled: true
+    allowOrigins:
+      - "https://spike-platform.com"
+      - "https://*.spike-platform.com"
+  routing:
+    auth:
+      prefix: "/auth"
+      service: auth-service
+      port: 8001
+    tenant:
+      prefix: "/tenant"
+      service: tenant-service
+      port: 8002
+
+# Monitoring Configuration
+monitoring:
+  prometheus:
+    enabled: true
+    retention: 30d
+    storage:
+      size: 50Gi
+  grafana:
+    enabled: true
+    adminPassword: "grafana-admin-password"
+    persistence:
+      enabled: true
+      size: 1Gi
+    dashboards:
+      spike:
+        gnetId: 12345
+        datasource: Prometheus
+  jaeger:
+    enabled: true
+    storage:
+      type: elasticsearch
+      elasticsearch:
+        nodeCount: 3
+        minimumMasterNodes: 2
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+
+# Security Configuration
+security:
+  networkPolicies:
+    enabled: true
+  podSecurityPolicy:
+    enabled: true
+  serviceAccount:
+    create: true
+    annotations: {}
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    fsGroup: 1001
+
+# Backup Configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *" # Daily at 2 AM
+  retention: "30d"
+  storage:
+    type: s3
+    bucket: "spike-platform-backups"
+    region: "us-east-1"
+
+# Feature Flags
+featureFlags:
+  enabled: true
+  provider: consul # or redis, configmap
+  flags:
+    USE_AUTH_SERVICE: "true"
+    USE_TENANT_SERVICE: "true"
+    TRAFFIC_PERCENTAGE_AUTH: "100"
+    TRAFFIC_PERCENTAGE_TENANT: "100"
+    ENABLE_HEBREW_UI: "true"
+    ENABLE_BGU_INTEGRATION: "true"
+    ENABLE_TAU_INTEGRATION: "false"
+    ENABLE_HUJI_INTEGRATION: "false"
+
+# Resource Limits by Tenant
+tenantResources:
+  default:
+    cpu:
+      request: "100m"
+      limit: "500m"
+    memory:
+      request: "128Mi"
+      limit: "512Mi"
+    storage: "1Gi"
+  bgu:
+    cpu:
+      request: "200m"
+      limit: "1000m"
+    memory:
+      request: "256Mi"
+      limit: "1Gi"
+    storage: "5Gi"
+  tau:
+    cpu:
+      request: "150m"
+      limit: "750m"
+    memory:
+      request: "192Mi"
+      limit: "768Mi"
+    storage: "3Gi"
+  huji:
+    cpu:
+      request: "100m"
+      limit: "500m"
+    memory:
+      request: "128Mi"
+      limit: "512Mi"
+    storage: "2Gi"

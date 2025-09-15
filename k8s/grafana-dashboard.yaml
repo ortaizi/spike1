@@ -1,0 +1,323 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spike-performance-dashboard
+  namespace: spike-platform
+  labels:
+    grafana_dashboard: "1"
+data:
+  spike-performance-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Spike Platform - Performance Metrics",
+        "tags": ["spike", "microservices", "performance"],
+        "style": "dark",
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "API Response Time (95th Percentile)",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=~\"spike-.*\"}[5m]))",
+                "legendFormat": "{{ job }} - 95th percentile",
+                "refId": "A"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Response Time (seconds)",
+                "max": null,
+                "min": 0
+              }
+            ],
+            "alert": {
+              "conditions": [
+                {
+                  "query": {
+                    "queryType": "",
+                    "refId": "A"
+                  },
+                  "reducer": {
+                    "type": "last",
+                    "params": []
+                  },
+                  "evaluator": {
+                    "params": [0.2],
+                    "type": "gt"
+                  }
+                }
+              ],
+              "executionErrorState": "alerting",
+              "noDataState": "no_data",
+              "frequency": "10s",
+              "handler": 1,
+              "name": "API Response Time Alert",
+              "message": "API response time exceeded 200ms threshold"
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "Request Rate (RPS)",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(http_requests_total{job=~\"spike-.*\"}[5m])",
+                "legendFormat": "{{ job }} - {{ method }}",
+                "refId": "B"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Requests per Second",
+                "min": 0
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "Error Rate",
+            "type": "singlestat",
+            "targets": [
+              {
+                "expr": "rate(http_requests_total{status=~\"5..\",job=~\"spike-.*\"}[5m]) / rate(http_requests_total{job=~\"spike-.*\"}[5m]) * 100",
+                "legendFormat": "Error Rate %",
+                "refId": "C"
+              }
+            ],
+            "valueName": "current",
+            "format": "percent",
+            "thresholds": "1,5",
+            "colorBackground": true,
+            "gridPos": {"h": 4, "w": 6, "x": 0, "y": 8}
+          },
+          {
+            "id": 4,
+            "title": "Service Availability",
+            "type": "singlestat",
+            "targets": [
+              {
+                "expr": "(1 - rate(http_requests_total{status=~\"5..\",job=~\"spike-.*\"}[5m]) / rate(http_requests_total{job=~\"spike-.*\"}[5m])) * 100",
+                "legendFormat": "Availability %",
+                "refId": "D"
+              }
+            ],
+            "valueName": "current",
+            "format": "percent",
+            "thresholds": "99,99.9",
+            "colorBackground": true,
+            "gridPos": {"h": 4, "w": 6, "x": 6, "y": 8}
+          },
+          {
+            "id": 5,
+            "title": "Database Connection Pool",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "db_connections_active",
+                "legendFormat": "Active Connections - {{ instance }}",
+                "refId": "E"
+              },
+              {
+                "expr": "db_connections_max",
+                "legendFormat": "Max Connections - {{ instance }}",
+                "refId": "F"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Connections",
+                "min": 0
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+          },
+          {
+            "id": 6,
+            "title": "Memory Usage by Service",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "container_memory_working_set_bytes{pod=~\".*spike.*\"} / 1024 / 1024",
+                "legendFormat": "{{ pod }} - Memory MB",
+                "refId": "G"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Memory (MB)",
+                "min": 0
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+          },
+          {
+            "id": 7,
+            "title": "CPU Usage by Service",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(container_cpu_usage_seconds_total{pod=~\".*spike.*\"}[5m]) * 100",
+                "legendFormat": "{{ pod }} - CPU %",
+                "refId": "H"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "CPU Usage (%)",
+                "min": 0,
+                "max": 100
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+          },
+          {
+            "id": 8,
+            "title": "Tenant Isolation Metrics",
+            "type": "table",
+            "targets": [
+              {
+                "expr": "sum by (tenant_id) (http_requests_total{job=~\"spike-.*\"})",
+                "legendFormat": "Requests per Tenant",
+                "refId": "I"
+              }
+            ],
+            "columns": [
+              {"text": "Tenant ID", "value": "tenant_id"},
+              {"text": "Total Requests", "value": "Value"}
+            ],
+            "gridPos": {"h": 6, "w": 24, "x": 0, "y": 24}
+          },
+          {
+            "id": 9,
+            "title": "Sync Job Performance",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sync_job_duration_seconds",
+                "legendFormat": "Sync Duration - {{ university }}",
+                "refId": "J"
+              },
+              {
+                "expr": "rate(sync_jobs_completed_total[5m])",
+                "legendFormat": "Jobs Completed/sec - {{ university }}",
+                "refId": "K"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Duration (seconds) / Rate (jobs/sec)",
+                "min": 0
+              }
+            ],
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 30}
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: spike-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:latest
+        ports:
+        - containerPort: 3000
+          name: grafana
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: "spike-admin-password"
+        - name: GF_INSTALL_PLUGINS
+          value: "grafana-kubernetes-app"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - name: grafana-dashboard-config
+          mountPath: /etc/grafana/provisioning/dashboards/
+        - name: grafana-datasource-config
+          mountPath: /etc/grafana/provisioning/datasources/
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+      volumes:
+      - name: grafana-dashboard-config
+        configMap:
+          name: spike-performance-dashboard
+      - name: grafana-datasource-config
+        configMap:
+          name: grafana-datasources
+      - name: grafana-storage
+        persistentVolumeClaim:
+          claimName: grafana-storage-pvc
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: spike-platform
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus-server:9090
+        isDefault: true
+        editable: true
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-storage-pvc
+  namespace: spike-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: spike-platform
+spec:
+  selector:
+    app: grafana
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+  type: LoadBalancer

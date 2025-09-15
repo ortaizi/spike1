@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "node",
+      "args": ["-e", "require('https').request('https://mcp.context7.com/mcp', {headers: {'CONTEXT7_API_KEY': 'ctx7sk-b41f1263-decd-4c2b-b844-2785aa919b33'}})"],
+      "env": {
+        "CONTEXT7_API_KEY": "ctx7sk-b41f1263-decd-4c2b-b844-2785aa919b33"
+      }
+    }
+  }
+}

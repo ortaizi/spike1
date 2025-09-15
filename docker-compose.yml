@@ -1,0 +1,220 @@
+# Docker Compose for Spike Platform Microservices Development
+version: '3.8'
+
+services:
+  # Infrastructure Services
+  postgresql:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: spike_platform
+      POSTGRES_USER: spike_user
+      POSTGRES_PASSWORD: spike_password123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+      - ./services/auth-service/src/database/schema.sql:/docker-entrypoint-initdb.d/01-auth-schema.sql
+      - ./services/tenant-service/src/database/tenant-schema.sql:/docker-entrypoint-initdb.d/02-tenant-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spike_user -d spike_platform"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - spike-network
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass redis_password123
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - spike-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: spike_user
+      RABBITMQ_DEFAULT_PASS: rabbitmq_password123
+      RABBITMQ_DEFAULT_VHOST: spike_platform
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    networks:
+      - spike-network
+
+  # Microservices
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: 8001
+      DB_HOST: postgresql
+      DB_PORT: 5432
+      DB_NAME: spike_platform
+      DB_USER: spike_user
+      DB_PASSWORD: spike_password123
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password123
+      JWT_SECRET: your-jwt-secret-key-here-development
+      JWT_REFRESH_SECRET: your-jwt-refresh-secret-here-development
+      JWT_ACCESS_EXPIRE: "1h"
+      JWT_REFRESH_EXPIRE: "7d"
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-your-google-client-id}
+      ENCRYPTION_KEY: your-encryption-key-32-chars-long
+      LOG_LEVEL: debug
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./services/auth-service/src:/usr/src/app/src
+      - ./services/auth-service/logs:/usr/src/app/logs
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - spike-network
+    restart: unless-stopped
+
+  tenant-service:
+    build:
+      context: ./services/tenant-service
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: 8002
+      DB_HOST: postgresql
+      DB_PORT: 5432
+      DB_NAME: spike_platform
+      DB_USER: spike_user
+      DB_PASSWORD: spike_password123
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password123
+      LOG_LEVEL: debug
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./services/tenant-service/src:/usr/src/app/src
+      - ./services/tenant-service/logs:/usr/src/app/logs
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - spike-network
+    restart: unless-stopped
+
+  # Monitoring and Observability (Development)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: :9411
+      COLLECTOR_OTLP_ENABLED: true
+    ports:
+      - "16686:16686"
+      - "14250:14250"
+      - "14268:14268"
+      - "14269:14269"
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "9411:9411"   # Zipkin
+    networks:
+      - spike-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - spike-network
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: false
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - spike-network
+
+  # API Gateway (Development)
+  nginx-gateway:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - auth-service
+      - tenant-service
+    networks:
+      - spike-network
+
+networks:
+  spike-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgresql_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local

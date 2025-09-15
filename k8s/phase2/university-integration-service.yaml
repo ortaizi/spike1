@@ -1,0 +1,170 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: university-integration-service
+  namespace: spike-phase2
+  labels:
+    app: university-integration
+    service: university-integration
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: university-integration
+  template:
+    metadata:
+      labels:
+        app: university-integration
+        service: university-integration
+        version: v1.0.0
+    spec:
+      containers:
+      - name: university-integration
+        image: spike/university-integration:latest
+        ports:
+        - containerPort: 8002
+        env:
+        - name: REDIS_URL
+          value: "redis://redis.spike-infrastructure:6379"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-credentials
+              key: university-integration-url
+        - name: RABBITMQ_URL
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: amqp-url
+        - name: AUTH_SERVICE_URL
+          value: "http://auth-service.spike-phase1:8001"
+        - name: NOTIFICATION_SERVICE_URL
+          value: "http://notification-service.spike-phase2:8003"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: logs
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: university-integration-service
+  namespace: spike-phase2
+  labels:
+    app: university-integration
+    service: university-integration
+spec:
+  selector:
+    app: university-integration
+  ports:
+  - port: 8002
+    targetPort: 8002
+    name: http
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: university-integration-worker
+  namespace: spike-phase2
+  labels:
+    app: university-integration-worker
+    service: university-integration
+    version: v1.0.0
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: university-integration-worker
+  template:
+    metadata:
+      labels:
+        app: university-integration-worker
+        service: university-integration
+        version: v1.0.0
+    spec:
+      containers:
+      - name: celery-worker
+        image: spike/university-integration:latest
+        command: ["python", "-m", "celery", "worker", "-A", "src.tasks.scraping_tasks", "--loglevel=info", "--concurrency=2"]
+        env:
+        - name: REDIS_URL
+          value: "redis://redis.spike-infrastructure:6379"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-credentials
+              key: university-integration-url
+        - name: RABBITMQ_URL
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: amqp-url
+        - name: AUTH_SERVICE_URL
+          value: "http://auth-service.spike-phase1:8001"
+        - name: NOTIFICATION_SERVICE_URL
+          value: "http://notification-service.spike-phase2:8003"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: logs
+        emptyDir: {}
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: university-integration-hpa
+  namespace: spike-phase2
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: university-integration-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

@@ -1,0 +1,421 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: spike-platform-gateway
+  namespace: spike-platform
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: spike-platform-tls
+    hosts:
+    - "*.spike-platform.com"
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*.spike-platform.com"
+    tls:
+      httpsRedirect: true
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: spike-platform-vs
+  namespace: spike-platform
+spec:
+  hosts:
+  - "*.spike-platform.com"
+  gateways:
+  - spike-platform-gateway
+  http:
+  # Academic Service Routes
+  - match:
+    - uri:
+        prefix: /api/academic
+    - uri:
+        prefix: /api/courses
+    - uri:
+        prefix: /api/assignments
+    - uri:
+        prefix: /api/grades
+    - uri:
+        prefix: /api/enrollments
+    - uri:
+        prefix: /api/teams
+    - uri:
+        prefix: /api/dashboard
+    route:
+    - destination:
+        host: academic-service.spike-platform.svc.cluster.local
+        port:
+          number: 80
+    headers:
+      request:
+        set:
+          x-forwarded-proto: https
+          x-service-target: academic-service
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+      retryOn: gateway-error,connect-failure,refused-stream
+
+  # Sync Orchestrator Routes
+  - match:
+    - uri:
+        prefix: /api/sync
+    - uri:
+        prefix: /api/jobs
+    - uri:
+        prefix: /api/schedules
+    - uri:
+        prefix: /api/metrics
+    route:
+    - destination:
+        host: sync-orchestrator.spike-platform.svc.cluster.local
+        port:
+          number: 80
+    headers:
+      request:
+        set:
+          x-forwarded-proto: https
+          x-service-target: sync-orchestrator
+    timeout: 60s
+    retries:
+      attempts: 2
+      perTryTimeout: 30s
+      retryOn: gateway-error,connect-failure,refused-stream
+
+  # Auth Service Routes (Phase 1 services)
+  - match:
+    - uri:
+        prefix: /api/auth
+    route:
+    - destination:
+        host: auth-service.spike-platform.svc.cluster.local
+        port:
+          number: 80
+    headers:
+      request:
+        set:
+          x-forwarded-proto: https
+          x-service-target: auth-service
+    timeout: 15s
+    retries:
+      attempts: 3
+      perTryTimeout: 5s
+      retryOn: gateway-error,connect-failure,refused-stream
+
+  # Tenant Management Routes
+  - match:
+    - uri:
+        prefix: /api/tenants
+    route:
+    - destination:
+        host: tenant-service.spike-platform.svc.cluster.local
+        port:
+          number: 80
+    headers:
+      request:
+        set:
+          x-forwarded-proto: https
+          x-service-target: tenant-service
+    timeout: 20s
+
+  # Static Frontend Routes (Next.js app)
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: web-frontend.spike-platform.svc.cluster.local
+        port:
+          number: 80
+    headers:
+      request:
+        set:
+          x-forwarded-proto: https
+          x-service-target: web-frontend
+    timeout: 10s
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: academic-service-dr
+  namespace: spike-platform
+spec:
+  host: academic-service.spike-platform.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      simple: LEAST_CONN
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 10
+        maxRetries: 3
+        consecutiveGatewayErrors: 5
+        interval: 30s
+        baseEjectionTime: 30s
+    circuitBreaker:
+      consecutiveGatewayErrors: 5
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+  portLevelSettings:
+  - port:
+      number: 80
+    connectionPool:
+      tcp:
+        maxConnections: 50
+      http:
+        http1MaxPendingRequests: 25
+        maxRequestsPerConnection: 5
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: sync-orchestrator-dr
+  namespace: spike-platform
+spec:
+  host: sync-orchestrator.spike-platform.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    connectionPool:
+      tcp:
+        maxConnections: 50
+      http:
+        http1MaxPendingRequests: 25
+        http2MaxRequests: 50
+        maxRequestsPerConnection: 5
+        maxRetries: 2
+        consecutiveGatewayErrors: 3
+        interval: 60s
+        baseEjectionTime: 60s
+    circuitBreaker:
+      consecutiveGatewayErrors: 3
+      consecutive5xxErrors: 3
+      interval: 60s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 30
+
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: spike-platform-authz
+  namespace: spike-platform
+spec:
+  rules:
+  # Allow health checks
+  - to:
+    - operation:
+        paths: ["/health", "/metrics"]
+    when:
+    - key: source.ip
+      values: ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+
+  # Allow authenticated API access
+  - to:
+    - operation:
+        paths: ["/api/*"]
+    when:
+    - key: request.headers[authorization]
+      values: ["Bearer *"]
+
+  # Allow frontend access
+  - to:
+    - operation:
+        paths: ["/*"]
+    when:
+    - key: source.ip
+      notValues: ["0.0.0.0"]
+
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: spike-platform-peer-auth
+  namespace: spike-platform
+spec:
+  mtls:
+    mode: STRICT
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: external-university-apis
+  namespace: spike-platform
+spec:
+  hosts:
+  - moodle.bgu.ac.il
+  - moodle.tau.ac.il
+  - moodle.huji.ac.il
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  - number: 80
+    name: http
+    protocol: HTTP
+  location: MESH_EXTERNAL
+  resolution: DNS
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-gateway-config
+  namespace: spike-platform
+  labels:
+    app: api-gateway
+data:
+  rate-limiting.yaml: |
+    rateLimits:
+      # Academic Service Rate Limits
+      - name: academic-api
+        domain: spike-platform
+        descriptors:
+          - key: tenant_id
+            value: bgu
+            rateLimit:
+              requestsPerUnit: 1000
+              unit: minute
+          - key: tenant_id
+            value: tau
+            rateLimit:
+              requestsPerUnit: 800
+              unit: minute
+          - key: tenant_id
+            value: huji
+            rateLimit:
+              requestsPerUnit: 600
+              unit: minute
+
+      # Sync Orchestrator Rate Limits
+      - name: sync-api
+        domain: spike-platform
+        descriptors:
+          - key: user_id
+            rateLimit:
+              requestsPerUnit: 10
+              unit: hour
+          - key: tenant_id
+            value: bgu
+            rateLimit:
+              requestsPerUnit: 100
+              unit: hour
+
+      # Auth Service Rate Limits
+      - name: auth-api
+        domain: spike-platform
+        descriptors:
+          - key: source_ip
+            rateLimit:
+              requestsPerUnit: 50
+              unit: minute
+
+  tenant-routing.yaml: |
+    tenantRouting:
+      bgu:
+        subdomain: bgu.spike-platform.com
+        features:
+          - academic-service
+          - sync-orchestrator
+          - notifications
+        limits:
+          maxUsers: 10000
+          maxConcurrentSyncJobs: 20
+      tau:
+        subdomain: tau.spike-platform.com
+        features:
+          - academic-service
+          - sync-orchestrator
+        limits:
+          maxUsers: 8000
+          maxConcurrentSyncJobs: 15
+      huji:
+        subdomain: huji.spike-platform.com
+        features:
+          - academic-service
+          - sync-orchestrator
+        limits:
+          maxUsers: 6000
+          maxConcurrentSyncJobs: 10
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: rate-limiting-filter
+  namespace: spike-platform
+spec:
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: envoy.filters.network.http_connection_manager
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.local_ratelimit
+        typed_config:
+          "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+          type_url: type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+          value:
+            stat_prefix: local_rate_limiter
+            token_bucket:
+              max_tokens: 1000
+              tokens_per_fill: 1000
+              fill_interval: 60s
+            filter_enabled:
+              runtime_key: local_rate_limit_enabled
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            filter_enforced:
+              runtime_key: local_rate_limit_enforced
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            response_headers_to_add:
+            - append: false
+              header:
+                key: x-rate-limit
+                value: "1000"
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: spike-platform-sidecar
+  namespace: spike-platform
+spec:
+  egress:
+  - hosts:
+    - "./*"
+    - "istio-system/*"
+    - "infrastructure/*"
+    - "monitoring/*"
+    - "moodle.bgu.ac.il"
+    - "moodle.tau.ac.il"
+    - "moodle.huji.ac.il"
