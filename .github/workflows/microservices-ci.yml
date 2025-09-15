@@ -5,18 +5,15 @@ on:
     branches: [ main, develop ]
     paths:
       - 'services/**'
-      - 'k8s/**'
-      - 'charts/**'
+      - 'docker-compose*.yml'
   pull_request:
     branches: [ main ]
     paths:
       - 'services/**'
-      - 'k8s/**'
-      - 'charts/**'
+      - 'docker-compose*.yml'
 
 env:
   DOCKER_REGISTRY: registry.spike-platform.com
-  KUBERNETES_NAMESPACE: spike-platform
 
 jobs:
   # Test microservices
@@ -202,47 +199,28 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup Helm
-      uses: azure/setup-helm@v3
-      with:
-        version: '3.12.0'
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-    - name: Setup kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: '1.28.0'
-
-    - name: Configure kubectl
+    - name: Deploy with Docker Compose
       run: |
-        echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > kubeconfig
-        export KUBECONFIG=kubeconfig
+        # Create staging environment file
+        cat > .env.staging << EOF
+        ENVIRONMENT=staging
+        AUTH_SERVICE_IMAGE=${{ env.DOCKER_REGISTRY }}/auth-service:sha-${{ github.sha }}
+        TENANT_SERVICE_IMAGE=${{ env.DOCKER_REGISTRY }}/tenant-service:sha-${{ github.sha }}
+        POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD_STAGING }}
+        REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD_STAGING }}
+        EOF
 
-    - name: Deploy to staging
-      run: |
-        export KUBECONFIG=kubeconfig
+        # Deploy services
+        docker-compose -f docker-compose.yml --env-file .env.staging up -d
 
-        # Update Helm dependencies
-        helm dependency update charts/spike-platform
-
-        # Deploy to staging
-        helm upgrade --install spike-platform-staging ./charts/spike-platform \
-          --namespace staging \
-          --create-namespace \
-          --set global.imageRegistry=${{ env.DOCKER_REGISTRY }} \
-          --set authService.image.tag=sha-${{ github.sha }} \
-          --set tenantService.image.tag=sha-${{ github.sha }} \
-          --set environment=staging \
-          --wait \
-          --timeout=10m
+        # Wait for services to be ready
+        sleep 60
 
     - name: Run smoke tests
       run: |
-        export KUBECONFIG=kubeconfig
-
-        # Wait for services to be ready
-        kubectl rollout status deployment/spike-platform-staging-auth-service -n staging
-        kubectl rollout status deployment/spike-platform-staging-tenant-service -n staging
-
         # Run smoke tests
         cd tests/smoke
         npm ci
@@ -279,7 +257,6 @@ jobs:
         npm run test:provisioning
       env:
         TEST_ENVIRONMENT: staging
-        KUBERNETES_CONFIG: ${{ secrets.KUBE_CONFIG_STAGING }}
 
   # Performance testing
   performance-tests:
@@ -319,68 +296,49 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup Helm
-      uses: azure/setup-helm@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Registry
+      uses: docker/login-action@v3
       with:
-        version: '3.12.0'
+        registry: ${{ env.DOCKER_REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Setup kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: '1.28.0'
-
-    - name: Configure kubectl
+    - name: Deploy to production
       run: |
-        echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > kubeconfig
-        export KUBECONFIG=kubeconfig
+        # Create production environment file
+        cat > .env.production << EOF
+        ENVIRONMENT=production
+        AUTH_SERVICE_IMAGE=${{ env.DOCKER_REGISTRY }}/auth-service:sha-${{ github.sha }}
+        TENANT_SERVICE_IMAGE=${{ env.DOCKER_REGISTRY }}/tenant-service:sha-${{ github.sha }}
+        POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD_PRODUCTION }}
+        REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD_PRODUCTION }}
+        RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD_PRODUCTION }}
+        JWT_SECRET=${{ secrets.JWT_SECRET_PRODUCTION }}
+        GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+        GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+        EOF
 
-    - name: Blue-Green Deployment
+        # Deploy services
+        docker-compose -f docker-compose.yml --env-file .env.production up -d
+
+        # Wait for services to be ready
+        sleep 120
+
+    - name: Run production smoke tests
       run: |
-        export KUBECONFIG=kubeconfig
-
-        # Deploy to green environment
-        helm upgrade --install spike-platform-green ./charts/spike-platform \
-          --namespace production-green \
-          --create-namespace \
-          --set global.imageRegistry=${{ env.DOCKER_REGISTRY }} \
-          --set authService.image.tag=sha-${{ github.sha }} \
-          --set tenantService.image.tag=sha-${{ github.sha }} \
-          --set environment=production \
-          --set deployment.color=green \
-          --wait \
-          --timeout=15m
-
-    - name: Production smoke tests
-      run: |
-        export KUBECONFIG=kubeconfig
+        # Wait for all services to be fully ready
+        sleep 60
 
         # Run production readiness tests
         cd tests/smoke
-        npm run test:production-green
+        npm ci
+        npm run test:production
 
-    - name: Switch traffic to green
+    - name: Verify deployment
       run: |
-        export KUBECONFIG=kubeconfig
-
-        # Update Istio VirtualService to route to green
-        kubectl patch virtualservice spike-platform -n production \
-          --type merge -p '{"spec":{"http":[{"route":[{"destination":{"host":"spike-platform","subset":"green"},"weight":100}]}]}}'
-
-    - name: Cleanup blue deployment
-      run: |
-        export KUBECONFIG=kubeconfig
-
-        # Wait 10 minutes for traffic to stabilize
-        sleep 600
-
-        # Delete blue deployment
-        helm uninstall spike-platform-blue -n production-blue || true
-        kubectl delete namespace production-blue || true
-
-    - name: Update production with new blue
-      run: |
-        export KUBECONFIG=kubeconfig
-
-        # Rename green to blue for next deployment
-        kubectl patch virtualservice spike-platform -n production \
-          --type merge -p '{"spec":{"http":[{"route":[{"destination":{"host":"spike-platform","subset":"blue"},"weight":100}]}]}}'
+        # Check service health endpoints
+        curl -f http://localhost:8001/health || exit 1
+        curl -f http://localhost:8002/health || exit 1
