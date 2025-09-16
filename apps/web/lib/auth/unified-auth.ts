@@ -236,8 +236,41 @@ async function saveUniversityCredentials(userEmail: string, credentials: any) {
   }
 }
 
-// Unified NextAuth configuration
+// Unified NextAuth configuration with enhanced CSRF protection
 export const unifiedAuthOptions: AuthOptions = {
+  // Enhanced CSRF protection configuration
+  cookies: {
+    sessionToken: {
+      name: `__Secure-next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    },
+    callbackUrl: {
+      name: `__Secure-next-auth.callback-url`,
+      options: {
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    },
+    csrfToken: {
+      name: `__Host-next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    }
+  },
+
+  // Use secure headers and CSRF tokens
+  useSecureCookies: process.env.NODE_ENV === 'production',
+
   providers: [
     // Stage 1: Google OAuth (only if credentials are provided)
     ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET ? [
@@ -603,7 +636,17 @@ export const unifiedAuthOptions: AuthOptions = {
   },
   
   secret: env.AUTH_SECRET,
-  debug: env.AUTH_DEBUG
+  debug: env.AUTH_DEBUG,
+
+  // Additional security headers
+  headers: async () => {
+    return {
+      'X-Frame-Options': 'DENY',
+      'X-Content-Type-Options': 'nosniff',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin'
+    };
+  }
 };
 
 // Export the configured NextAuth instance

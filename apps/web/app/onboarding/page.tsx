@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+// import { getCsrfToken } from 'next-auth/react'; // TODO: Use when implementing CSRF tokens
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/button';
@@ -10,10 +11,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { CheckCircle, User, Mail, GraduationCap, ArrowRight, Lock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { validateUniversityEmail, getHebrewErrorMessage, FORM_VALIDATION_HE } from '../../lib/auth/hebrew-auth-errors';
+import { useCsrfToken } from '../../hooks/use-csrf-token';
 
 export default function OnboardingPage() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
+  const { secureFetch } = useCsrfToken();
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [universityPassword, setUniversityPassword] = useState('');
@@ -37,7 +40,7 @@ export default function OnboardingPage() {
     // Check if onboarding is already completed
     const checkOnboardingStatus = async () => {
       try {
-        const response = await fetch('/api/user/onboarding');
+        const response = await secureFetch('/api/user/onboarding');
         if (response.ok) {
           const data = await response.json();
           if (data.onboardingCompleted) {
@@ -110,7 +113,7 @@ export default function OnboardingPage() {
       
       console.log(`🔐 Testing connection for ${userInfo.username}`);
       
-      const response = await fetch('/api/moodle/validate', {
+      const response = await secureFetch('/api/moodle/validate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../../lib/auth/server-auth';
+import { csrfProtection, rateLimit } from '../../../../../lib/security/csrf-protection';
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting (10 requests per minute)
+    const rateLimitResponse = await rateLimit(10, 60000)(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    // Apply CSRF protection
+    const csrfResponse = await csrfProtection(request);
+    if (csrfResponse) {
+      return csrfResponse;
+    }
+
     // בדיקת הרשאות משתמש
     const session = await getServerSession(authOptions);
     
