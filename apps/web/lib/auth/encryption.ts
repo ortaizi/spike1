@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { env } from '../env';
 
 // Get encryption key from environment or generate a secure one for development
@@ -54,14 +54,14 @@ export class CredentialsEncryption {
       const iv = crypto.randomBytes(16);
       
       // Encrypt username
-      const usernameCipher = crypto.createCipher(ALGORITHM, ENCRYPTION_KEY);
+      const usernameCipher = crypto.createCipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
       usernameCipher.setAAD(Buffer.from('spike-username-v1'));
       let encryptedUsername = usernameCipher.update(username, 'utf8', 'hex');
       encryptedUsername += usernameCipher.final('hex');
       const usernameAuthTag = usernameCipher.getAuthTag();
       
       // Encrypt password with same IV but different AAD
-      const passwordCipher = crypto.createCipher(ALGORITHM, ENCRYPTION_KEY);
+      const passwordCipher = crypto.createCipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
       passwordCipher.setAAD(Buffer.from('spike-password-v1'));
       let encryptedPassword = passwordCipher.update(password, 'utf8', 'hex');
       encryptedPassword += passwordCipher.final('hex');
@@ -105,14 +105,14 @@ export class CredentialsEncryption {
       const ivBuffer = Buffer.from(iv, 'hex');
       
       // Decrypt username
-      const usernameDecipher = crypto.createDecipher(ALGORITHM, ENCRYPTION_KEY);
+      const usernameDecipher = crypto.createDecipheriv(ALGORITHM, ENCRYPTION_KEY, ivBuffer);
       usernameDecipher.setAAD(Buffer.from('spike-username-v1'));
       usernameDecipher.setAuthTag(Buffer.from(usernameAuthTag, 'hex'));
       let username = usernameDecipher.update(encryptedUsername, 'hex', 'utf8');
       username += usernameDecipher.final('utf8');
       
       // Decrypt password
-      const passwordDecipher = crypto.createDecipher(ALGORITHM, ENCRYPTION_KEY); 
+      const passwordDecipher = crypto.createDecipheriv(ALGORITHM, ENCRYPTION_KEY, ivBuffer); 
       passwordDecipher.setAAD(Buffer.from('spike-password-v1'));
       passwordDecipher.setAuthTag(Buffer.from(passwordAuthTag, 'hex'));
       let password = passwordDecipher.update(encryptedPassword, 'hex', 'utf8');

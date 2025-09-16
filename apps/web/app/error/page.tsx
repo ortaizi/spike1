@@ -340,7 +340,7 @@ export default function ErrorPage() {
                 </div>
                 <div className="text-center p-4 bg-purple-50 rounded-lg">
                   <MessageSquare className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-                  <h4 className="font-semibold text-gray-900">צ'אט</h4>
+                  <h4 className="font-semibold text-gray-900">צ&apos;אט</h4>
                   <p className="text-sm text-gray-600">זמין עכשיו</p>
                 </div>
               </div>

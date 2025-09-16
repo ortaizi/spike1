@@ -603,8 +603,7 @@ export const unifiedAuthOptions: AuthOptions = {
   },
   
   secret: env.AUTH_SECRET,
-  debug: env.AUTH_DEBUG,
-  trustHost: true
+  debug: env.AUTH_DEBUG
 };
 
 // Export the configured NextAuth instance

@@ -10,8 +10,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if Supabase is available (not using placeholder values)
-    const supabaseUrl = process.env.SUPABASE_URL || '';
-    const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
+    const supabaseUrl = process.env['SUPABASE_URL'] || '';
+    const supabaseKey = process.env['SUPABASE_ANON_KEY'] || '';
     
     if (supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
       console.log('Using mock Moodle data (Supabase not configured)');

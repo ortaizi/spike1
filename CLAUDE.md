@@ -119,6 +119,58 @@ cd apps/web && NODE_OPTIONS='--max-old-space-size=4096' npx next dev --port 3000
 1. Check server: `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000`
 2. If not 200, restart server from `apps/web`
 3. Verify before proceeding
+4. **ALWAYS use subagents proactively** - Don't ask, just use them based on task type
+
+## 🤖 Subagent Usage Guidelines
+
+**Use specialized subagents for specific tasks:**
+
+**Frontend Development:**
+- `frontend-developer` - React components, UI fixes, responsive layouts
+- `ui-ux-designer` - Design systems, user flows, interface optimization
+
+**Backend & Architecture:**
+- `backend-architect` - API design, microservices, database schemas
+- `architect-review` - System design reviews, architectural decisions
+
+**Testing & Quality:**
+- `test-automator` - Test automation, quality engineering
+- `tdd-orchestrator` - TDD implementation and governance
+- `debugger` - Error debugging, test failures, unexpected behavior
+
+**Security & Performance:**
+- `security-auditor` - Security audits, vulnerability assessment, compliance
+- `performance-engineer` - Performance optimization, observability, scalability
+
+**DevOps & Operations:**
+- `devops-troubleshooter` - Incident response, system troubleshooting
+- `error-detective` - Log analysis, error pattern detection
+
+**Code Quality:**
+- `code-reviewer` - Code quality assurance, security scanning
+- `docs-architect` - Technical documentation, architecture guides
+
+**When to Use Subagents (MANDATORY):**
+- **ANY debugging task** - ALWAYS use `debugger` agent first
+- **ANY UI/frontend issue** - ALWAYS use `frontend-developer` agent
+- **ANY performance issue** - ALWAYS use `performance-engineer` agent
+- **ANY security concern** - ALWAYS use `security-auditor` agent
+- **ANY testing task** - ALWAYS use `test-automator` agent
+- **ANY code review** - ALWAYS use `code-reviewer` agent
+- Complex multi-step tasks requiring specialized expertise
+- Architecture decisions and reviews
+
+**🚨 CRITICAL: Use subagents IMMEDIATELY when encountering:**
+- Errors, bugs, or unexpected behavior → `debugger`
+- UI/UX issues or layout problems → `frontend-developer`
+- Performance bottlenecks → `performance-engineer`
+- Test failures → `test-automator`
+- Code quality issues → `code-reviewer`
+
+**Hebrew/RTL Specific:**
+- Use `frontend-developer` for RTL layout fixes
+- Use `ui-ux-designer` for Hebrew interface optimization
+- Use `test-automator` for Hebrew content testing
 
 ## 📋 Best Practices
 
@@ -177,3 +229,28 @@ cd apps/web && NODE_OPTIONS='--max-old-space-size=4096' npx next dev --port 3000
 - Test with Hebrew academic terminology
 - Ensure proper RTL text alignment
 - Optimize Hebrew font loading
+
+## Visual Development
+
+### Design Principles
+- Comprehensive design checklist in `/context/design-principles.md`
+- Brand style guide in `/context/style-guide.md`
+- When making visual (front-end, UI/UX) changes, always refer to these files for guidance
+
+### Quick Visual Check
+IMMEDIATELY after implementing any front-end change:
+1. **Identify what changed** - Review the modified components/pages
+2. **Navigate to affected pages** - Use `mcp__playwright__browser_navigate` to visit each changed view
+3. **Verify design compliance** - Compare against `/context/design-principles.md` and `/context/style-guide.md`
+4. **Validate feature implementation** - Ensure the change fulfills the user's specific request
+5. **Check acceptance criteria** - Review any provided context files or requirements
+6. **Capture evidence** - Take full page screenshot at desktop viewport (1440px) of each changed view
+7. **Check for errors** - Run `mcp__playwright__browser_console_messages`
+
+This verification ensures changes meet design standards and user requirements.
+
+### Comprehensive Design Review
+Invoke the `@agent-design-review` subagent for thorough design validation when:
+- Completing significant UI/UX features
+- Before finalizing PRs with visual changes
+- Needing comprehensive accessibility and responsiveness testing
