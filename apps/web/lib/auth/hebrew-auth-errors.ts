@@ -245,13 +245,15 @@ export function validateUniversityEmail(email: string): {
 export function formatHebrewError(errorCode: string, additionalInfo?: string): string {
   const error = getHebrewErrorMessage(errorCode);
   let formatted = `${error.title}: ${error.message}`;
-  
+
   if (additionalInfo) {
     formatted += ` (${additionalInfo})`;
   }
-  
+
   return formatted;
 }
+
+// validateUniversityEmail is already exported above
 
 // Success Messages in Hebrew
 export const AUTH_SUCCESS_HE = {

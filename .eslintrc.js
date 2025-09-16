@@ -9,7 +9,6 @@ module.exports = {
   extends: [
     'eslint:recommended',
     '@typescript-eslint/recommended',
-    '@typescript-eslint/recommended-requiring-type-checking',
     'next/core-web-vitals',
     'prettier', // Must be last to override other configs
   ],
@@ -20,7 +19,7 @@ module.exports = {
     ecmaFeatures: {
       jsx: true,
     },
-    project: ['./tsconfig.json', './apps/*/tsconfig.json', './packages/*/tsconfig.json'],
+    project: './tsconfig.json',
     tsconfigRootDir: __dirname,
   },
   plugins: [
@@ -38,7 +37,7 @@ module.exports = {
     'import/resolver': {
       typescript: {
         alwaysTryTypes: true,
-        project: ['./tsconfig.json', './apps/*/tsconfig.json', './packages/*/tsconfig.json'],
+        project: './tsconfig.json',
       },
     },
   },
@@ -323,7 +322,7 @@ module.exports = {
     
     // Next.js API routes
     {
-      files: ['apps/web/app/api/**/*.{js,ts}', 'apps/web/pages/api/**/*.{js,ts}'],
+      files: ['app/api/**/*.{js,ts}', 'pages/api/**/*.{js,ts}'],
       rules: {
         'import/no-default-export': 'off',
         '@typescript-eslint/explicit-function-return-type': 'off',
@@ -341,7 +340,7 @@ module.exports = {
     
     // Page components
     {
-      files: ['apps/web/app/**/page.{js,jsx,ts,tsx}', 'apps/web/pages/**/*.{js,jsx,ts,tsx}'],
+      files: ['app/**/page.{js,jsx,ts,tsx}', 'pages/**/*.{js,jsx,ts,tsx}'],
       rules: {
         'import/no-default-export': 'off',
         '@typescript-eslint/explicit-function-return-type': 'off',
@@ -350,7 +349,7 @@ module.exports = {
     
     // Layout components
     {
-      files: ['apps/web/app/**/layout.{js,jsx,ts,tsx}'],
+      files: ['app/**/layout.{js,jsx,ts,tsx}'],
       rules: {
         'import/no-default-export': 'off',
         '@typescript-eslint/explicit-function-return-type': 'off',

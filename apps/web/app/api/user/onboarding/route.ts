@@ -291,8 +291,8 @@ export async function PATCH(request: NextRequest) {
     const validatedData = universityCredentialsSchema.parse(body);
 
     // Check if Supabase is available (not using placeholder values)
-    const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const supabaseKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL'] || '';
+    const supabaseKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] || '';
     
     if (supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
       console.log('Using mock university credentials update (Supabase not configured)');

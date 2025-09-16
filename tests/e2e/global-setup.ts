@@ -58,7 +58,7 @@ async function globalSetup(config: FullConfig) {
     // Check if authentication system is responding
     console.log('🔐 Testing authentication system...');
     try {
-      await page.goto('/api/auth/signin', { timeout: 5000 });
+      await page.goto((baseURL || 'http://localhost:3000') + '/api/auth/signin', { timeout: 5000 });
       console.log('✅ Authentication system responding');
     } catch (error) {
       console.log('⚠️  Authentication system check failed:', error);
@@ -66,8 +66,8 @@ async function globalSetup(config: FullConfig) {
     
     // Verify academic year context
     console.log('📚 Checking academic context...');
-    await page.goto('/');
-    
+    await page.goto(baseURL || 'http://localhost:3000');
+
     // Check for Hebrew academic terms
     const hebrewContent = await page.locator('text=/[א-ת]|BGU|בן גוריון/').count();
     if (hebrewContent > 0) {

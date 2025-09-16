@@ -1,12 +1,12 @@
 // Environment variables with proper types
 export const env = {
-  // Supabase
-  NEXT_PUBLIC_SUPABASE_URL: process.env['NEXT_PUBLIC_SUPABASE_URL'] || '',
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] || '',
-  SUPABASE_SERVICE_ROLE_KEY: process.env['SUPABASE_SERVICE_ROLE_KEY'] || '',
+  // Supabase (with development defaults)
+  NEXT_PUBLIC_SUPABASE_URL: process.env['NEXT_PUBLIC_SUPABASE_URL'] || 'https://dev-placeholder.supabase.co',
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] || 'dev-anon-key-placeholder',
+  SUPABASE_SERVICE_ROLE_KEY: process.env['SUPABASE_SERVICE_ROLE_KEY'] || 'dev-service-role-key-placeholder',
   
-  // Auth
-  AUTH_SECRET: process.env['AUTH_SECRET'] || '',
+  // Auth (with development defaults)
+  AUTH_SECRET: process.env['AUTH_SECRET'] || 'dev-auth-secret-change-in-production',
   AUTH_DEBUG: process.env['AUTH_DEBUG'] === 'true',
   APP_URL: process.env['APP_URL'] || 'http://localhost:3000',
   

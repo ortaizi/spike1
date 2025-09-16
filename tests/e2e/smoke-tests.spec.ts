@@ -189,16 +189,21 @@ test.describe('🚨 CRITICAL: Production Readiness', () => {
 
   test('CRITICAL: Hebrew authentication flow accessible', async ({ page }) => {
     await page.goto('/auth/signin');
-    
-    // Must have accessible authentication form
-    const authForm = page.locator('form[method="post"], [data-testid="auth-form"]');
-    await expect(authForm).toBeVisible();
-    
-    // Must support Hebrew input
-    const emailInput = page.locator('input[type="email"], input[name="email"]');
-    if (await emailInput.count() > 0) {
-      await expect(emailInput).toBeVisible();
-      await expect(emailInput).toBeEnabled();
+
+    // Must have accessible Google OAuth authentication
+    const googleSigninButton = page.locator('button:has-text("התחבר עם Google"), button:has-text("Google")');
+    await expect(googleSigninButton).toBeVisible();
+    await expect(googleSigninButton).toBeEnabled();
+
+    // Must have Hebrew UI elements
+    const hebrewText = page.locator('text=/התחבר|התחברות|Google/').first();
+    await expect(hebrewText).toBeVisible();
+
+    // Page should be RTL
+    const htmlElement = page.locator('html');
+    const dir = await htmlElement.getAttribute('dir');
+    if (dir) {
+      expect(dir).toBe('rtl');
     }
   });
 

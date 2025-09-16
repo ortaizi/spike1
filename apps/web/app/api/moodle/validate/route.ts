@@ -54,8 +54,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Use extracted data or provided data
-    const universityId = providedUniversityId || emailData.university.id;
+    const universityId = providedUniversityId || emailData.university?.id;
     const username = providedUsername || emailData.username;
+
+    if (!universityId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'לא ניתן לזהות את האוניברסיטה'
+        },
+        { status: 400 }
+      );
+    }
 
     // Verify university is active in our database
     const { data: university, error: universityError } = await supabase

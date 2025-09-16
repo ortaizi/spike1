@@ -811,3 +811,111 @@ export const Constants = {
   },
 } as const
 
+// Convenience type aliases for common database entities
+export type User = Tables<'users'>
+export type UserInsert = TablesInsert<'users'>
+export type UserUpdate = TablesUpdate<'users'>
+
+export type UniversityData = Tables<'university_data'>
+export type UniversityDataInsert = TablesInsert<'university_data'>
+export type UniversityDataUpdate = TablesUpdate<'university_data'>
+
+export type University = Tables<'universities'>
+export type UniversityInsert = TablesInsert<'universities'>
+export type UniversityUpdate = TablesUpdate<'universities'>
+
+export type UserUniversityConnection = Tables<'user_university_connections'>
+export type UserUniversityConnectionInsert = TablesInsert<'user_university_connections'>
+export type UserUniversityConnectionUpdate = TablesUpdate<'user_university_connections'>
+
+export type SyncJob = Tables<'sync_jobs'>
+export type SyncJobInsert = TablesInsert<'sync_jobs'>
+export type SyncJobUpdate = TablesUpdate<'sync_jobs'>
+
+export type AuthAttempt = Tables<'auth_attempts'>
+export type AuthAttemptInsert = TablesInsert<'auth_attempts'>
+export type AuthAttemptUpdate = TablesUpdate<'auth_attempts'>
+
+// Legacy type aliases for backward compatibility
+export type Course = UniversityData & { data_type: 'course' }
+export type Assignment = UniversityData & { data_type: 'assignment' }
+export type Grade = UniversityData & { data_type: 'grade' }
+export type CourseEnrollment = UniversityData & { data_type: 'enrollment' }
+export type Team = UniversityData & { data_type: 'team' }
+export type TeamMember = UniversityData & { data_type: 'team_member' }
+
+// Input types for creating entities
+export interface CreateUserInput extends Omit<UserInsert, 'id' | 'created_at' | 'updated_at'> {}
+export interface UpdateUserInput extends Partial<Omit<UserUpdate, 'id' | 'created_at'>> {}
+
+export interface CreateCourseInput extends Omit<UniversityDataInsert, 'id' | 'created_at' | 'updated_at'> {
+  data_type: 'course'
+}
+export interface UpdateCourseInput extends Partial<Omit<UniversityDataUpdate, 'id' | 'created_at'>> {}
+
+export interface CreateAssignmentInput extends Omit<UniversityDataInsert, 'id' | 'created_at' | 'updated_at'> {
+  data_type: 'assignment'
+}
+export interface UpdateAssignmentInput extends Partial<Omit<UniversityDataUpdate, 'id' | 'created_at'>> {}
+
+export interface CreateGradeInput extends Omit<UniversityDataInsert, 'id' | 'created_at' | 'updated_at'> {
+  data_type: 'grade'
+}
+export interface UpdateGradeInput extends Partial<Omit<UniversityDataUpdate, 'id' | 'created_at'>> {}
+
+export interface CreateEnrollmentInput extends Omit<UniversityDataInsert, 'id' | 'created_at' | 'updated_at'> {
+  data_type: 'enrollment'
+}
+
+export interface CreateTeamInput extends Omit<UniversityDataInsert, 'id' | 'created_at' | 'updated_at'> {
+  data_type: 'team'
+}
+export interface UpdateTeamInput extends Partial<Omit<UniversityDataUpdate, 'id' | 'created_at'>> {}
+
+export interface CreateTeamMemberInput extends Omit<UniversityDataInsert, 'id' | 'created_at' | 'updated_at'> {
+  data_type: 'team_member'
+}
+
+// Filter types for queries
+export interface UserFilters {
+  email?: string
+  is_setup_complete?: boolean
+  preferred_language?: string
+}
+
+export interface CourseFilters {
+  connection_id?: string
+  academic_year?: string
+  semester?: string
+  status?: string
+}
+
+export interface AssignmentFilters {
+  connection_id?: string
+  academic_year?: string
+  semester?: string
+  status?: string
+}
+
+export interface GradeFilters {
+  connection_id?: string
+  academic_year?: string
+  semester?: string
+}
+
+// Generic database operation result
+export interface DatabaseResult<T = any> {
+  data?: T
+  error?: string
+  count?: number
+}
+
+// Paginated response for list operations
+export interface PaginatedResponse<T = any> {
+  data: T[]
+  count: number
+  page: number
+  limit: number
+  hasMore: boolean
+}
+

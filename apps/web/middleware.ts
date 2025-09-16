@@ -12,13 +12,7 @@ export default async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   
   console.log(`🛡️ Smart Middleware: ENABLED - Processing ${pathname}`);
-  
-  // DEV MODE: Skip auth for dashboard in development
-  if (process.env.NODE_ENV === 'development' && pathname.startsWith('/dashboard')) {
-    console.log(`🔧 DEV MODE: Bypassing auth for dashboard - ${pathname}`);
-    return NextResponse.next();
-  }
-  
+
   // Skip middleware for public routes and static files
   const publicRoutes = [
     '/api', // All API routes handle their own auth
