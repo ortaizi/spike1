@@ -4,7 +4,7 @@ import { authOptions } from '../../../../../lib/auth/server-auth';
 import { supabase } from '../../../../../lib/db';
 import { spawn } from 'child_process';
 import * as path from 'path';
-import { createHash, randomBytes, createCipher, createDecipher } from 'crypto';
+import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'crypto';
 
 /**
  * POST /api/auth/credentials/validate
@@ -385,7 +385,7 @@ function encryptPassword(password: string): string {
   const key = createHash('sha256').update(process.env['ENCRYPTION_KEY'] || 'dev-key-change-in-prod').digest();
   const iv = randomBytes(16);
 
-  const cipher = createCipher(algorithm, key);
+  const cipher = createCipheriv(algorithm, key, iv);
   let encrypted = cipher.update(password, 'utf8', 'hex');
   encrypted += cipher.final('hex');
 
@@ -400,7 +400,7 @@ function decryptPassword(encryptedData: string): string {
   const [ivHex, encrypted] = encryptedData.split(':');
   const iv = Buffer.from(ivHex, 'hex');
 
-  const decipher = createDecipher(algorithm, key);
+  const decipher = createDecipheriv(algorithm, key, iv);
   let decrypted = decipher.update(encrypted, 'hex', 'utf8');
   decrypted += decipher.final('utf8');
   
