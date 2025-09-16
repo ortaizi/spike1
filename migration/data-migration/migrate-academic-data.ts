@@ -9,6 +9,7 @@
 import { Pool } from 'pg';
 import { createHash } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import { createSafeSchema } from '../../services/academic-service/src/utils/sql-builder';
 
 interface MigrationConfig {
   tenant: string;
@@ -114,8 +115,9 @@ class AcademicDataMigration {
     const client = await this.targetPool.connect();
     try {
       // Create schema if it doesn't exist
-      await client.query(`CREATE SCHEMA IF NOT EXISTS academic_${this.config.tenant}`);
-      console.log(`✅ Schema academic_${this.config.tenant} ready`);
+      const safeSchemaName = createSafeSchema(this.config.tenant);
+      await client.query(`CREATE SCHEMA IF NOT EXISTS ${safeSchemaName}`);
+      console.log(`✅ Schema ${safeSchemaName} ready`);
     } finally {
       client.release();
     }

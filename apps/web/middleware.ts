@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { validateOrigin } from "./lib/security/csrf-protection";
 
 /**
  * Smart Authentication Middleware for Spike Platform
@@ -15,13 +16,41 @@ export default async function middleware(request: NextRequest) {
 
   // Skip middleware for public routes and static files
   const publicRoutes = [
-    '/api', // All API routes handle their own auth
     '/_next', // Next.js static files
     '/favicon.ico',
     '/robots.txt',
     '/sitemap.xml',
     '/auth/error', // Auth error page
   ];
+
+  // API routes need origin validation for CSRF protection
+  if (pathname.startsWith('/api')) {
+    // Skip CSRF for specific public API endpoints
+    const publicApiRoutes = [
+      '/api/health',
+      '/api/universities',
+      '/api/auth/csrf', // NextAuth CSRF endpoint
+      '/api/auth/providers', // NextAuth providers
+      '/api/auth/session', // Session checks
+    ];
+
+    const isPublicApi = publicApiRoutes.some(route => pathname.startsWith(route));
+
+    // For protected API routes, validate origin
+    if (!isPublicApi && request.method !== 'GET') {
+      const isValidOrigin = validateOrigin(request);
+      if (!isValidOrigin) {
+        console.log(`🚫 CSRF: Invalid origin for ${pathname}`);
+        return NextResponse.json(
+          { error: 'Invalid origin', code: 'CSRF_ORIGIN_MISMATCH' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Let API routes handle their own auth and CSRF token validation
+    return NextResponse.next();
+  }
   
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
   if (isPublicRoute) {

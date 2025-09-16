@@ -5,6 +5,7 @@ import { supabase } from '../../../../../lib/db';
 import { spawn } from 'child_process';
 import * as path from 'path';
 import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'crypto';
+import { csrfProtection, rateLimit } from '../../../../../lib/security/csrf-protection';
 
 /**
  * POST /api/auth/credentials/validate
@@ -12,6 +13,18 @@ import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'crypt
  */
 export async function POST(request: NextRequest) {
   try {
+    // Apply strict rate limiting for credential validation (3 attempts per minute)
+    const rateLimitResponse = await rateLimit(3, 60000)(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    // Apply CSRF protection
+    const csrfResponse = await csrfProtection(request);
+    if (csrfResponse) {
+      return csrfResponse;
+    }
+
     const startTime = Date.now();
     const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
     

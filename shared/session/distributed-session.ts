@@ -69,7 +69,10 @@ export class DistributedSessionManager {
       lazyConnect: true
     });
 
-    this.jwtSecret = process.env.JWT_SECRET || 'fallback-secret-key';
+    this.jwtSecret = process.env.JWT_SECRET || (() => {
+      logger.error('JWT_SECRET environment variable not set! Using temporary fallback.');
+      return 'temp-fallback-' + Math.random().toString(36).substring(2, 15);
+    })();
 
     this.setupEventHandlers();
   }

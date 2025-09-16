@@ -42,7 +42,7 @@ PGPASSWORD="${DB_PASSWORD}" psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}"
 DO \$\$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'academic_service_user') THEN
-        CREATE USER academic_service_user WITH ENCRYPTED PASSWORD 'academic_service_password';
+        CREATE USER academic_service_user WITH ENCRYPTED PASSWORD '${ACADEMIC_SERVICE_DB_PASSWORD:-fallback-db-password}';
     END IF;
 END
 \$\$;

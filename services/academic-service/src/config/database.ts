@@ -1,5 +1,6 @@
 import { Pool, PoolClient } from 'pg';
 import { logger } from './logging';
+import { SafeSqlBuilder, createSafeDatabase, createSafeSchema } from '../utils/sql-builder';
 
 export class DatabaseManager {
   private static instance: DatabaseManager;
@@ -70,7 +71,7 @@ export class DatabaseManager {
     const pool = new Pool({
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '5432'),
-      database: `spike_${tenantId}`,
+      database: createSafeDatabase(tenantId),
       user: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',
       max: 10,
@@ -83,7 +84,8 @@ export class DatabaseManager {
       const client = await pool.connect();
 
       // Create schema if it doesn't exist
-      await client.query(`CREATE SCHEMA IF NOT EXISTS academic_${tenantId}`);
+      const safeSchemaName = createSafeSchema(tenantId);
+      await client.query(`CREATE SCHEMA IF NOT EXISTS ${safeSchemaName}`);
 
       client.release();
       this.pools.set(tenantId, pool);

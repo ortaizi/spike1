@@ -4,6 +4,7 @@ import { unifiedAuthOptions } from '../../../../lib/auth/unified-auth';
 import { supabaseAdmin } from '../../../../lib/database/service-role';
 import { extractDataFromEmail } from '../../../../lib/university-utils';
 import { z } from 'zod';
+import { csrfProtection, rateLimit } from '../../../../lib/security/csrf-protection';
 
 // Validation schema for onboarding data
 const onboardingSchema = z.object({
@@ -157,6 +158,18 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting (20 requests per minute for onboarding)
+    const rateLimitResponse = await rateLimit(20, 60000)(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    // Apply CSRF protection
+    const csrfResponse = await csrfProtection(request);
+    if (csrfResponse) {
+      return csrfResponse;
+    }
+
     // Get session using NextAuth
     const session = await getServerSession(unifiedAuthOptions);
     
@@ -276,6 +289,18 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimitResponse = await rateLimit(20, 60000)(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    // Apply CSRF protection
+    const csrfResponse = await csrfProtection(request);
+    if (csrfResponse) {
+      return csrfResponse;
+    }
+
     // Get session using NextAuth
     const session = await getServerSession(unifiedAuthOptions);
     

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '../../../../lib/db'
+import { csrfProtection, rateLimit } from '../../../../lib/security/csrf-protection'
+import { getServerSession } from 'next-auth'
+import { unifiedAuthOptions } from '../../../../lib/auth/unified-auth'
 
 export async function GET(
   request: NextRequest,
@@ -35,6 +38,36 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Apply rate limiting
+    const rateLimitResponse = await rateLimit(10, 60000)(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    // Apply CSRF protection
+    const csrfResponse = await csrfProtection(request);
+    if (csrfResponse) {
+      return csrfResponse;
+    }
+
+    // Verify user can only update their own data
+    const session = await getServerSession(unifiedAuthOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Check if user is updating their own profile or is admin
+    if (session.user.id !== params.id) {
+      console.warn(`User ${session.user.id} attempted to update user ${params.id}`);
+      return NextResponse.json(
+        { error: 'Forbidden: You can only update your own profile' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json()
 
     const { data, error } = await supabase
@@ -70,6 +103,36 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Apply rate limiting (strict for DELETE operations)
+    const rateLimitResponse = await rateLimit(5, 60000)(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    // Apply CSRF protection
+    const csrfResponse = await csrfProtection(request);
+    if (csrfResponse) {
+      return csrfResponse;
+    }
+
+    // Verify user can only delete their own data
+    const session = await getServerSession(unifiedAuthOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Check if user is deleting their own account
+    if (session.user.id !== params.id) {
+      console.warn(`User ${session.user.id} attempted to delete user ${params.id}`);
+      return NextResponse.json(
+        { error: 'Forbidden: You can only delete your own account' },
+        { status: 403 }
+      );
+    }
+
     const { error } = await supabase
       .from('users')
       .delete()

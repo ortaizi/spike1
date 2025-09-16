@@ -5,6 +5,7 @@ import { authenticateWithMoodle } from '../../../../lib/moodle-client';
 import { extractDataFromEmail } from '../../../../lib/university-utils';
 import { supabase } from '../../../../lib/db';
 import { z } from 'zod';
+import { csrfProtection, rateLimit } from '../../../../lib/security/csrf-protection';
 
 // Validation schema for Moodle credentials  
 const moodleCredentialsSchema = z.object({
@@ -21,6 +22,18 @@ function encryptPassword(password: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting (5 attempts per minute for credential validation)
+    const rateLimitResponse = await rateLimit(5, 60000)(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    // Apply CSRF protection
+    const csrfResponse = await csrfProtection(request);
+    if (csrfResponse) {
+      return csrfResponse;
+    }
+
     // Get session using NextAuth
     const session = await getServerSession(unifiedAuthOptions);
     

@@ -230,7 +230,7 @@ export default defineConfig({
     timeout: 120 * 1000, // 2 minutes for slow academic system setup
     env: {
       NODE_ENV: 'test',
-      NEXTAUTH_SECRET: 'test-secret-for-e2e',
+      NEXTAUTH_SECRET: process.env.TEST_NEXTAUTH_SECRET || 'fallback-test-secret',
       NEXTAUTH_URL: 'http://localhost:3000',
     },
   },

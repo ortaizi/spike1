@@ -8,6 +8,8 @@ import {
   UPDATE_TRIGGERS
 } from './query-models';
 import cron from 'node-cron';
+import { SafeSqlBuilder, createSafeSchema, createSafeQualifiedTable } from '../utils/sql-builder';
+import { validateTenantId } from '../utils/tenant-validation';
 
 export class ViewManager {
   private static instance: ViewManager;
@@ -205,20 +207,32 @@ export class ViewManager {
       await client.query('BEGIN');
 
       // Drop triggers first
-      await client.query(`DROP TRIGGER IF EXISTS refresh_on_grade_change_${tenantId} ON academic_${tenantId}.grades CASCADE`);
-      await client.query(`DROP TRIGGER IF EXISTS refresh_on_enrollment_change_${tenantId} ON academic_${tenantId}.enrollments CASCADE`);
-      await client.query(`DROP TRIGGER IF EXISTS refresh_on_assignment_change_${tenantId} ON academic_${tenantId}.assignments CASCADE`);
+      const safeTenantId = validateTenantId(tenantId);
+      const safeSchema = createSafeSchema(safeTenantId);
+      const gradeTrigger = SafeSqlBuilder.quoteIdentifier(SafeSqlBuilder.createTriggerName('refresh_on_grade_change', safeTenantId));
+      const enrollmentTrigger = SafeSqlBuilder.quoteIdentifier(SafeSqlBuilder.createTriggerName('refresh_on_enrollment_change', safeTenantId));
+      const assignmentTrigger = SafeSqlBuilder.quoteIdentifier(SafeSqlBuilder.createTriggerName('refresh_on_assignment_change', safeTenantId));
+
+      await client.query(`DROP TRIGGER IF EXISTS ${gradeTrigger} ON ${safeSchema}.grades CASCADE`);
+      await client.query(`DROP TRIGGER IF EXISTS ${enrollmentTrigger} ON ${safeSchema}.enrollments CASCADE`);
+      await client.query(`DROP TRIGGER IF EXISTS ${assignmentTrigger} ON ${safeSchema}.assignments CASCADE`);
 
       // Drop function
-      await client.query(`DROP FUNCTION IF EXISTS refresh_query_models_${tenantId}() CASCADE`);
+      const safeFunction = SafeSqlBuilder.quoteIdentifier(SafeSqlBuilder.createFunctionName('refresh_query_models', safeTenantId));
+      await client.query(`DROP FUNCTION IF EXISTS ${safeFunction}() CASCADE`);
 
       // Drop materialized views
-      await client.query(`DROP MATERIALIZED VIEW IF EXISTS academic_${tenantId}.dashboard_summary CASCADE`);
-      await client.query(`DROP MATERIALIZED VIEW IF EXISTS academic_${tenantId}.course_summary CASCADE`);
-      await client.query(`DROP MATERIALIZED VIEW IF EXISTS academic_${tenantId}.student_progress CASCADE`);
+      const dashboardView = SafeSqlBuilder.createQualifiedTableName(SafeSqlBuilder.createSchemaName(safeTenantId), 'dashboard_summary');
+      const courseView = SafeSqlBuilder.createQualifiedTableName(SafeSqlBuilder.createSchemaName(safeTenantId), 'course_summary');
+      const progressView = SafeSqlBuilder.createQualifiedTableName(SafeSqlBuilder.createSchemaName(safeTenantId), 'student_progress');
+
+      await client.query(`DROP MATERIALIZED VIEW IF EXISTS ${dashboardView} CASCADE`);
+      await client.query(`DROP MATERIALIZED VIEW IF EXISTS ${courseView} CASCADE`);
+      await client.query(`DROP MATERIALIZED VIEW IF EXISTS ${progressView} CASCADE`);
 
       // Drop snapshots table
-      await client.query(`DROP TABLE IF EXISTS academic_${tenantId}.snapshots CASCADE`);
+      const snapshotsTable = SafeSqlBuilder.createQualifiedTableName(SafeSqlBuilder.createSchemaName(safeTenantId), 'snapshots');
+      await client.query(`DROP TABLE IF EXISTS ${snapshotsTable} CASCADE`);
 
       await client.query('COMMIT');
 
@@ -357,7 +371,8 @@ export class ViewManager {
   private async getViewStats(client: any, viewName: string): Promise<{ rows: number; lastRefresh: Date }> {
     try {
       // Get row count
-      const countResult = await client.query(`SELECT COUNT(*) as rows FROM ${viewName}`);
+      const safeViewName = SafeSqlBuilder.quoteIdentifier(viewName);
+      const countResult = await client.query(`SELECT COUNT(*) as rows FROM ${safeViewName}`);
       const rows = parseInt(countResult.rows[0].rows) || 0;
 
       // Get last refresh time (materialized views don't have this built-in, so we approximate)
