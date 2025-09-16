@@ -9,9 +9,41 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Apply rate limiting
+    const rateLimitResponse = await rateLimit(20, 60000)(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    // Apply CSRF protection
+    const csrfResponse = await csrfProtection(request);
+    if (csrfResponse) {
+      return csrfResponse;
+    }
+
+    // CRITICAL SECURITY: Authentication check to prevent unauthorized access
+    const session = await getServerSession(unifiedAuthOptions);
+    if (!session?.user?.id) {
+      console.warn('SECURITY: Unauthenticated access attempt to GET /api/users/[id]');
+      return NextResponse.json(
+        { error: 'Unauthorized: Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // CRITICAL SECURITY: Authorization check to prevent IDOR attacks
+    if (session.user.id !== params.id) {
+      console.warn(`SECURITY: User ${session.user.id} attempted unauthorized access to user ${params.id}`);
+      return NextResponse.json(
+        { error: 'Forbidden: You can only access your own profile' },
+        { status: 403 }
+      );
+    }
+
+    // Secure data query with selective field access (data minimization)
     const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .select('id, email, name, avatar_url, university_id, is_setup_complete, created_at, updated_at')
       .eq('id', params.id)
       .single()
 
