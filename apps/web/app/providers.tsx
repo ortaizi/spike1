@@ -22,11 +22,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const isClient = useIsClient();
 
   return (
-    <SessionProvider 
-      refetchInterval={0} 
+    <SessionProvider
+      refetchInterval={0}
       refetchOnWindowFocus={false}
       refetchWhenOffline={false}
-      refetchInterval={false}
     >
       <QueryClientProvider client={queryClient}>
         <ThemeProvider
