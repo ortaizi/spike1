@@ -1,6 +1,6 @@
 import { Pool, PoolClient } from 'pg';
+import { createSafeDatabase, createSafeSchema } from '../utils/sql-builder';
 import { logger } from './logging';
-import { SafeSqlBuilder, createSafeDatabase, createSafeSchema } from '../utils/sql-builder';
 
 export class DatabaseManager {
   private static instance: DatabaseManager;
@@ -97,11 +97,7 @@ export class DatabaseManager {
     }
   }
 
-  async executeQuery(
-    tenantId: string,
-    query: string,
-    params: any[] = []
-  ): Promise<any> {
+  async executeQuery(tenantId: string, query: string, params: any[] = []): Promise<any> {
     const client = await this.getConnection(tenantId);
 
     try {

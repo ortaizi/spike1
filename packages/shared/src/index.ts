@@ -8,7 +8,7 @@ export function formatDate(date: string | Date): string {
   return new Intl.DateTimeFormat('he-IL', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   }).format(new Date(date));
 }
 
@@ -18,7 +18,7 @@ export function formatDateTime(date: string | Date): string {
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   }).format(new Date(date));
 }
 
@@ -98,10 +98,10 @@ export function isValidStudentId(id: string): boolean {
 // Grade helpers
 export function calculateGPA(grades: Array<{ grade: number; credits: number }>): number {
   if (grades.length === 0) return 0;
-  
+
   const totalCredits = grades.reduce((sum, g) => sum + g.credits, 0);
-  const weightedSum = grades.reduce((sum, g) => sum + (g.grade * g.credits), 0);
-  
+  const weightedSum = grades.reduce((sum, g) => sum + g.grade * g.credits, 0);
+
   return totalCredits > 0 ? weightedSum / totalCredits : 0;
 }
 
@@ -153,15 +153,15 @@ export function timeUntilDue(dueDate: string): string {
   const due = new Date(dueDate);
   const now = new Date();
   const diff = due.getTime() - now.getTime();
-  
+
   if (diff < 0) {
     return 'פג תוקף';
   }
-  
+
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  
+
   if (days > 0) {
     return `${days} ימים`;
   } else if (hours > 0) {
@@ -180,6 +180,6 @@ export function isDueSoon(dueDate: string, hoursThreshold = 24): boolean {
   const now = new Date();
   const diff = due.getTime() - now.getTime();
   const hours = diff / (1000 * 60 * 60);
-  
+
   return hours > 0 && hours <= hoursThreshold;
 }

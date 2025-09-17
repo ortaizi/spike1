@@ -28,9 +28,11 @@ async function testEncryptionFix() {
     console.log('Second encryption IV:', encrypted2.iv);
 
     // The encrypted values should be different because of unique IVs
-    if (encrypted1.encryptedUsername !== encrypted2.encryptedUsername &&
-        encrypted1.encryptedPassword !== encrypted2.encryptedPassword &&
-        encrypted1.iv !== encrypted2.iv) {
+    if (
+      encrypted1.encryptedUsername !== encrypted2.encryptedUsername &&
+      encrypted1.encryptedPassword !== encrypted2.encryptedPassword &&
+      encrypted1.iv !== encrypted2.iv
+    ) {
       console.log('✅ SUCCESS: IV randomization working correctly!');
       console.log('✅ Same plaintext produces different ciphertext (proper IV usage)');
     } else {
@@ -53,8 +55,12 @@ async function testEncryptionFix() {
       encrypted2.iv
     );
 
-    if (decrypted1.username === username && decrypted1.password === password &&
-        decrypted2.username === username && decrypted2.password === password) {
+    if (
+      decrypted1.username === username &&
+      decrypted1.password === password &&
+      decrypted2.username === username &&
+      decrypted2.password === password
+    ) {
       console.log('✅ SUCCESS: Both encrypted versions decrypt correctly!');
       console.log('\n🎉 ALL TESTS PASSED: Encryption vulnerability fix is successful!');
       console.log('🔒 Security status: CRITICAL vulnerability resolved ✅');
@@ -63,7 +69,6 @@ async function testEncryptionFix() {
       console.log('❌ FAILED: Decryption failed for one or both versions');
       return false;
     }
-
   } catch (error) {
     console.error('❌ ERROR: Encryption test failed:', error);
     return false;

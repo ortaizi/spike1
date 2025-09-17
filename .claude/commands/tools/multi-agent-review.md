@@ -4,12 +4,16 @@ model: sonnet
 
 Perform comprehensive multi-agent code review with specialized reviewers:
 
-[Extended thinking: This tool command invokes multiple review-focused agents to provide different perspectives on code quality, security, and architecture. Each agent reviews independently, then findings are consolidated.]
+[Extended thinking: This tool command invokes multiple review-focused agents to
+provide different perspectives on code quality, security, and architecture. Each
+agent reviews independently, then findings are consolidated.]
 
 ## Review Process
 
 ### 1. Code Quality Review
+
 Use Task tool with subagent_type="code-reviewer" to examine:
+
 - Code style and readability
 - Adherence to SOLID principles
 - Design patterns and anti-patterns
@@ -17,10 +21,14 @@ Use Task tool with subagent_type="code-reviewer" to examine:
 - Documentation completeness
 - Test coverage and quality
 
-Prompt: "Perform detailed code review of: $ARGUMENTS. Focus on maintainability, readability, and best practices. Provide specific line-by-line feedback where appropriate."
+Prompt: "Perform detailed code review of: $ARGUMENTS. Focus on maintainability,
+readability, and best practices. Provide specific line-by-line feedback where
+appropriate."
 
 ### 2. Security Review
+
 Use Task tool with subagent_type="security-auditor" to check:
+
 - Authentication and authorization flaws
 - Input validation and sanitization
 - SQL injection and XSS vulnerabilities
@@ -28,10 +36,14 @@ Use Task tool with subagent_type="security-auditor" to check:
 - Security misconfigurations
 - Dependency vulnerabilities
 
-Prompt: "Conduct security review of: $ARGUMENTS. Identify vulnerabilities, security risks, and OWASP compliance issues. Provide severity ratings and remediation steps."
+Prompt: "Conduct security review of: $ARGUMENTS. Identify vulnerabilities,
+security risks, and OWASP compliance issues. Provide severity ratings and
+remediation steps."
 
 ### 3. Architecture Review
+
 Use Task tool with subagent_type="architect-reviewer" to evaluate:
+
 - Service boundaries and coupling
 - Scalability considerations
 - Design pattern appropriateness
@@ -39,7 +51,9 @@ Use Task tool with subagent_type="architect-reviewer" to evaluate:
 - API design quality
 - Data flow and dependencies
 
-Prompt: "Review architecture and design of: $ARGUMENTS. Evaluate scalability, maintainability, and architectural patterns. Identify potential bottlenecks and design improvements."
+Prompt: "Review architecture and design of: $ARGUMENTS. Evaluate scalability,
+maintainability, and architectural patterns. Identify potential bottlenecks and
+design improvements."
 
 ## Consolidated Review Output
 

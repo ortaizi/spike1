@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { logger } from '../config/logging';
 
 export class ServiceError extends Error {
@@ -13,7 +13,10 @@ export class ServiceError extends Error {
 }
 
 export class ValidationError extends ServiceError {
-  constructor(message: string, public details?: any) {
+  constructor(
+    message: string,
+    public details?: any
+  ) {
     super(message, 400, 'VALIDATION_ERROR');
     this.name = 'ValidationError';
   }
@@ -48,12 +51,7 @@ export class ForbiddenError extends ServiceError {
   }
 }
 
-export const errorMiddleware = (
-  error: Error,
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const errorMiddleware = (error: Error, req: Request, res: Response, next: NextFunction) => {
   const requestLogger = req.logger || logger;
 
   if (error instanceof ServiceError) {
@@ -63,14 +61,14 @@ export const errorMiddleware = (
       statusCode: error.statusCode,
       tenantId: req.tenantId,
       userId: req.userId,
-      stack: error.stack
+      stack: error.stack,
     });
 
     return res.status(error.statusCode).json({
       error: error.message,
       code: error.code,
       timestamp: new Date().toISOString(),
-      correlationId: req.correlationId
+      correlationId: req.correlationId,
     });
   }
 
@@ -79,13 +77,13 @@ export const errorMiddleware = (
     error: error.message,
     stack: error.stack,
     tenantId: req.tenantId,
-    userId: req.userId
+    userId: req.userId,
   });
 
   res.status(500).json({
     error: 'Internal server error',
     code: 'INTERNAL_ERROR',
     timestamp: new Date().toISOString(),
-    correlationId: req.correlationId
+    correlationId: req.correlationId,
   });
 };

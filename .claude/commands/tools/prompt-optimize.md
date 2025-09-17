@@ -50,4 +50,5 @@ Analyze and improve the prompt by:
    - Fallback strategies
    - Cost optimization
 
-Provide optimized prompts with explanations for each change. Include evaluation metrics and testing strategies. Consider both quality and cost efficiency.
+Provide optimized prompts with explanations for each change. Include evaluation
+metrics and testing strategies. Consider both quality and cost efficiency.

@@ -9,7 +9,7 @@
     "useDefineForClassFields": true,
     "allowJs": true,
     "checkJs": false,
-    
+
     // ================================================================================================
     // 🔒 STRICT TYPE CHECKING (Enterprise Grade)
     // ================================================================================================
@@ -23,7 +23,7 @@
     "useUnknownInCatchVariables": true,
     "alwaysStrict": true,
     "exactOptionalPropertyTypes": false,
-    
+
     // ================================================================================================
     // 🚨 ADDITIONAL CHECKS (Prevent Runtime Errors)
     // ================================================================================================
@@ -34,7 +34,7 @@
     "noPropertyAccessFromIndexSignature": true,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
-    
+
     // ================================================================================================
     // 🧹 CODE QUALITY
     // ================================================================================================
@@ -42,7 +42,7 @@
     "noUnusedParameters": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    
+
     // ================================================================================================
     // 🔧 MODULE SYSTEM
     // ================================================================================================
@@ -53,7 +53,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": false,
-    
+
     // ================================================================================================
     // 🏗️ BUILD & EMIT
     // ================================================================================================
@@ -66,20 +66,20 @@
     "downlevelIteration": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    
+
     // ================================================================================================
     // 🚀 PERFORMANCE
     // ================================================================================================
     "incremental": true,
     "composite": false,
     "tsBuildInfoFile": "./.tsbuildinfo",
-    
+
     // ================================================================================================
     // 🎨 JSX & REACT
     // ================================================================================================
     "jsx": "preserve",
     "jsxImportSource": "react",
-    
+
     // ================================================================================================
     // 🗂️ PATH MAPPING (Monorepo Structure)
     // ================================================================================================
@@ -93,7 +93,7 @@
       "@/hooks/*": ["./apps/web/hooks/*"],
       "@/stores/*": ["./apps/web/stores/*"],
       "@/app/*": ["./apps/web/app/*"],
-      
+
       // Shared packages
       "@spike/database": ["./packages/database/src"],
       "@spike/database/*": ["./packages/database/src/*"],
@@ -101,12 +101,12 @@
       "@spike/shared/*": ["./packages/shared/src/*"],
       "@spike/ui": ["./packages/ui/src"],
       "@spike/ui/*": ["./packages/ui/src/*"],
-      
+
       // Type-only imports
       "@/types": ["./apps/web/types"],
       "@spike/types": ["./packages/shared/src/types"]
     },
-    
+
     // ================================================================================================
     // 🔌 PLUGINS
     // ================================================================================================
@@ -119,7 +119,7 @@
       }
     ]
   },
-  
+
   // ================================================================================================
   // 📁 INCLUDE & EXCLUDE PATTERNS
   // ================================================================================================
@@ -127,41 +127,41 @@
     // Next.js types
     "next-env.d.ts",
     ".next/types/**/*.ts",
-    
+
     // All TypeScript files
     "**/*.ts",
     "**/*.tsx",
     "**/*.cts",
     "**/*.mts",
-    
+
     // Configuration files
     "**/*.config.ts",
     "**/*.config.js",
-    
+
     // Test files
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/*.spec.ts",
     "**/*.spec.tsx",
-    
+
     // Story files
     "**/*.stories.ts",
     "**/*.stories.tsx",
-    
+
     // Declaration files
     "**/*.d.ts",
-    
+
     // Specific directories
     "apps/**/*",
     "packages/**/*"
   ],
-  
+
   "exclude": [
     // Dependencies
     "node_modules",
     "**/node_modules",
     "**/node_modules/**",
-    
+
     // Build outputs
     ".next",
     "**/.next",
@@ -178,17 +178,17 @@
     ".turbo",
     "**/.turbo",
     "**/.turbo/**",
-    
+
     // Cache directories
     ".cache",
     "**/.cache",
     "**/.cache/**",
-    
+
     // Test coverage
     "coverage",
     "**/coverage",
     "**/coverage/**",
-    
+
     // Temporary files
     "tmp",
     "**/tmp",
@@ -196,36 +196,36 @@
     "temp",
     "**/temp",
     "**/temp/**",
-    
+
     // Python files (scraper service)
     "**/*.py",
     "**/__pycache__",
     "**/venv",
     "**/env",
-    
+
     // Database files
     "**/*.db",
     "**/*.sqlite",
-    
+
     // Logs
     "**/*.log",
-    
+
     // OS files
     "**/.DS_Store",
     "**/Thumbs.db",
-    
+
     // Editor files
     "**/.vscode",
     "**/.idea",
-    
+
     // Deployment
     ".vercel",
     "**/.vercel",
-    
+
     // Environment files
     "**/.env*"
   ],
-  
+
   // ================================================================================================
   // 📊 COMPILER PERFORMANCE
   // ================================================================================================
@@ -234,15 +234,9 @@
     "watchDirectory": "useFsEvents",
     "fallbackPolling": "dynamicPriority",
     "synchronousWatchDirectory": true,
-    "excludeDirectories": [
-      "**/node_modules",
-      "**/.next",
-      "**/dist",
-      "**/build",
-      "**/.turbo"
-    ]
+    "excludeDirectories": ["**/node_modules", "**/.next", "**/dist", "**/build", "**/.turbo"]
   },
-  
+
   // ================================================================================================
   // 🎓 ACADEMIC PLATFORM SPECIFIC SETTINGS
   // ================================================================================================
@@ -261,4 +255,4 @@
       "path": "./packages/ui"
     }
   ]
-} 
+}

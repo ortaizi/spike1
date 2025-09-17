@@ -1,8 +1,8 @@
+import { v4 as uuidv4 } from 'uuid';
 import { DatabaseManager } from '../config/database';
-import { EventBus } from './event-bus';
 import { logger } from '../config/logging';
 import { DomainEvent } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { EventBus } from './event-bus';
 
 export class EventStore {
   private static instance: EventStore;
@@ -25,7 +25,7 @@ export class EventStore {
     const eventWithDefaults = {
       ...event,
       correlationId: event.correlationId || uuidv4(),
-      eventTime: event.eventTime || new Date()
+      eventTime: event.eventTime || new Date(),
     };
 
     // Store event in tenant-specific event store
@@ -45,7 +45,7 @@ export class EventStore {
       eventWithDefaults.tenantId,
       eventWithDefaults.correlationId,
       eventWithDefaults.userId,
-      1 // Version - could be calculated based on existing events for the aggregate
+      1, // Version - could be calculated based on existing events for the aggregate
     ];
 
     await this.dbManager.executeQuery(event.tenantId, query, values);
@@ -57,7 +57,7 @@ export class EventStore {
       eventType: eventWithDefaults.eventType,
       aggregateId: eventWithDefaults.aggregateId,
       tenantId: eventWithDefaults.tenantId,
-      correlationId: eventWithDefaults.correlationId
+      correlationId: eventWithDefaults.correlationId,
     });
   }
 
@@ -88,7 +88,7 @@ export class EventStore {
       eventTime: row.event_time,
       tenantId: row.tenant_id,
       correlationId: row.correlation_id,
-      userId: row.user_id
+      userId: row.user_id,
     }));
   }
 
@@ -114,14 +114,11 @@ export class EventStore {
       eventTime: row.event_time,
       tenantId: row.tenant_id,
       correlationId: row.correlation_id,
-      userId: row.user_id
+      userId: row.user_id,
     }));
   }
 
-  async getEventsByCorrelationId(
-    tenantId: string,
-    correlationId: string
-  ): Promise<DomainEvent[]> {
+  async getEventsByCorrelationId(tenantId: string, correlationId: string): Promise<DomainEvent[]> {
     const query = `
       SELECT * FROM academic_${tenantId}.events
       WHERE correlation_id = $1
@@ -137,7 +134,7 @@ export class EventStore {
       eventTime: row.event_time,
       tenantId: row.tenant_id,
       correlationId: row.correlation_id,
-      userId: row.user_id
+      userId: row.user_id,
     }));
   }
 
@@ -169,21 +166,12 @@ export class EventStore {
       eventTime: row.event_time,
       tenantId: row.tenant_id,
       correlationId: row.correlation_id,
-      userId: row.user_id
+      userId: row.user_id,
     }));
   }
 
-  async replayEvents(
-    tenantId: string,
-    fromTime: Date,
-    eventTypes?: string[]
-  ): Promise<void> {
-    const events = await this.getEventsInTimeRange(
-      tenantId,
-      fromTime,
-      new Date(),
-      eventTypes
-    );
+  async replayEvents(tenantId: string, fromTime: Date, eventTypes?: string[]): Promise<void> {
+    const events = await this.getEventsInTimeRange(tenantId, fromTime, new Date(), eventTypes);
 
     for (const event of events) {
       // Re-publish events to event bus for replay
@@ -193,7 +181,7 @@ export class EventStore {
         eventType: event.eventType,
         aggregateId: event.aggregateId,
         originalTime: event.eventTime.toISOString(),
-        tenantId
+        tenantId,
       });
     }
 
@@ -201,7 +189,7 @@ export class EventStore {
       tenantId,
       eventCount: events.length,
       fromTime: fromTime.toISOString(),
-      eventTypes
+      eventTypes,
     });
   }
 
@@ -229,14 +217,14 @@ export class EventStore {
       JSON.stringify(data),
       version,
       new Date(),
-      tenantId
+      tenantId,
     ]);
 
     logger.debug('Snapshot created', {
       aggregateId,
       aggregateType,
       version,
-      tenantId
+      tenantId,
     });
   }
 
@@ -264,7 +252,7 @@ export class EventStore {
     return {
       data: JSON.parse(row.data),
       version: row.version,
-      createdAt: row.created_at
+      createdAt: row.created_at,
     };
   }
 }
@@ -354,7 +342,7 @@ export class CourseAggregate extends AggregateRoot {
       eventTime: new Date(),
       tenantId,
       correlationId,
-      userId
+      userId,
     };
 
     this.addEvent(event);
@@ -372,7 +360,7 @@ export class CourseAggregate extends AggregateRoot {
       eventTime: new Date(),
       tenantId,
       correlationId,
-      userId
+      userId,
     };
 
     this.addEvent(event);
@@ -390,7 +378,7 @@ export class CourseAggregate extends AggregateRoot {
       eventTime: new Date(),
       tenantId,
       correlationId,
-      userId
+      userId,
     };
 
     this.addEvent(event);

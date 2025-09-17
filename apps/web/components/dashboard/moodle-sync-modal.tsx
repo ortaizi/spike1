@@ -1,13 +1,28 @@
-"use client";
+'use client';
 
-import { useState } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, RefreshCw, CheckCircle, AlertCircle, BookOpen, FileText, Calendar } from 'lucide-react';
+import {
+  AlertCircle,
+  BookOpen,
+  Calendar,
+  CheckCircle,
+  FileText,
+  Loader2,
+  RefreshCw,
+} from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 interface SyncStatus {
@@ -25,7 +40,7 @@ export function MoodleSyncModal() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [formData, setFormData] = useState({
     moodle_username: '',
-    moodle_password: ''
+    moodle_password: '',
   });
 
   // בדיקת סטטוס סנכרון
@@ -49,7 +64,7 @@ export function MoodleSyncModal() {
     }
 
     setIsLoading(true);
-    
+
     try {
       const response = await fetch('/api/user-sync', {
         method: 'POST',
@@ -86,49 +101,52 @@ export function MoodleSyncModal() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <RefreshCw className="h-4 w-4" />
+        <Button variant='outline' className='gap-2'>
+          <RefreshCw className='h-4 w-4' />
           סנכרון מודל
         </Button>
       </DialogTrigger>
-      
-      <DialogContent className="sm:max-w-[600px]">
+
+      <DialogContent className='sm:max-w-[600px]'>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
+          <DialogTitle className='flex items-center gap-2'>
+            <BookOpen className='h-5 w-5' />
             סנכרון נתונים ממודל
           </DialogTitle>
-          <DialogDescription>
-            התחבר למודל כדי לסנכרן את הקורסים והתוכן שלך
-          </DialogDescription>
+          <DialogDescription>התחבר למודל כדי לסנכרן את הקורסים והתוכן שלך</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className='space-y-6'>
           {/* סטטוס נוכחי */}
           {syncStatus && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">סטטוס נוכחי</CardTitle>
+                <CardTitle className='text-lg'>סטטוס נוכחי</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">סטטוס: {syncStatus.exists ? 'מחובר' : 'לא מחובר'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-blue-500" />
-                    <span className="text-sm">
-                      עדכון אחרון: {syncStatus.last_sync ? new Date(syncStatus.last_sync).toLocaleDateString('he-IL') : 'לא ידוע'}
+                <div className='grid grid-cols-2 gap-4'>
+                  <div className='flex items-center gap-2'>
+                    <CheckCircle className='h-4 w-4 text-green-500' />
+                    <span className='text-sm'>
+                      סטטוס: {syncStatus.exists ? 'מחובר' : 'לא מחובר'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 text-purple-500" />
-                    <span className="text-sm">קורסים: {syncStatus.courses_count}</span>
+                  <div className='flex items-center gap-2'>
+                    <Calendar className='h-4 w-4 text-blue-500' />
+                    <span className='text-sm'>
+                      עדכון אחרון:{' '}
+                      {syncStatus.last_sync
+                        ? new Date(syncStatus.last_sync).toLocaleDateString('he-IL')
+                        : 'לא ידוע'}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-orange-500" />
-                    <span className="text-sm">פריטי תוכן: {syncStatus.content_count}</span>
+                  <div className='flex items-center gap-2'>
+                    <BookOpen className='h-4 w-4 text-purple-500' />
+                    <span className='text-sm'>קורסים: {syncStatus.courses_count}</span>
+                  </div>
+                  <div className='flex items-center gap-2'>
+                    <FileText className='h-4 w-4 text-orange-500' />
+                    <span className='text-sm'>פריטי תוכן: {syncStatus.content_count}</span>
                   </div>
                 </div>
               </CardContent>
@@ -143,57 +161,57 @@ export function MoodleSyncModal() {
                 הזן את פרטי ההתחברות שלך למודל של אוניברסיטת בן-גוריון
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="moodle_username">שם משתמש במודל</Label>
+            <CardContent className='space-y-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='moodle_username'>שם משתמש במודל</Label>
                 <Input
-                  id="moodle_username"
-                  type="text"
-                  placeholder="לדוגמה: ortaiz"
+                  id='moodle_username'
+                  type='text'
+                  placeholder='לדוגמה: ortaiz'
                   value={formData.moodle_username}
-                  onChange={(e) => setFormData(prev => ({ ...prev, moodle_username: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, moodle_username: e.target.value }))
+                  }
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="moodle_password">סיסמה</Label>
+
+              <div className='space-y-2'>
+                <Label htmlFor='moodle_password'>סיסמה</Label>
                 <Input
-                  id="moodle_password"
-                  type="password"
-                  placeholder="הזן את הסיסמה שלך"
+                  id='moodle_password'
+                  type='password'
+                  placeholder='הזן את הסיסמה שלך'
                   value={formData.moodle_password}
-                  onChange={(e) => setFormData(prev => ({ ...prev, moodle_password: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, moodle_password: e.target.value }))
+                  }
                 />
               </div>
 
               <Alert>
-                <AlertCircle className="h-4 w-4" />
+                <AlertCircle className='h-4 w-4' />
                 <AlertDescription>
-                  הנתונים שלך נשמרים באופן מאובטח ואינם נשמרים במערכת שלנו.
-                  הם משמשים רק לסנכרון עם מודל.
+                  הנתונים שלך נשמרים באופן מאובטח ואינם נשמרים במערכת שלנו. הם משמשים רק לסנכרון עם
+                  מודל.
                 </AlertDescription>
               </Alert>
             </CardContent>
           </Card>
 
           {/* כפתורי פעולה */}
-          <div className="flex gap-3 justify-end">
-            <Button variant="outline" onClick={() => setIsOpen(false)}>
+          <div className='flex justify-end gap-3'>
+            <Button variant='outline' onClick={() => setIsOpen(false)}>
               ביטול
             </Button>
-            <Button 
-              onClick={syncData} 
-              disabled={isLoading}
-              className="gap-2"
-            >
+            <Button onClick={syncData} disabled={isLoading} className='gap-2'>
               {isLoading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className='h-4 w-4 animate-spin' />
                   מסנכרן...
                 </>
               ) : (
                 <>
-                  <RefreshCw className="h-4 w-4" />
+                  <RefreshCw className='h-4 w-4' />
                   סנכרון נתונים
                 </>
               )}
@@ -203,4 +221,4 @@ export function MoodleSyncModal() {
       </DialogContent>
     </Dialog>
   );
-} 
+}

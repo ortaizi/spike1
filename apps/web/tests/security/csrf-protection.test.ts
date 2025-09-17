@@ -1,15 +1,10 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  validateOrigin,
-  validateCsrfToken,
-  csrfProtection,
-  rateLimit
-} from '../../lib/security/csrf-protection';
+import { csrfProtection, rateLimit, validateCsrfToken, validateOrigin } from '../../lib/security/csrf-protection';
 
 // Mock next-auth
-jest.mock('next-auth/jwt', () => ({
-  getToken: jest.fn()
+vi.mock('next-auth/jwt', () => ({
+  getToken: vi.fn(),
 }));
 
 describe('CSRF Protection', () => {
@@ -17,18 +12,18 @@ describe('CSRF Protection', () => {
 
   beforeEach(() => {
     // Reset mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Base mock request
     mockRequest = {
       method: 'POST',
       headers: new Headers({
         'content-type': 'application/json',
-        'origin': 'http://localhost:3000'
+        origin: 'http://localhost:3000',
       }),
       url: 'http://localhost:3000/api/test',
-      clone: jest.fn().mockReturnThis(),
-      json: jest.fn().mockResolvedValue({})
+      clone: vi.fn().mockReturnThis(),
+      json: vi.fn().mockResolvedValue({}),
     };
   });
 
@@ -37,8 +32,8 @@ describe('CSRF Protection', () => {
       const request = new NextRequest('http://localhost:3000/api/test', {
         method: 'POST',
         headers: {
-          'origin': 'http://localhost:3000'
-        }
+          origin: 'http://localhost:3000',
+        },
       });
 
       const result = validateOrigin(request);
@@ -49,8 +44,8 @@ describe('CSRF Protection', () => {
       const request = new NextRequest('http://localhost:3000/api/test', {
         method: 'POST',
         headers: {
-          'origin': 'http://evil.com'
-        }
+          origin: 'http://evil.com',
+        },
       });
 
       const result = validateOrigin(request);
@@ -58,31 +53,29 @@ describe('CSRF Protection', () => {
     });
 
     it('should handle missing origin header in development', () => {
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
+      vi.stubEnv('NODE_ENV', 'development');
 
       const request = new NextRequest('http://localhost:3000/api/test', {
-        method: 'POST'
+        method: 'POST',
       });
 
       const result = validateOrigin(request);
       expect(result).toBe(true);
 
-      process.env.NODE_ENV = originalEnv;
+      vi.unstubAllEnvs();
     });
 
     it('should reject missing origin header in production', () => {
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
+      vi.stubEnv('NODE_ENV', 'production');
 
       const request = new NextRequest('http://localhost:3000/api/test', {
-        method: 'POST'
+        method: 'POST',
       });
 
       const result = validateOrigin(request);
       expect(result).toBe(false);
 
-      process.env.NODE_ENV = originalEnv;
+      vi.unstubAllEnvs();
     });
   });
 
@@ -91,12 +84,12 @@ describe('CSRF Protection', () => {
       const request = new NextRequest('http://localhost:3000/api/test', {
         method: 'POST',
         headers: {
-          'x-csrf-token': 'valid-token-123456789012345678901234567890'
-        }
+          'x-csrf-token': 'valid-token-123456789012345678901234567890',
+        },
       });
 
-      const { getToken } = require('next-auth/jwt');
-      getToken.mockResolvedValue({ sub: 'user123' });
+      const { getToken } = await import('next-auth/jwt');
+      vi.mocked(getToken).mockResolvedValue({ sub: 'user123' });
 
       const result = await validateCsrfToken(request);
       expect(result).toBe(true);
@@ -106,12 +99,12 @@ describe('CSRF Protection', () => {
       const request = new NextRequest('http://localhost:3000/api/test', {
         method: 'POST',
         headers: {
-          'cookie': '__Host-next-auth.csrf-token=valid-token-123456789012345678901234567890|hash'
-        }
+          cookie: '__Host-next-auth.csrf-token=valid-token-123456789012345678901234567890|hash',
+        },
       });
 
-      const { getToken } = require('next-auth/jwt');
-      getToken.mockResolvedValue({ sub: 'user123' });
+      const { getToken } = await import('next-auth/jwt');
+      vi.mocked(getToken).mockResolvedValue({ sub: 'user123' });
 
       const result = await validateCsrfToken(request);
       expect(result).toBe(true);
@@ -119,7 +112,7 @@ describe('CSRF Protection', () => {
 
     it('should reject missing CSRF token', async () => {
       const request = new NextRequest('http://localhost:3000/api/test', {
-        method: 'POST'
+        method: 'POST',
       });
 
       const result = await validateCsrfToken(request);
@@ -130,12 +123,12 @@ describe('CSRF Protection', () => {
       const request = new NextRequest('http://localhost:3000/api/test', {
         method: 'POST',
         headers: {
-          'x-csrf-token': 'short'
-        }
+          'x-csrf-token': 'short',
+        },
       });
 
-      const { getToken } = require('next-auth/jwt');
-      getToken.mockResolvedValue(null);
+      const { getToken } = await import('next-auth/jwt');
+      vi.mocked(getToken).mockResolvedValue(null);
 
       const result = await validateCsrfToken(request);
       expect(result).toBe(false);
@@ -145,7 +138,7 @@ describe('CSRF Protection', () => {
   describe('csrfProtection', () => {
     it('should skip protection for safe methods', async () => {
       const request = new NextRequest('http://localhost:3000/api/test', {
-        method: 'GET'
+        method: 'GET',
       });
 
       const result = await csrfProtection(request);
@@ -156,8 +149,8 @@ describe('CSRF Protection', () => {
       const request = new NextRequest('http://localhost:3000/api/test', {
         method: 'POST',
         headers: {
-          'origin': 'http://evil.com'
-        }
+          origin: 'http://evil.com',
+        },
       });
 
       const result = await csrfProtection(request);
@@ -174,13 +167,13 @@ describe('CSRF Protection', () => {
       const request = new NextRequest('http://localhost:3000/api/test', {
         method: 'POST',
         headers: {
-          'origin': 'http://localhost:3000',
-          'x-csrf-token': 'valid-token-123456789012345678901234567890'
-        }
+          origin: 'http://localhost:3000',
+          'x-csrf-token': 'valid-token-123456789012345678901234567890',
+        },
       });
 
-      const { getToken } = require('next-auth/jwt');
-      getToken.mockResolvedValue(null);
+      const { getToken } = await import('next-auth/jwt');
+      vi.mocked(getToken).mockResolvedValue(null);
 
       const result = await csrfProtection(request);
       expect(result).toBeInstanceOf(NextResponse);
@@ -196,13 +189,13 @@ describe('CSRF Protection', () => {
       const request = new NextRequest('http://localhost:3000/api/test', {
         method: 'POST',
         headers: {
-          'origin': 'http://localhost:3000',
-          'x-csrf-token': 'valid-token-123456789012345678901234567890'
-        }
+          origin: 'http://localhost:3000',
+          'x-csrf-token': 'valid-token-123456789012345678901234567890',
+        },
       });
 
-      const { getToken } = require('next-auth/jwt');
-      getToken.mockResolvedValue({ sub: 'user123', email: 'test@example.com' });
+      const { getToken } = await import('next-auth/jwt');
+      vi.mocked(getToken).mockResolvedValue({ sub: 'user123', email: 'test@example.com' });
 
       const result = await csrfProtection(request);
       expect(result).toBe(null);
@@ -212,13 +205,13 @@ describe('CSRF Protection', () => {
       const request = new NextRequest('http://localhost:3000/api/test', {
         method: 'POST',
         headers: {
-          'origin': 'http://localhost:3000',
-          'x-csrf-token': 'valid-token-123456789012345678901234567890'
-        }
+          origin: 'http://localhost:3000',
+          'x-csrf-token': 'valid-token-123456789012345678901234567890',
+        },
       });
 
-      const { getToken } = require('next-auth/jwt');
-      getToken.mockResolvedValue({ sub: 'user123' });
+      const { getToken } = await import('next-auth/jwt');
+      vi.mocked(getToken).mockResolvedValue({ sub: 'user123' });
 
       const result = await csrfProtection(request);
 
@@ -231,21 +224,21 @@ describe('CSRF Protection', () => {
   describe('rateLimit', () => {
     beforeEach(() => {
       // Clear rate limit map between tests
-      jest.useFakeTimers();
+      vi.useFakeTimers();
     });
 
     afterEach(() => {
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should allow requests within rate limit', async () => {
-      const limiter = rateLimit(3, 1000);
-      const { getToken } = require('next-auth/jwt');
-      getToken.mockResolvedValue({ sub: 'user123' });
+      const limiter = rateLimit(5, 1000); // Increase limit to avoid conflicts
+      const { getToken } = await import('next-auth/jwt');
+      vi.mocked(getToken).mockResolvedValue({ sub: 'unique-user-1' }); // Use unique user ID
 
       for (let i = 0; i < 3; i++) {
         const request = new NextRequest('http://localhost:3000/api/test', {
-          method: 'POST'
+          method: 'POST',
         });
 
         const result = await limiter(request);
@@ -255,13 +248,13 @@ describe('CSRF Protection', () => {
 
     it('should block requests exceeding rate limit', async () => {
       const limiter = rateLimit(2, 1000);
-      const { getToken } = require('next-auth/jwt');
-      getToken.mockResolvedValue({ sub: 'user123' });
+      const { getToken } = await import('next-auth/jwt');
+      vi.mocked(getToken).mockResolvedValue({ sub: 'unique-user-2' }); // Use unique user ID
 
       // First two requests should pass
       for (let i = 0; i < 2; i++) {
         const request = new NextRequest('http://localhost:3000/api/test', {
-          method: 'POST'
+          method: 'POST',
         });
 
         const result = await limiter(request);
@@ -270,7 +263,7 @@ describe('CSRF Protection', () => {
 
       // Third request should be blocked
       const request = new NextRequest('http://localhost:3000/api/test', {
-        method: 'POST'
+        method: 'POST',
       });
 
       const result = await limiter(request);
@@ -286,29 +279,29 @@ describe('CSRF Protection', () => {
 
     it('should reset rate limit after window expires', async () => {
       const limiter = rateLimit(1, 1000);
-      const { getToken } = require('next-auth/jwt');
-      getToken.mockResolvedValue({ sub: 'user123' });
+      const { getToken } = await import('next-auth/jwt');
+      vi.mocked(getToken).mockResolvedValue({ sub: 'unique-user-3' }); // Use unique user ID
 
       // First request should pass
       let request = new NextRequest('http://localhost:3000/api/test', {
-        method: 'POST'
+        method: 'POST',
       });
       let result = await limiter(request);
       expect(result).toBe(null);
 
       // Second request should be blocked
       request = new NextRequest('http://localhost:3000/api/test', {
-        method: 'POST'
+        method: 'POST',
       });
       result = await limiter(request);
       expect(result).toBeInstanceOf(NextResponse);
 
       // Advance time past the window
-      jest.advanceTimersByTime(1100);
+      vi.advanceTimersByTime(1100);
 
       // Third request should pass (new window)
       request = new NextRequest('http://localhost:3000/api/test', {
-        method: 'POST'
+        method: 'POST',
       });
       result = await limiter(request);
       expect(result).toBe(null);
@@ -316,28 +309,28 @@ describe('CSRF Protection', () => {
 
     it('should track rate limits per user', async () => {
       const limiter = rateLimit(1, 1000);
-      const { getToken } = require('next-auth/jwt');
+      const { getToken } = await import('next-auth/jwt');
 
       // User 1 makes a request
-      getToken.mockResolvedValue({ sub: 'user1' });
+      vi.mocked(getToken).mockResolvedValue({ sub: 'unique-user-4' });
       let request = new NextRequest('http://localhost:3000/api/test', {
-        method: 'POST'
+        method: 'POST',
       });
       let result = await limiter(request);
       expect(result).toBe(null);
 
       // User 2 should still be able to make a request
-      getToken.mockResolvedValue({ sub: 'user2' });
+      vi.mocked(getToken).mockResolvedValue({ sub: 'unique-user-5' });
       request = new NextRequest('http://localhost:3000/api/test', {
-        method: 'POST'
+        method: 'POST',
       });
       result = await limiter(request);
       expect(result).toBe(null);
 
       // User 1's second request should be blocked
-      getToken.mockResolvedValue({ sub: 'user1' });
+      vi.mocked(getToken).mockResolvedValue({ sub: 'unique-user-4' });
       request = new NextRequest('http://localhost:3000/api/test', {
-        method: 'POST'
+        method: 'POST',
       });
       result = await limiter(request);
       expect(result).toBeInstanceOf(NextResponse);

@@ -1,10 +1,12 @@
 # Spike - Academic Management Platform
 
-A comprehensive academic management platform designed specifically for Ben Gurion University students.
+A comprehensive academic management platform designed specifically for Ben
+Gurion University students.
 
 ## 🎯 Overview
 
-Spike integrates assignment tracking, academic calendar, course management, email organization, and team collaboration into one seamless experience.
+Spike integrates assignment tracking, academic calendar, course management,
+email organization, and team collaboration into one seamless experience.
 
 ## 🏗️ Architecture
 
@@ -29,28 +31,33 @@ This is a monorepo built with Turborepo containing:
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd Spike
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp env.example .env
    # Edit .env with your configuration
    ```
 
 4. **Start the database**
+
    ```bash
    docker-compose up -d postgres redis
    ```
 
 5. **Set up the database**
+
    ```bash
    npm run db:push
    npm run db:seed
@@ -104,7 +111,8 @@ spike/
 
 ## 🎨 Design System
 
-The platform uses a custom design system based on your existing Vercel v0 pages. All new features will maintain visual consistency with your original design.
+The platform uses a custom design system based on your existing Vercel v0 pages.
+All new features will maintain visual consistency with your original design.
 
 ### Hebrew RTL Support
 
@@ -137,18 +145,21 @@ The platform uses PostgreSQL with Prisma ORM. Key models include:
 ## 🚀 Deployment
 
 ### Frontend (Vercel)
+
 ```bash
 npm run build
 # Deploy to Vercel
 ```
 
 ### Backend (Railway/Render)
+
 ```bash
 # Deploy Express.js service
 # Deploy Python scraper
 ```
 
 ### Database (Neon.tech/Supabase)
+
 - Use managed PostgreSQL service
 - Configure connection pooling
 - Set up automated backups
@@ -173,4 +184,5 @@ npm run build
 
 ## 🆘 Support
 
-For support and questions, please refer to the project documentation or create an issue. 
+For support and questions, please refer to the project documentation or create
+an issue.

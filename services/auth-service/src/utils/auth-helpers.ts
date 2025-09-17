@@ -1,6 +1,6 @@
+import { v4 as uuidv4 } from 'uuid';
 import { DatabaseConnection } from '../database/connection';
 import { logger } from './logger';
-import { v4 as uuidv4 } from 'uuid';
 
 const db = new DatabaseConnection();
 
@@ -11,7 +11,7 @@ const UNIVERSITY_DOMAINS = {
   'tau.ac.il': 'tau',
   'mail.tau.ac.il': 'tau',
   'huji.ac.il': 'huji',
-  'mail.huji.ac.il': 'huji'
+  'mail.huji.ac.il': 'huji',
 };
 
 // Extract tenant ID from email domain
@@ -38,17 +38,22 @@ export function generateSessionToken(): string {
 
 // Hash token for storage
 export function hashToken(token: string): string {
-  return require('crypto')
-    .createHash('sha256')
-    .update(token)
-    .digest('hex');
+  return require('crypto').createHash('sha256').update(token).digest('hex');
 }
 
 // Create audit log entry
 interface AuditLogData {
   userId?: string;
   tenantId: string;
-  eventType: 'login' | 'logout' | 'credential_store' | 'credential_retrieve' | 'session_create' | 'session_revoke' | 'token_refresh' | 'password_reset';
+  eventType:
+    | 'login'
+    | 'logout'
+    | 'credential_store'
+    | 'credential_retrieve'
+    | 'session_create'
+    | 'session_revoke'
+    | 'token_refresh'
+    | 'password_reset';
   eventData: any;
   ipAddress?: string;
   userAgent?: string;
@@ -57,28 +62,30 @@ interface AuditLogData {
 
 export async function createAuditLog(data: AuditLogData): Promise<void> {
   try {
-    await db.query(`
+    await db.query(
+      `
       INSERT INTO auth.audit_logs (
         id, user_id, tenant_id, event_type, event_data, ip_address, user_agent, correlation_id
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    `, [
-      uuidv4(),
-      data.userId || null,
-      data.tenantId,
-      data.eventType,
-      JSON.stringify(data.eventData),
-      data.ipAddress || null,
-      data.userAgent || null,
-      data.correlationId
-    ]);
+    `,
+      [
+        uuidv4(),
+        data.userId || null,
+        data.tenantId,
+        data.eventType,
+        JSON.stringify(data.eventData),
+        data.ipAddress || null,
+        data.userAgent || null,
+        data.correlationId,
+      ]
+    );
 
     logger.info('Audit log created', {
       eventType: data.eventType,
       tenantId: data.tenantId,
       userId: data.userId,
-      correlationId: data.correlationId
+      correlationId: data.correlationId,
     });
-
   } catch (error) {
     logger.error('Failed to create audit log:', error);
     // Don't throw error to avoid disrupting the main flow
@@ -86,7 +93,11 @@ export async function createAuditLog(data: AuditLogData): Promise<void> {
 }
 
 // Validate university credentials format
-export function validateCredentialsFormat(username: string, password: string, universityId: string): { valid: boolean; errors: string[] } {
+export function validateCredentialsFormat(
+  username: string,
+  password: string,
+  universityId: string
+): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   // Username validation by university
@@ -127,7 +138,7 @@ export function validateCredentialsFormat(username: string, password: string, un
 
   return {
     valid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -153,11 +164,14 @@ export function sanitizeUserDataForLogging(userData: any): any {
 // Check if user session is valid
 export async function isSessionValid(userId: string, tenantId: string): Promise<boolean> {
   try {
-    const sessionResult = await db.query(`
+    const sessionResult = await db.query(
+      `
       SELECT id FROM auth.sessions
       WHERE user_id = $1 AND tenant_id = $2 AND is_active = true AND expires_at > NOW()
       LIMIT 1
-    `, [userId, tenantId]);
+    `,
+      [userId, tenantId]
+    );
 
     return sessionResult.length > 0;
   } catch (error) {
@@ -169,10 +183,13 @@ export async function isSessionValid(userId: string, tenantId: string): Promise<
 // Get user's active session count
 export async function getActiveSessionCount(userId: string, tenantId: string): Promise<number> {
   try {
-    const result = await db.query(`
+    const result = await db.query(
+      `
       SELECT COUNT(*) as count FROM auth.sessions
       WHERE user_id = $1 AND tenant_id = $2 AND is_active = true AND expires_at > NOW()
-    `, [userId, tenantId]);
+    `,
+      [userId, tenantId]
+    );
 
     return parseInt(result[0]?.count || '0');
   } catch (error) {
@@ -202,7 +219,7 @@ export async function checkRateLimit(
   return {
     allowed: true, // Simplified for now
     remaining: maxAttempts - 1,
-    resetTime: new Date(now + windowMs)
+    resetTime: new Date(now + windowMs),
   };
 }
 
@@ -216,7 +233,7 @@ export function getUniversityConfig(universityId: string) {
       loginUrl: 'https://in.bgu.ac.il',
       supportedFeatures: ['moodle', 'grades', 'schedule'],
       locale: 'he-IL',
-      timezone: 'Asia/Jerusalem'
+      timezone: 'Asia/Jerusalem',
     },
     tau: {
       name: 'Tel Aviv University',
@@ -225,7 +242,7 @@ export function getUniversityConfig(universityId: string) {
       loginUrl: 'https://www.tau.ac.il',
       supportedFeatures: ['moodle', 'grades'],
       locale: 'he-IL',
-      timezone: 'Asia/Jerusalem'
+      timezone: 'Asia/Jerusalem',
     },
     huji: {
       name: 'Hebrew University of Jerusalem',
@@ -234,8 +251,8 @@ export function getUniversityConfig(universityId: string) {
       loginUrl: 'https://www.huji.ac.il',
       supportedFeatures: ['moodle'],
       locale: 'he-IL',
-      timezone: 'Asia/Jerusalem'
-    }
+      timezone: 'Asia/Jerusalem',
+    },
   };
 
   return configs[universityId] || null;
@@ -245,7 +262,10 @@ export function getUniversityConfig(universityId: string) {
 export function encryptSensitiveData(data: string): string {
   const crypto = require('crypto');
   const algorithm = 'aes-256-gcm';
-  const key = Buffer.from(process.env.ENCRYPTION_KEY || 'your-encryption-key-32-chars-long', 'utf8');
+  const key = Buffer.from(
+    process.env.ENCRYPTION_KEY || 'your-encryption-key-32-chars-long',
+    'utf8'
+  );
   const iv = crypto.randomBytes(12);
 
   const cipher = crypto.createCipher(algorithm, key);
@@ -263,7 +283,10 @@ export function encryptSensitiveData(data: string): string {
 export function decryptSensitiveData(encryptedData: string): string {
   const crypto = require('crypto');
   const algorithm = 'aes-256-gcm';
-  const key = Buffer.from(process.env.ENCRYPTION_KEY || 'your-encryption-key-32-chars-long', 'utf8');
+  const key = Buffer.from(
+    process.env.ENCRYPTION_KEY || 'your-encryption-key-32-chars-long',
+    'utf8'
+  );
 
   const parts = encryptedData.split(':');
   const iv = Buffer.from(parts[0], 'hex');

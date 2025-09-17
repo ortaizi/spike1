@@ -9,7 +9,7 @@
  * before constructing SQL identifiers.
  */
 
-import { validateTenantId, SecureTenantIdValidator } from './tenant-validation';
+import { SecureTenantIdValidator, validateTenantId } from './tenant-validation';
 
 /**
  * Safe SQL identifier builder with protection against SQL injection
@@ -192,10 +192,12 @@ export class SafeSqlBuilder {
    * @returns true if safe, false otherwise
    */
   static isValidIdentifier(identifier: string): boolean {
-    return typeof identifier === 'string' &&
-           identifier.length > 0 &&
-           identifier.length <= 63 && // PostgreSQL identifier limit
-           /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(identifier); // Must start with letter or underscore
+    return (
+      typeof identifier === 'string' &&
+      identifier.length > 0 &&
+      identifier.length <= 63 && // PostgreSQL identifier limit
+      /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(identifier)
+    ); // Must start with letter or underscore
   }
 }
 

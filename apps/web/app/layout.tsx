@@ -1,47 +1,42 @@
-import type { Metadata } from "next"
-import { Assistant, Inter, Heebo, Poppins } from "next/font/google"
-import "./globals.css"
-import { Providers } from "./providers"
+import type { Metadata } from 'next';
+import { Assistant, Heebo, Inter, Poppins } from 'next/font/google';
+import './globals.css';
+import { Providers } from './providers';
 
-
-const heebo = Heebo({ 
+const heebo = Heebo({
   subsets: ['hebrew', 'latin'],
-  variable: '--font-heebo'
-})
+  variable: '--font-heebo',
+});
 
-const assistant = Assistant({ 
+const assistant = Assistant({
   subsets: ['hebrew', 'latin'],
-  variable: '--font-assistant'
-})
+  variable: '--font-assistant',
+});
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-inter'
-})
+  variable: '--font-inter',
+});
 
-const poppins = Poppins({ 
+const poppins = Poppins({
   subsets: ['latin'],
   weight: ['400', '600'],
-  variable: '--font-poppins'
-})
+  variable: '--font-poppins',
+});
 
 export const metadata: Metadata = {
-  title: "spike - פלטפורמת ניהול אקדמי",
-  description: "פלטפורמה מקיפה לניהול אקדמי לסטודנטים ישראלים",
-}
+  title: 'spike - פלטפורמת ניהול אקדמי',
+  description: 'פלטפורמה מקיפה לניהול אקדמי לסטודנטים ישראלים',
+};
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="he" dir="rtl" suppressHydrationWarning>
-      <body className={`${heebo.variable} ${assistant.variable} ${inter.variable} ${poppins.variable} font-sans`}>
-        <Providers>
-          {children}
-        </Providers>
+    <html lang='he' dir='rtl' suppressHydrationWarning>
+      <body
+        className={`${heebo.variable} ${assistant.variable} ${inter.variable} ${poppins.variable} font-sans`}
+      >
+        <Providers>{children}</Providers>
       </body>
     </html>
-  )
-} 
+  );
+}

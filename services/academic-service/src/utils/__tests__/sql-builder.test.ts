@@ -5,7 +5,7 @@
  * construct SQL identifiers without SQL injection vulnerabilities.
  */
 
-import { SafeSqlBuilder, createSafeSchema, createSafeQualifiedTable, createSafeDatabase } from '../sql-builder';
+import { SafeSqlBuilder, createSafeDatabase, createSafeQualifiedTable, createSafeSchema } from '../sql-builder';
 
 describe('SafeSqlBuilder', () => {
   describe('Schema Name Creation', () => {
@@ -174,7 +174,7 @@ describe('SQL Injection Prevention Tests', () => {
     "admin'/**/UNION/**/SELECT/**/password/**/FROM/**/users--",
     "1' OR '1'='1' --",
     "'; EXEC xp_cmdshell('malicious_command'); --",
-    "tenant\"; DROP TABLE courses; --"
+    'tenant"; DROP TABLE courses; --',
   ];
 
   test.each(maliciousInputs)('should prevent SQL injection in schema creation: %s', (maliciousInput) => {
@@ -192,15 +192,9 @@ describe('SQL Injection Prevention Tests', () => {
 
 describe('Integration Tests', () => {
   test('should work with real-world tenant IDs', () => {
-    const validTenantIds = [
-      'bgu_student_2024',
-      'haifa_university',
-      'technion_cs',
-      'weizmann_science',
-      'huji_medicine'
-    ];
+    const validTenantIds = ['bgu_student_2024', 'haifa_university', 'technion_cs', 'weizmann_science', 'huji_medicine'];
 
-    validTenantIds.forEach(tenantId => {
+    validTenantIds.forEach((tenantId) => {
       expect(() => {
         const schema = SafeSqlBuilder.createSchemaName(tenantId);
         const database = SafeSqlBuilder.createDatabaseName(tenantId);

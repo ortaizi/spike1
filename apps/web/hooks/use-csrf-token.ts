@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
 import { getCsrfToken } from 'next-auth/react';
+import { useCallback, useEffect, useState } from 'react';
 
 /**
  * Custom hook for CSRF token management
@@ -43,7 +43,7 @@ export const useCsrfToken = (): UseCsrfTokenReturn => {
     async (url: string, options: RequestInit = {}): Promise<Response> => {
       // Wait for token if still loading
       if (isLoading) {
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
           const checkToken = setInterval(() => {
             if (!isLoading) {
               clearInterval(checkToken);
@@ -76,8 +76,14 @@ export const useCsrfToken = (): UseCsrfTokenReturn => {
 
       // If CSRF token expired or invalid, refresh and retry once
       if (response.status === 403) {
-        const responseData = await response.clone().json().catch(() => null);
-        if (responseData?.code === 'CSRF_TOKEN_INVALID' || responseData?.code === 'CSRF_ORIGIN_MISMATCH') {
+        const responseData = await response
+          .clone()
+          .json()
+          .catch(() => null);
+        if (
+          responseData?.code === 'CSRF_TOKEN_INVALID' ||
+          responseData?.code === 'CSRF_ORIGIN_MISMATCH'
+        ) {
           console.warn('CSRF token invalid, refreshing...');
           await refreshToken();
 
@@ -173,10 +179,12 @@ export const secureFormSubmit = async (
   return fetch(url, {
     method: 'POST',
     headers,
-    body: isFormData ? formData : JSON.stringify({
-      ...formData,
-      csrfToken: token, // Include in body as fallback
-    }),
+    body: isFormData
+      ? formData
+      : JSON.stringify({
+          ...formData,
+          csrfToken: token, // Include in body as fallback
+        }),
     credentials: 'same-origin',
   });
 };

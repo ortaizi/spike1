@@ -1,10 +1,10 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
-import { supabase } from '../db';
+// import { supabase } from '../db'; // Unused import
 import { supabaseAdmin } from '../database/service-role';
 import { env } from '../env';
-import type { AuthOptions, SessionStrategy } from 'next-auth';
+import type { AuthOptions } from 'next-auth';
 import { UNIVERSITIES, authenticateWithUniversity } from './university-auth';
 import { validateUniversityEmail, formatHebrewError } from './hebrew-auth-errors';
 
@@ -41,15 +41,18 @@ declare module "next-auth" {
   
   interface JWT {
     provider?: string;
+    googleId?: string;
     universityId?: string;
     universityName?: string;
     lastSync?: string;
     isDualStageComplete?: boolean;
+    sub?: string;
+    email?: string;
   }
 }
 
 // Helper function to create or update Google user
-async function createOrUpdateGoogleUser(user: any, account: any) {
+async function createOrUpdateGoogleUser(user: any, _account: any) {
   try {
     console.log('🔄 Creating/updating Google user:', user.email);
     console.log('🔍 User object:', { id: user.id, name: user.name, email: user.email, image: user.image });

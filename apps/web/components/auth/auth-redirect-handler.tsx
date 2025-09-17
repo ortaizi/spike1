@@ -10,12 +10,12 @@ interface AuthRedirectHandlerProps {
 
 /**
  * Smart Authentication Redirect Handler
- * 
+ *
  * This component handles automatic redirection based on user setup completion status:
  * - If user has Google session but setup is incomplete -> redirect to onboarding
  * - If user has complete setup -> redirect to dashboard
  * - If no session -> stay on current page
- * 
+ *
  * This replaces the disabled middleware logic to prevent infinite loops
  * while still providing the smart routing functionality.
  */
@@ -32,7 +32,7 @@ export function AuthRedirectHandler({ children }: AuthRedirectHandlerProps) {
     }
 
     // Only run the redirect check once per session change
-    if (hasChecked && status !== 'loading') {
+    if (hasChecked && status === 'authenticated' || status === 'unauthenticated') {
       setIsChecking(false);
       return;
     }
@@ -42,7 +42,7 @@ export function AuthRedirectHandler({ children }: AuthRedirectHandlerProps) {
         console.log('🔄 AuthRedirectHandler: Checking user setup status...', {
           hasSession: !!session,
           email: session?.user?.email,
-          pathname: window.location.pathname
+          pathname: window.location.pathname,
         });
 
         // If no session, don't redirect (let user stay on landing page)
@@ -55,10 +55,10 @@ export function AuthRedirectHandler({ children }: AuthRedirectHandlerProps) {
 
         // Only run on specific pages where redirect logic should apply
         const currentPath = window.location.pathname;
-        const shouldRunRedirect = 
+        const shouldRunRedirect =
           currentPath === '/' || // Landing page
           currentPath.startsWith('/api/auth/callback'); // OAuth callback pages
-        
+
         if (!shouldRunRedirect) {
           console.log('🔄 AuthRedirectHandler: Not on a page that needs redirect logic, skipping');
           setIsChecking(false);
@@ -100,7 +100,6 @@ export function AuthRedirectHandler({ children }: AuthRedirectHandlerProps) {
           console.log('🔄 AuthRedirectHandler: Setup incomplete, redirecting to onboarding');
           router.push('/onboarding');
         }
-
       } catch (error) {
         console.error('❌ AuthRedirectHandler: Error checking setup status:', error);
       } finally {
@@ -121,10 +120,10 @@ export function AuthRedirectHandler({ children }: AuthRedirectHandlerProps) {
   // Show loading while checking
   if (isChecking && session) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">בודק סטטוס החשבון...</p>
+      <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100'>
+        <div className='text-center'>
+          <div className='mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600'></div>
+          <p className='text-gray-600'>בודק סטטוס החשבון...</p>
         </div>
       </div>
     );

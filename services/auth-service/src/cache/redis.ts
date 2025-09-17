@@ -28,7 +28,7 @@ export class RedisConnection {
       lazyConnect: true,
       keepAlive: 30000,
       connectTimeout: 10000,
-      lazyConnect: true
+      lazyConnect: true,
     };
 
     this.client = new Redis(redisConfig);
@@ -145,7 +145,7 @@ export class RedisConnection {
     }
 
     const results = await multi.exec();
-    return results?.[0]?.[1] as number || 0;
+    return (results?.[0]?.[1] as number) || 0;
   }
 
   // Multi-tenant session patterns
@@ -166,9 +166,7 @@ export class RedisConnection {
     if (keys.length === 0) return [];
 
     const values = await this.client.mget(...keys);
-    return values
-      .filter(value => value !== null)
-      .map(value => JSON.parse(value as string));
+    return values.filter((value) => value !== null).map((value) => JSON.parse(value as string));
   }
 
   async revokeTenantSessions(tenantId: string): Promise<number> {
@@ -209,7 +207,7 @@ export class RedisConnection {
     } catch (error) {
       return {
         status: 'unhealthy',
-        details: error.message
+        details: error.message,
       };
     }
   }
@@ -229,7 +227,7 @@ export class RedisConnection {
         if (key && value) acc[key] = value;
         return acc;
       }, {}),
-      memoryUsage: memory
+      memoryUsage: memory,
     };
   }
 }

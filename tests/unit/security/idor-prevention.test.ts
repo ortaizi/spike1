@@ -8,51 +8,53 @@
  * CRITICAL SECURITY: Issue #8 - Preventing unauthorized user data access
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi, MockedFunction } from 'vitest';
-import { NextRequest, NextResponse } from 'next/server';
-import { GET } from '../../../apps/web/app/api/users/[id]/route';
 import { getServerSession } from 'next-auth';
+import { NextRequest } from 'next/server';
+import { afterEach, beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
+import { GET } from '../../../apps/web/app/api/users/[id]/route';
 
 // Mock NextAuth session
 vi.mock('next-auth', () => ({
-  getServerSession: vi.fn()
+  getServerSession: vi.fn(),
 }));
 
 // Mock Supabase client
 vi.mock('../../../apps/web/lib/db', () => {
   const mockSupabaseSelect = vi.fn();
   const mockSupabaseFrom = vi.fn(() => ({
-    select: mockSupabaseSelect
+    select: mockSupabaseSelect,
   }));
 
   return {
     supabase: {
-      from: mockSupabaseFrom
-    }
+      from: mockSupabaseFrom,
+    },
   };
 });
 
 // Mock CSRF protection and rate limiting
 vi.mock('../../../apps/web/lib/security/csrf-protection', () => ({
   csrfProtection: vi.fn().mockResolvedValue(null),
-  rateLimit: vi.fn(() => vi.fn().mockResolvedValue(null))
+  rateLimit: vi.fn(() => vi.fn().mockResolvedValue(null)),
 }));
 
 // Mock auth config
 vi.mock('../../../apps/web/lib/auth/unified-auth', () => ({
-  unifiedAuthOptions: {}
+  unifiedAuthOptions: {},
 }));
 
 describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
   let mockGetServerSession: MockedFunction<typeof getServerSession>;
   let mockDbResponse: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Reset all mocks
     vi.clearAllMocks();
 
     // Setup session mock
     mockGetServerSession = getServerSession as MockedFunction<typeof getServerSession>;
+
+    // Reset security mocks (mocks are recreated automatically)
 
     // Setup default database response
     mockDbResponse = {
@@ -64,10 +66,17 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
         university_id: 'bgu',
         is_setup_complete: true,
         created_at: '2024-01-01T00:00:00.000Z',
-        updated_at: '2024-01-02T00:00:00.000Z'
+        updated_at: '2024-01-02T00:00:00.000Z',
       },
-      error: null
+      error: null,
     };
+
+    // Setup default Supabase mock for each test
+    const { supabase } = (await vi.importMock('../../../apps/web/lib/db')) as any;
+    const mockSingle = vi.fn().mockResolvedValue(mockDbResponse);
+    const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
+    supabase.from.mockReturnValue({ select: mockSelect });
 
     // Setup console mocks for clean test output
     vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -79,7 +88,6 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
   });
 
   describe('🔐 Authentication Tests', () => {
-
     it('CRITICAL: should return 401 for unauthenticated requests', async () => {
       // Mock no session
       mockGetServerSession.mockResolvedValue(null);
@@ -93,15 +101,13 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       expect(data.error).toBe('Unauthorized: Authentication required');
 
       // Verify security warning was logged
-      expect(console.warn).toHaveBeenCalledWith(
-        'SECURITY: Unauthenticated access attempt to GET /api/users/[id]'
-      );
+      expect(console.warn).toHaveBeenCalledWith('SECURITY: Unauthenticated access attempt to GET /api/users/[id]');
     });
 
     it('CRITICAL: should return 401 for malformed sessions', async () => {
       // Mock session without user ID
       mockGetServerSession.mockResolvedValue({
-        user: { email: 'test@example.com' } // Missing user.id
+        user: { email: 'test@example.com' }, // Missing user.id
       } as any);
 
       const request = new NextRequest('http://localhost:3000/api/users/user-123');
@@ -116,7 +122,7 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
     it('CRITICAL: should return 401 for sessions with empty user ID', async () => {
       // Mock session with empty user ID
       mockGetServerSession.mockResolvedValue({
-        user: { id: '', email: 'test@example.com' }
+        user: { id: '', email: 'test@example.com' },
       } as any);
 
       const request = new NextRequest('http://localhost:3000/api/users/user-123');
@@ -124,18 +130,16 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
 
       expect(response.status).toBe(401);
     });
-
   });
 
   describe('🚫 Authorization Tests (IDOR Prevention)', () => {
-
-    it('CRITICAL: should return 403 when user tries to access another user\'s data', async () => {
+    it("CRITICAL: should return 403 when user tries to access another user's data", async () => {
       // Mock authenticated session
       mockGetServerSession.mockResolvedValue({
         user: {
           id: 'user-456', // Different user
-          email: 'other@post.bgu.ac.il'
-        }
+          email: 'other@post.bgu.ac.il',
+        },
       } as any);
 
       const request = new NextRequest('http://localhost:3000/api/users/user-123');
@@ -152,7 +156,7 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       );
 
       // Verify database was never queried
-      const { supabase } = await vi.importMock('../../../apps/web/lib/db') as any;
+      const { supabase } = (await vi.importMock('../../../apps/web/lib/db')) as any;
       expect(supabase.from).not.toHaveBeenCalled();
     });
 
@@ -160,8 +164,8 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       mockGetServerSession.mockResolvedValue({
         user: {
           id: 'regular-user-789',
-          email: 'regular@post.bgu.ac.il'
-        }
+          email: 'regular@post.bgu.ac.il',
+        },
       } as any);
 
       const request = new NextRequest('http://localhost:3000/api/users/admin-user-001');
@@ -177,14 +181,11 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       mockGetServerSession.mockResolvedValue({
         user: {
           id: 'attacker-user',
-          email: 'attacker@post.bgu.ac.il'
-        }
+          email: 'attacker@post.bgu.ac.il',
+        },
       } as any);
 
-      const targetUserIds = [
-        'user-001', 'user-002', 'admin-123',
-        'service-account-456', 'test-user-789'
-      ];
+      const targetUserIds = ['user-001', 'user-002', 'admin-123', 'service-account-456', 'test-user-789'];
 
       for (const targetId of targetUserIds) {
         const request = new NextRequest(`http://localhost:3000/api/users/${targetId}`);
@@ -197,32 +198,34 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       }
 
       // Verify database was never queried for any attempt
-      const { supabase } = await vi.importMock('../../../apps/web/lib/db') as any;
+      const { supabase } = (await vi.importMock('../../../apps/web/lib/db')) as any;
       expect(supabase.from).not.toHaveBeenCalled();
     });
-
   });
 
   describe('✅ Authorized Access Tests', () => {
-
     it('should allow users to access their own data', async () => {
       // Mock authenticated session for the same user
       mockGetServerSession.mockResolvedValue({
         user: {
           id: 'user-123',
-          email: 'test@post.bgu.ac.il'
-        }
+          email: 'test@post.bgu.ac.il',
+        },
       } as any);
-
-      // Set up database mock for this test
-      const { supabase } = await vi.importMock('../../../apps/web/lib/db') as any;
-      const mockSingle = vi.fn().mockResolvedValue(mockDbResponse);
-      const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
-      const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
-      supabase.from.mockReturnValue({ select: mockSelect });
 
       const request = new NextRequest('http://localhost:3000/api/users/user-123');
       const response = await GET(request, { params: { id: 'user-123' } });
+
+      // Debug the response if it's not 200
+      if (response.status !== 200) {
+        try {
+          const errorData = await response.clone().json();
+          console.log('Unexpected response status:', response.status);
+          console.log('Error response:', errorData);
+        } catch (e) {
+          console.log('Could not parse error response');
+        }
+      }
 
       expect(response.status).toBe(200);
 
@@ -231,6 +234,7 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       expect(data.email).toBe('test@post.bgu.ac.il');
 
       // Verify database was queried correctly
+      const { supabase } = (await vi.importMock('../../../apps/web/lib/db')) as any;
       expect(supabase.from).toHaveBeenCalledWith('users');
     });
 
@@ -238,12 +242,12 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       mockGetServerSession.mockResolvedValue({
         user: {
           id: 'user-123',
-          email: 'test@post.bgu.ac.il'
-        }
+          email: 'test@post.bgu.ac.il',
+        },
       } as any);
 
       // Set up database mock for this test
-      const { supabase } = await vi.importMock('../../../apps/web/lib/db') as any;
+      const { supabase } = (await vi.importMock('../../../apps/web/lib/db')) as any;
       const mockSingle = vi.fn().mockResolvedValue(mockDbResponse);
       const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
@@ -256,12 +260,17 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
 
       // Verify only safe fields are included
       const expectedFields = [
-        'id', 'email', 'name', 'avatar_url',
-        'university_id', 'is_setup_complete',
-        'created_at', 'updated_at'
+        'id',
+        'email',
+        'name',
+        'avatar_url',
+        'university_id',
+        'is_setup_complete',
+        'created_at',
+        'updated_at',
       ];
 
-      expectedFields.forEach(field => {
+      expectedFields.forEach((field) => {
         expect(data).toHaveProperty(field);
       });
 
@@ -269,24 +278,22 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       const selectedFields = 'id, email, name, avatar_url, university_id, is_setup_complete, created_at, updated_at';
       expect(selectedFields).not.toMatch(/password|encrypted|secret/);
     });
-
   });
 
   describe('💾 Database Security Tests', () => {
-
     it('should handle database errors securely', async () => {
       mockGetServerSession.mockResolvedValue({
         user: {
           id: 'user-123',
-          email: 'test@post.bgu.ac.il'
-        }
+          email: 'test@post.bgu.ac.il',
+        },
       } as any);
 
       // Mock database error
-      const { supabase } = await vi.importMock('../../../apps/web/lib/db') as any;
+      const { supabase } = (await vi.importMock('../../../apps/web/lib/db')) as any;
       const mockSingle = vi.fn().mockResolvedValue({
         data: null,
-        error: { message: 'Database connection failed', code: 'DB_ERROR' }
+        error: { message: 'Database connection failed', code: 'DB_ERROR' },
       });
       const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
@@ -311,8 +318,8 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       mockGetServerSession.mockResolvedValue({
         user: {
           id: 'user-123',
-          email: 'test@post.bgu.ac.il'
-        }
+          email: 'test@post.bgu.ac.il',
+        },
       } as any);
 
       // Test with malicious input
@@ -326,19 +333,17 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       // Database should use parameterized queries if reached
       // (In this case, auth check prevents database access)
     });
-
   });
 
   describe('🔄 Integration Security Tests', () => {
-
     it('CRITICAL: should apply all security layers in correct order', async () => {
       const { csrfProtection, rateLimit } = require('../../../apps/web/lib/security/csrf-protection');
 
       mockGetServerSession.mockResolvedValue({
         user: {
           id: 'user-123',
-          email: 'test@post.bgu.ac.il'
-        }
+          email: 'test@post.bgu.ac.il',
+        },
       } as any);
 
       const request = new NextRequest('http://localhost:3000/api/users/user-123');
@@ -370,8 +375,8 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
         mockGetServerSession.mockResolvedValue({
           user: {
             id: 'legitimate-user',
-            email: 'test@post.bgu.ac.il'
-          }
+            email: 'test@post.bgu.ac.il',
+          },
         } as any);
 
         const request = new NextRequest(`http://localhost:3000/api/users/${encodeURIComponent(edgeId)}`);
@@ -384,18 +389,16 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
         );
       }
     });
-
   });
 
   describe('🧪 CRITICAL: End-to-End Security Validation', () => {
-
     it('CRITICAL: complete IDOR attack simulation should fail', async () => {
       // Simulate a complete IDOR attack scenario
       const attackerSession = {
         user: {
           id: 'attacker-999',
-          email: 'attacker@evil.com'
-        }
+          email: 'attacker@evil.com',
+        },
       };
 
       const targetUserId = 'victim-123';
@@ -409,7 +412,7 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       // Attack should be completely blocked
       expect(response.status).toBe(403);
       expect(await response.json()).toEqual({
-        error: 'Forbidden: You can only access your own profile'
+        error: 'Forbidden: You can only access your own profile',
       });
 
       // Security incident should be logged
@@ -418,7 +421,7 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       );
 
       // Victim's data should never be touched
-      const { supabase } = await vi.importMock('../../../apps/web/lib/db') as any;
+      const { supabase } = (await vi.importMock('../../../apps/web/lib/db')) as any;
       expect(supabase.from).not.toHaveBeenCalled();
     });
 
@@ -426,8 +429,8 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       const legitimateUser = {
         user: {
           id: 'legitimate-user-456',
-          email: 'student@post.bgu.ac.il'
-        }
+          email: 'student@post.bgu.ac.il',
+        },
       };
 
       mockGetServerSession.mockResolvedValue(legitimateUser as any);
@@ -444,12 +447,10 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       expect(userData.email).toBe('test@post.bgu.ac.il'); // From mock data
 
       // No security warnings should be logged
-      expect(console.warn).not.toHaveBeenCalledWith(
-        expect.stringContaining('SECURITY:')
-      );
+      expect(console.warn).not.toHaveBeenCalledWith(expect.stringContaining('SECURITY:'));
 
       // Database should be queried properly
-      const { supabase } = await vi.importMock('../../../apps/web/lib/db') as any;
+      const { supabase } = (await vi.importMock('../../../apps/web/lib/db')) as any;
       expect(supabase.from).toHaveBeenCalledWith('users');
     });
 
@@ -458,8 +459,8 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       mockGetServerSession.mockResolvedValue({
         user: {
           id: 'user-A',
-          email: 'userA@post.bgu.ac.il'
-        }
+          email: 'userA@post.bgu.ac.il',
+        },
       } as any);
 
       // Attacker tries to use hijacked session to access different user
@@ -467,11 +468,7 @@ describe('🔒 IDOR Prevention - GET /api/users/[id]', () => {
       const response = await GET(request, { params: { id: 'user-B' } });
 
       expect(response.status).toBe(403);
-      expect(console.warn).toHaveBeenCalledWith(
-        'SECURITY: User user-A attempted unauthorized access to user user-B'
-      );
+      expect(console.warn).toHaveBeenCalledWith('SECURITY: User user-A attempted unauthorized access to user user-B');
     });
-
   });
-
 });

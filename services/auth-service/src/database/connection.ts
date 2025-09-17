@@ -104,7 +104,7 @@ export class DatabaseConnection {
       logger.debug('Database query executed', {
         query: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
         duration,
-        rows: result.rowCount
+        rows: result.rowCount,
       });
 
       return result.rows;
@@ -112,7 +112,7 @@ export class DatabaseConnection {
       logger.error('Database query error:', {
         query: text,
         params,
-        error: error.message
+        error: error.message,
       });
       throw error;
     } finally {
@@ -147,7 +147,7 @@ export class DatabaseConnection {
     } catch (error) {
       return {
         status: 'unhealthy',
-        details: error.message
+        details: error.message,
       };
     }
   }

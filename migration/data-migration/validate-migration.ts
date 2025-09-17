@@ -88,14 +88,17 @@ class MigrationValidator {
       overall: {
         passed: true,
         criticalErrors: 0,
-        warnings: 0
-      }
+        warnings: 0,
+      },
     };
 
     // Calculate overall results
     const entities = [results.courses, results.assignments, results.enrollments, results.grades];
-    results.overall.passed = entities.every(entity => entity.passed);
-    results.overall.criticalErrors = entities.reduce((sum, entity) => sum + entity.errors.length, 0);
+    results.overall.passed = entities.every((entity) => entity.passed);
+    results.overall.criticalErrors = entities.reduce(
+      (sum, entity) => sum + entity.errors.length,
+      0
+    );
     results.overall.warnings = entities.reduce((sum, entity) => sum + entity.warnings.length, 0);
 
     this.printResults(results);
@@ -115,7 +118,7 @@ class MigrationValidator {
       passed: true,
       counts: { source: 0, target: 0, missing: 0, extra: 0 },
       errors: [],
-      warnings: []
+      warnings: [],
     };
 
     try {
@@ -137,32 +140,38 @@ class MigrationValidator {
         result.errors.push({
           type: 'DATA_MISMATCH',
           entityId: 'COUNT',
-          message: `Course count mismatch: source=${result.counts.source}, target=${result.counts.target}`
+          message: `Course count mismatch: source=${result.counts.source}, target=${result.counts.target}`,
         });
         result.passed = false;
       }
 
       // Detailed record validation
-      const sourceCourses = await sourceClient.query(`
+      const sourceCourses = await sourceClient.query(
+        `
         SELECT id, code, name, faculty, academic_year, semester, credits, instructor, created_at
         FROM courses
         WHERE tenant_id = $1
         ORDER BY id
-      `, [this.config.tenant]);
+      `,
+        [this.config.tenant]
+      );
 
       for (const sourceCourse of sourceCourses.rows) {
-        const targetResult = await targetClient.query(`
+        const targetResult = await targetClient.query(
+          `
           SELECT id, code, name, faculty, academic_year, semester, credits, instructor, created_at
           FROM academic_${this.config.tenant}.courses
           WHERE id = $1
-        `, [sourceCourse.id]);
+        `,
+          [sourceCourse.id]
+        );
 
         if (targetResult.rows.length === 0) {
           result.errors.push({
             type: 'MISSING_RECORD',
             entityId: sourceCourse.id,
             message: `Course ${sourceCourse.code} (${sourceCourse.id}) not found in target`,
-            details: { code: sourceCourse.code, name: sourceCourse.name }
+            details: { code: sourceCourse.code, name: sourceCourse.name },
           });
           result.counts.missing++;
           result.passed = false;
@@ -181,8 +190,8 @@ class MigrationValidator {
               message: `Course ${sourceCourse.code}: ${field} mismatch`,
               details: {
                 source: sourceCourse[field],
-                target: targetCourse[field]
-              }
+                target: targetCourse[field],
+              },
             });
             result.passed = false;
           }
@@ -196,18 +205,18 @@ class MigrationValidator {
             message: `Course ${sourceCourse.code}: instructor mismatch`,
             details: {
               source: sourceCourse.instructor,
-              target: targetCourse.instructor
-            }
+              target: targetCourse.instructor,
+            },
           });
         }
 
         // Check timestamp drift (warning if > 1 minute)
         const timeDrift = Math.abs(
-          new Date(sourceCourse.created_at).getTime() -
-          new Date(targetCourse.created_at).getTime()
+          new Date(sourceCourse.created_at).getTime() - new Date(targetCourse.created_at).getTime()
         );
 
-        if (timeDrift > 60000) { // 1 minute
+        if (timeDrift > 60000) {
+          // 1 minute
           result.warnings.push({
             type: 'TIMESTAMP_DRIFT',
             entityId: sourceCourse.id,
@@ -215,8 +224,8 @@ class MigrationValidator {
             details: {
               driftMs: timeDrift,
               source: sourceCourse.created_at,
-              target: targetCourse.created_at
-            }
+              target: targetCourse.created_at,
+            },
           });
         }
       }
@@ -226,28 +235,29 @@ class MigrationValidator {
         SELECT id, code FROM academic_${this.config.tenant}.courses ORDER BY id
       `);
 
-      const sourceIds = new Set(sourceCourses.rows.map(c => c.id));
+      const sourceIds = new Set(sourceCourses.rows.map((c) => c.id));
       for (const targetCourse of allTargetCourses.rows) {
         if (!sourceIds.has(targetCourse.id)) {
           result.warnings.push({
             type: 'MINOR_DIFFERENCE',
             entityId: targetCourse.id,
             message: `Extra course in target: ${targetCourse.code}`,
-            details: { code: targetCourse.code }
+            details: { code: targetCourse.code },
           });
           result.counts.extra++;
         }
       }
 
       if (this.config.verbose) {
-        console.log(`✅ Courses validation: ${result.passed ? 'PASSED' : 'FAILED'} - ${result.errors.length} errors, ${result.warnings.length} warnings`);
+        console.log(
+          `✅ Courses validation: ${result.passed ? 'PASSED' : 'FAILED'} - ${result.errors.length} errors, ${result.warnings.length} warnings`
+        );
       }
-
     } catch (error) {
       result.errors.push({
         type: 'CONSTRAINT_VIOLATION',
         entityId: 'VALIDATION',
-        message: `Course validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Course validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
       result.passed = false;
     } finally {
@@ -269,17 +279,20 @@ class MigrationValidator {
       passed: true,
       counts: { source: 0, target: 0, missing: 0, extra: 0 },
       errors: [],
-      warnings: []
+      warnings: [],
     };
 
     try {
       // Get counts with JOIN to ensure tenant filtering
-      const sourceCount = await sourceClient.query(`
+      const sourceCount = await sourceClient.query(
+        `
         SELECT COUNT(*) as count
         FROM assignments a
         JOIN courses c ON a.course_id = c.id
         WHERE c.tenant_id = $1
-      `, [this.config.tenant]);
+      `,
+        [this.config.tenant]
+      );
       result.counts.source = parseInt(sourceCount.rows[0].count);
 
       const targetCount = await targetClient.query(
@@ -291,26 +304,32 @@ class MigrationValidator {
         result.errors.push({
           type: 'DATA_MISMATCH',
           entityId: 'COUNT',
-          message: `Assignment count mismatch: source=${result.counts.source}, target=${result.counts.target}`
+          message: `Assignment count mismatch: source=${result.counts.source}, target=${result.counts.target}`,
         });
         result.passed = false;
       }
 
       // Detailed validation
-      const sourceAssignments = await sourceClient.query(`
+      const sourceAssignments = await sourceClient.query(
+        `
         SELECT a.id, a.course_id, a.title, a.due_date, a.status, a.weight, a.max_grade, c.code as course_code
         FROM assignments a
         JOIN courses c ON a.course_id = c.id
         WHERE c.tenant_id = $1
         ORDER BY a.id
-      `, [this.config.tenant]);
+      `,
+        [this.config.tenant]
+      );
 
       for (const sourceAssignment of sourceAssignments.rows) {
-        const targetResult = await targetClient.query(`
+        const targetResult = await targetClient.query(
+          `
           SELECT id, course_id, title, due_date, status, weight, max_grade
           FROM academic_${this.config.tenant}.assignments
           WHERE id = $1
-        `, [sourceAssignment.id]);
+        `,
+          [sourceAssignment.id]
+        );
 
         if (targetResult.rows.length === 0) {
           result.errors.push({
@@ -319,8 +338,8 @@ class MigrationValidator {
             message: `Assignment ${sourceAssignment.title} not found in target`,
             details: {
               title: sourceAssignment.title,
-              courseCode: sourceAssignment.course_code
-            }
+              courseCode: sourceAssignment.course_code,
+            },
           });
           result.counts.missing++;
           result.passed = false;
@@ -339,8 +358,8 @@ class MigrationValidator {
               message: `Assignment ${sourceAssignment.title}: ${field} mismatch`,
               details: {
                 source: sourceAssignment[field],
-                target: targetAssignment[field]
-              }
+                target: targetAssignment[field],
+              },
             });
             result.passed = false;
           }
@@ -351,7 +370,8 @@ class MigrationValidator {
         const targetDue = new Date(targetAssignment.due_date);
         const dueDateDrift = Math.abs(sourceDue.getTime() - targetDue.getTime());
 
-        if (dueDateDrift > 60000) { // More than 1 minute difference
+        if (dueDateDrift > 60000) {
+          // More than 1 minute difference
           result.warnings.push({
             type: 'TIMESTAMP_DRIFT',
             entityId: sourceAssignment.id,
@@ -359,21 +379,22 @@ class MigrationValidator {
             details: {
               driftMs: dueDateDrift,
               source: sourceAssignment.due_date,
-              target: targetAssignment.due_date
-            }
+              target: targetAssignment.due_date,
+            },
           });
         }
       }
 
       if (this.config.verbose) {
-        console.log(`✅ Assignments validation: ${result.passed ? 'PASSED' : 'FAILED'} - ${result.errors.length} errors, ${result.warnings.length} warnings`);
+        console.log(
+          `✅ Assignments validation: ${result.passed ? 'PASSED' : 'FAILED'} - ${result.errors.length} errors, ${result.warnings.length} warnings`
+        );
       }
-
     } catch (error) {
       result.errors.push({
         type: 'CONSTRAINT_VIOLATION',
         entityId: 'VALIDATION',
-        message: `Assignment validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Assignment validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
       result.passed = false;
     } finally {
@@ -395,16 +416,19 @@ class MigrationValidator {
       passed: true,
       counts: { source: 0, target: 0, missing: 0, extra: 0 },
       errors: [],
-      warnings: []
+      warnings: [],
     };
 
     try {
-      const sourceCount = await sourceClient.query(`
+      const sourceCount = await sourceClient.query(
+        `
         SELECT COUNT(*) as count
         FROM enrollments e
         JOIN courses c ON e.course_id = c.id
         WHERE c.tenant_id = $1
-      `, [this.config.tenant]);
+      `,
+        [this.config.tenant]
+      );
       result.counts.source = parseInt(sourceCount.rows[0].count);
 
       const targetCount = await targetClient.query(
@@ -416,20 +440,21 @@ class MigrationValidator {
         result.errors.push({
           type: 'DATA_MISMATCH',
           entityId: 'COUNT',
-          message: `Enrollment count mismatch: source=${result.counts.source}, target=${result.counts.target}`
+          message: `Enrollment count mismatch: source=${result.counts.source}, target=${result.counts.target}`,
         });
         result.passed = false;
       }
 
       if (this.config.verbose) {
-        console.log(`✅ Enrollments validation: ${result.passed ? 'PASSED' : 'FAILED'} - ${result.errors.length} errors, ${result.warnings.length} warnings`);
+        console.log(
+          `✅ Enrollments validation: ${result.passed ? 'PASSED' : 'FAILED'} - ${result.errors.length} errors, ${result.warnings.length} warnings`
+        );
       }
-
     } catch (error) {
       result.errors.push({
         type: 'CONSTRAINT_VIOLATION',
         entityId: 'VALIDATION',
-        message: `Enrollment validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Enrollment validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
       result.passed = false;
     } finally {
@@ -451,17 +476,20 @@ class MigrationValidator {
       passed: true,
       counts: { source: 0, target: 0, missing: 0, extra: 0 },
       errors: [],
-      warnings: []
+      warnings: [],
     };
 
     try {
-      const sourceCount = await sourceClient.query(`
+      const sourceCount = await sourceClient.query(
+        `
         SELECT COUNT(*) as count
         FROM grades g
         JOIN assignments a ON g.assignment_id = a.id
         JOIN courses c ON a.course_id = c.id
         WHERE c.tenant_id = $1
-      `, [this.config.tenant]);
+      `,
+        [this.config.tenant]
+      );
       result.counts.source = parseInt(sourceCount.rows[0].count);
 
       const targetCount = await targetClient.query(
@@ -473,20 +501,21 @@ class MigrationValidator {
         result.errors.push({
           type: 'DATA_MISMATCH',
           entityId: 'COUNT',
-          message: `Grade count mismatch: source=${result.counts.source}, target=${result.counts.target}`
+          message: `Grade count mismatch: source=${result.counts.source}, target=${result.counts.target}`,
         });
         result.passed = false;
       }
 
       if (this.config.verbose) {
-        console.log(`✅ Grades validation: ${result.passed ? 'PASSED' : 'FAILED'} - ${result.errors.length} errors, ${result.warnings.length} warnings`);
+        console.log(
+          `✅ Grades validation: ${result.passed ? 'PASSED' : 'FAILED'} - ${result.errors.length} errors, ${result.warnings.length} warnings`
+        );
       }
-
     } catch (error) {
       result.errors.push({
         type: 'CONSTRAINT_VIOLATION',
         entityId: 'VALIDATION',
-        message: `Grade validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Grade validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
       result.passed = false;
     } finally {
@@ -520,14 +549,14 @@ class MigrationValidator {
 
       if (this.config.verbose && entity.errors.length > 0) {
         console.log('   Errors:');
-        entity.errors.forEach(error => {
+        entity.errors.forEach((error) => {
           console.log(`     - ${error.type}: ${error.message}`);
         });
       }
 
       if (this.config.verbose && entity.warnings.length > 0) {
         console.log('   Warnings:');
-        entity.warnings.slice(0, 5).forEach(warning => {
+        entity.warnings.slice(0, 5).forEach((warning) => {
           console.log(`     - ${warning.type}: ${warning.message}`);
         });
         if (entity.warnings.length > 5) {
@@ -549,7 +578,7 @@ class MigrationValidator {
 // CLI Interface
 async function main() {
   const args = process.argv.slice(2);
-  const tenant = args.find(arg => arg.startsWith('--tenant='))?.split('=')[1];
+  const tenant = args.find((arg) => arg.startsWith('--tenant='))?.split('=')[1];
   const verbose = args.includes('--verbose');
 
   if (!tenant) {
@@ -573,7 +602,7 @@ async function main() {
       database: `spike_${tenant}`,
       user: process.env.TARGET_DB_USER || 'postgres',
       password: process.env.TARGET_DB_PASSWORD || 'postgres',
-    }
+    },
   };
 
   const validator = new MigrationValidator(config);

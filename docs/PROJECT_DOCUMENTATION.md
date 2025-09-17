@@ -1,8 +1,7 @@
 # Spike Platform - Comprehensive Technical Documentation
 
-**Version:** 0.1.0
-**Last Updated:** September 2025
-**Classification:** Production Documentation
+**Version:** 0.1.0 **Last Updated:** September 2025 **Classification:**
+Production Documentation
 
 ---
 
@@ -31,22 +30,35 @@
 
 ### 1.1 Project Overview
 
-Spike is a comprehensive academic management platform specifically designed for Israeli university students, with a primary focus on Ben Gurion University (BGU) of the Negev. The platform revolutionizes how students interact with their academic resources by providing a unified interface for course management, assignment tracking, and Moodle integration.
+Spike is a comprehensive academic management platform specifically designed for
+Israeli university students, with a primary focus on Ben Gurion University (BGU)
+of the Negev. The platform revolutionizes how students interact with their
+academic resources by providing a unified interface for course management,
+assignment tracking, and Moodle integration.
 
 ### 1.2 Vision and Mission
 
-**Vision:** To become the leading academic management solution for Israeli higher education institutions, providing seamless integration with existing university systems while offering a modern, intuitive user experience.
+**Vision:** To become the leading academic management solution for Israeli
+higher education institutions, providing seamless integration with existing
+university systems while offering a modern, intuitive user experience.
 
-**Mission:** To simplify academic life for Israeli university students by centralizing all academic resources in a single, accessible, Hebrew-first platform that respects cultural and linguistic requirements.
+**Mission:** To simplify academic life for Israeli university students by
+centralizing all academic resources in a single, accessible, Hebrew-first
+platform that respects cultural and linguistic requirements.
 
 ### 1.3 Key Features
 
-- **Unified Authentication**: Multi-stage authentication system integrating Google OAuth with university credentials
-- **Real-time Moodle Synchronization**: Automatic course and assignment synchronization with BGU's Moodle system
-- **Hebrew-First Design**: Complete RTL support with Hebrew localization throughout
-- **Smart Dashboard**: Personalized academic dashboard with intelligent prioritization
+- **Unified Authentication**: Multi-stage authentication system integrating
+  Google OAuth with university credentials
+- **Real-time Moodle Synchronization**: Automatic course and assignment
+  synchronization with BGU's Moodle system
+- **Hebrew-First Design**: Complete RTL support with Hebrew localization
+  throughout
+- **Smart Dashboard**: Personalized academic dashboard with intelligent
+  prioritization
 - **Team Collaboration**: Built-in team management for group projects
-- **Assignment Tracking**: Comprehensive assignment management with due date tracking
+- **Assignment Tracking**: Comprehensive assignment management with due date
+  tracking
 - **Grade Management**: Centralized grade tracking across all courses
 - **Mobile Responsive**: Full functionality across all device types
 
@@ -135,6 +147,7 @@ graph TB
 ### 2.2 Technology Stack
 
 #### 2.2.1 Frontend Technologies
+
 - **Framework**: Next.js 14.0+ with App Router
 - **Language**: TypeScript 5.0+
 - **UI Library**: React 18.0+
@@ -145,6 +158,7 @@ graph TB
 - **Animation**: Framer Motion 12.0+
 
 #### 2.2.2 Backend Technologies
+
 - **Runtime**: Node.js 18.0+ LTS
 - **API Framework**: Next.js API Routes + Express.js microservices
 - **Authentication**: NextAuth.js with custom providers
@@ -154,13 +168,16 @@ graph TB
 - **Web Scraping**: Python with Puppeteer/Playwright
 
 #### 2.2.3 Database Technologies
+
 - **Primary Database**: PostgreSQL 15.0+
 - **Database Provider**: Supabase (managed PostgreSQL)
 - **Extensions**: uuid-ossp, pg_trgm, btree_gin, btree_gist
 - **Full-text Search**: PostgreSQL native with Hebrew support
 
 #### 2.2.4 Infrastructure
-- **Container Orchestration**: Docker Compose (development), Kubernetes (production planned)
+
+- **Container Orchestration**: Docker Compose (development), Kubernetes
+  (production planned)
 - **Reverse Proxy**: Nginx
 - **Monitoring**: Prometheus + Grafana
 - **Tracing**: Jaeger for distributed tracing
@@ -216,6 +233,7 @@ spike-platform/
 ### 2.4 Design Patterns
 
 #### 2.4.1 Architectural Patterns
+
 - **Microservices Architecture**: Loosely coupled services for scalability
 - **API Gateway Pattern**: Centralized entry point for all client requests
 - **Event-Driven Architecture**: Asynchronous communication via message queues
@@ -223,6 +241,7 @@ spike-platform/
 - **Service Layer Pattern**: Business logic encapsulation
 
 #### 2.4.2 Design Principles
+
 - **Domain-Driven Design (DDD)**: Clear domain boundaries and models
 - **SOLID Principles**: Single responsibility, open/closed, etc.
 - **12-Factor App**: Configuration, dependencies, and deployment best practices
@@ -274,9 +293,11 @@ sequenceDiagram
 
 ### 3.1 API Architecture
 
-The Spike platform implements a RESTful API architecture with the following characteristics:
+The Spike platform implements a RESTful API architecture with the following
+characteristics:
 
-- **Version Management**: API versioning through URL paths (future: `/api/v1/`, `/api/v2/`)
+- **Version Management**: API versioning through URL paths (future: `/api/v1/`,
+  `/api/v2/`)
 - **Authentication**: JWT-based authentication with refresh tokens
 - **Rate Limiting**: Configurable rate limits per endpoint
 - **Response Format**: Consistent JSON response structure
@@ -285,12 +306,15 @@ The Spike platform implements a RESTful API architecture with the following char
 ### 3.2 Authentication Endpoints
 
 #### 3.2.1 Google OAuth Initiation
+
 ```http
 GET /api/auth/signin
 ```
+
 Initiates Google OAuth flow for first-stage authentication.
 
 **Response:**
+
 ```json
 {
   "url": "https://accounts.google.com/o/oauth2/v2/auth?..."
@@ -298,12 +322,15 @@ Initiates Google OAuth flow for first-stage authentication.
 ```
 
 #### 3.2.2 University Credentials Validation
+
 ```http
 POST /api/auth/credentials/validate
 ```
+
 Validates university credentials for second-stage authentication.
 
 **Request Body:**
+
 ```json
 {
   "username": "string",
@@ -314,6 +341,7 @@ Validates university credentials for second-stage authentication.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -328,12 +356,15 @@ Validates university credentials for second-stage authentication.
 ```
 
 #### 3.2.3 Session Status
+
 ```http
 GET /api/auth/dual-stage/status
 ```
+
 Checks current authentication stage completion status.
 
 **Response:**
+
 ```json
 {
   "authenticated": true,
@@ -349,17 +380,21 @@ Checks current authentication stage completion status.
 ### 3.3 Academic Data Endpoints
 
 #### 3.3.1 Fetch User Courses
+
 ```http
 GET /api/user/courses
 ```
+
 Retrieves all courses for the authenticated user.
 
 **Query Parameters:**
+
 - `academicYear`: Filter by academic year (e.g., "2024")
 - `semester`: Filter by semester ("א", "ב", "קיץ")
 - `includeCompleted`: Include completed courses (boolean)
 
 **Response:**
+
 ```json
 {
   "courses": [
@@ -380,17 +415,21 @@ Retrieves all courses for the authenticated user.
 ```
 
 #### 3.3.2 Fetch Assignments
+
 ```http
 GET /api/user/assignments
 ```
+
 Retrieves assignments across all courses.
 
 **Query Parameters:**
+
 - `courseId`: Filter by course
 - `status`: Filter by status (pending, submitted, graded)
 - `dueDate`: Filter by due date range
 
 **Response:**
+
 ```json
 {
   "assignments": [
@@ -416,12 +455,15 @@ Retrieves assignments across all courses.
 ### 3.4 Synchronization Endpoints
 
 #### 3.4.1 Trigger Manual Sync
+
 ```http
 POST /api/sync/trigger
 ```
+
 Manually triggers Moodle synchronization.
 
 **Request Body:**
+
 ```json
 {
   "syncType": "full" | "incremental",
@@ -430,6 +472,7 @@ Manually triggers Moodle synchronization.
 ```
 
 **Response:**
+
 ```json
 {
   "jobId": "string",
@@ -439,12 +482,15 @@ Manually triggers Moodle synchronization.
 ```
 
 #### 3.4.2 Check Sync Status
+
 ```http
 GET /api/sync-status/{jobId}
 ```
+
 Monitors synchronization job progress.
 
 **Response:**
+
 ```json
 {
   "jobId": "string",
@@ -459,12 +505,15 @@ Monitors synchronization job progress.
 ### 3.5 User Management Endpoints
 
 #### 3.5.1 Get User Profile
+
 ```http
 GET /api/users/{userId}
 ```
+
 Retrieves user profile information.
 
 **Response:**
+
 ```json
 {
   "id": "string",
@@ -484,12 +533,15 @@ Retrieves user profile information.
 ```
 
 #### 3.5.2 Update User Onboarding
+
 ```http
 POST /api/user/onboarding
 ```
+
 Updates user onboarding status and preferences.
 
 **Request Body:**
+
 ```json
 {
   "step": "university_selection" | "credentials" | "preferences" | "complete",
@@ -525,12 +577,12 @@ All API errors follow a consistent format:
 
 API endpoints implement rate limiting with the following defaults:
 
-| Endpoint Type | Rate Limit | Window |
-|--------------|------------|---------|
-| Authentication | 10 requests | 15 minutes |
-| Data Retrieval | 100 requests | 1 minute |
-| Data Mutation | 30 requests | 1 minute |
-| Sync Operations | 5 requests | 1 hour |
+| Endpoint Type   | Rate Limit   | Window     |
+| --------------- | ------------ | ---------- |
+| Authentication  | 10 requests  | 15 minutes |
+| Data Retrieval  | 100 requests | 1 minute   |
+| Data Mutation   | 30 requests  | 1 minute   |
+| Sync Operations | 5 requests   | 1 hour     |
 
 ---
 
@@ -538,7 +590,8 @@ API endpoints implement rate limiting with the following defaults:
 
 ### 4.1 Database Architecture
 
-The Spike platform uses PostgreSQL 15+ with Supabase as the managed database provider. The schema is designed for:
+The Spike platform uses PostgreSQL 15+ with Supabase as the managed database
+provider. The schema is designed for:
 
 - **Multi-tenancy**: Support for multiple universities
 - **Performance**: Optimized indexes and materialized views
@@ -549,6 +602,7 @@ The Spike platform uses PostgreSQL 15+ with Supabase as the managed database pro
 ### 4.2 Core Tables
 
 #### 4.2.1 Users Table
+
 ```sql
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -575,6 +629,7 @@ CREATE INDEX idx_users_university_id ON users(university_id);
 ```
 
 #### 4.2.2 Courses Table
+
 ```sql
 CREATE TABLE courses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -604,6 +659,7 @@ CREATE INDEX idx_courses_name_fts ON courses
 ```
 
 #### 4.2.3 Assignments Table
+
 ```sql
 CREATE TABLE assignments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -628,6 +684,7 @@ CREATE INDEX idx_assignments_status ON assignments(status);
 ```
 
 #### 4.2.4 Course Enrollments Table
+
 ```sql
 CREATE TABLE course_enrollments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -649,6 +706,7 @@ CREATE INDEX idx_enrollments_user_status ON course_enrollments(user_id, status);
 ```
 
 #### 4.2.5 User Credentials Table
+
 ```sql
 CREATE TABLE user_credentials (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -673,6 +731,7 @@ CREATE INDEX idx_user_credentials_active ON user_credentials(is_active);
 ### 4.3 Synchronization Tables
 
 #### 4.3.1 Sync Jobs Table
+
 ```sql
 CREATE TABLE sync_jobs (
     id VARCHAR(255) PRIMARY KEY,
@@ -695,6 +754,7 @@ CREATE INDEX idx_sync_jobs_created_at ON sync_jobs(created_at);
 ```
 
 #### 4.3.2 Sync History Table
+
 ```sql
 CREATE TABLE sync_history (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -717,6 +777,7 @@ CREATE INDEX idx_sync_history_created_at ON sync_history(created_at DESC);
 ### 4.4 Security Tables
 
 #### 4.4.1 Auth Attempts Table
+
 ```sql
 CREATE TABLE auth_attempts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -736,6 +797,7 @@ CREATE INDEX idx_auth_attempts_created ON auth_attempts(created_at DESC);
 ```
 
 #### 4.4.2 User Sessions Table
+
 ```sql
 CREATE TABLE user_sessions (
     id VARCHAR(255) PRIMARY KEY,
@@ -792,6 +854,7 @@ CREATE POLICY assignments_enrolled_select ON assignments
 ### 4.6 Database Functions and Triggers
 
 #### 4.6.1 Auto-update Timestamp
+
 ```sql
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -812,6 +875,7 @@ CREATE TRIGGER update_courses_updated_at
 ```
 
 #### 4.6.2 Grade Calculation Function
+
 ```sql
 CREATE OR REPLACE FUNCTION calculate_weighted_grade(
     p_user_id UUID,
@@ -846,7 +910,8 @@ $$ LANGUAGE plpgsql;
 
 ### 5.1 Multi-Stage Authentication Architecture
 
-The Spike platform implements a sophisticated dual-stage authentication system that combines the security of OAuth with university-specific credentials.
+The Spike platform implements a sophisticated dual-stage authentication system
+that combines the security of OAuth with university-specific credentials.
 
 ```mermaid
 stateDiagram-v2
@@ -869,6 +934,7 @@ stateDiagram-v2
 ### 5.2 Authentication Flow Details
 
 #### 5.2.1 Stage 1: Google OAuth
+
 1. User initiates login from landing page
 2. Redirect to Google OAuth consent screen
 3. User authorizes application access
@@ -878,6 +944,7 @@ stateDiagram-v2
 7. Issue JWT with `provider: 'google'` flag
 
 #### 5.2.2 Stage 2: University Credentials
+
 1. User prompted for university credentials
 2. Credentials encrypted using AES-256-GCM
 3. Validation against BGU Moodle API
@@ -890,43 +957,45 @@ stateDiagram-v2
 ### 5.3 Security Implementation
 
 #### 5.3.1 Credential Encryption
+
 ```typescript
 // Encryption implementation (simplified)
 class CredentialsEncryption {
-    private static algorithm = 'aes-256-gcm';
-    private static keyLength = 32;
+  private static algorithm = 'aes-256-gcm';
+  private static keyLength = 32;
 
-    static encryptCredentials(
-        username: string,
-        password: string
-    ): EncryptedCredentials {
-        const iv = crypto.randomBytes(16);
-        const salt = crypto.randomBytes(64);
-        const key = crypto.pbkdf2Sync(
-            process.env.ENCRYPTION_KEY!,
-            salt,
-            100000,
-            this.keyLength,
-            'sha256'
-        );
+  static encryptCredentials(
+    username: string,
+    password: string
+  ): EncryptedCredentials {
+    const iv = crypto.randomBytes(16);
+    const salt = crypto.randomBytes(64);
+    const key = crypto.pbkdf2Sync(
+      process.env.ENCRYPTION_KEY!,
+      salt,
+      100000,
+      this.keyLength,
+      'sha256'
+    );
 
-        const cipher = crypto.createCipheriv(this.algorithm, key, iv);
-        const encrypted = Buffer.concat([
-            cipher.update(password, 'utf8'),
-            cipher.final()
-        ]);
+    const cipher = crypto.createCipheriv(this.algorithm, key, iv);
+    const encrypted = Buffer.concat([
+      cipher.update(password, 'utf8'),
+      cipher.final(),
+    ]);
 
-        return {
-            encryptedPassword: encrypted.toString('hex'),
-            iv: iv.toString('hex'),
-            salt: salt.toString('hex'),
-            authTag: cipher.getAuthTag().toString('hex')
-        };
-    }
+    return {
+      encryptedPassword: encrypted.toString('hex'),
+      iv: iv.toString('hex'),
+      salt: salt.toString('hex'),
+      authTag: cipher.getAuthTag().toString('hex'),
+    };
+  }
 }
 ```
 
 #### 5.3.2 JWT Token Structure
+
 ```json
 {
   "sub": "user-uuid",
@@ -946,47 +1015,50 @@ class CredentialsEncryption {
 
 ### 5.4 Middleware Protection
 
-The authentication middleware (`/apps/web/middleware.ts`) implements intelligent routing:
+The authentication middleware (`/apps/web/middleware.ts`) implements intelligent
+routing:
 
 #### 5.4.1 Route Protection Matrix
 
-| Route Pattern | No Auth | Google Only | Full Auth | Action |
-|--------------|---------|-------------|-----------|--------|
-| `/` (root) | ✅ | Redirect → `/dashboard` | Redirect → `/dashboard` | Show landing |
-| `/auth/*` | ✅ | ✅ | Redirect → `/dashboard` | Process auth |
-| `/onboarding` | Redirect → `/` | ✅ | Redirect → `/dashboard` | Show onboarding |
-| `/dashboard` | Redirect → `/` | Redirect → `/onboarding` | ✅ | Show dashboard |
-| `/api/*` | ✅ | ✅ | ✅ | Check per endpoint |
+| Route Pattern | No Auth        | Google Only              | Full Auth               | Action             |
+| ------------- | -------------- | ------------------------ | ----------------------- | ------------------ |
+| `/` (root)    | ✅             | Redirect → `/dashboard`  | Redirect → `/dashboard` | Show landing       |
+| `/auth/*`     | ✅             | ✅                       | Redirect → `/dashboard` | Process auth       |
+| `/onboarding` | Redirect → `/` | ✅                       | Redirect → `/dashboard` | Show onboarding    |
+| `/dashboard`  | Redirect → `/` | Redirect → `/onboarding` | ✅                      | Show dashboard     |
+| `/api/*`      | ✅             | ✅                       | ✅                      | Check per endpoint |
 
 #### 5.4.2 Smart Redirect Logic
+
 ```typescript
 // Simplified middleware logic
 function determineSmartFlow(token: JWT | null): AuthFlow {
-    if (!token) return 'no_auth';
+  if (!token) return 'no_auth';
 
-    if (token.isDualStageComplete &&
-        token.credentialsValid &&
-        !needsRevalidation(token)) {
-        return 'fully_authenticated';
-    }
+  if (
+    token.isDualStageComplete &&
+    token.credentialsValid &&
+    !needsRevalidation(token)
+  ) {
+    return 'fully_authenticated';
+  }
 
-    if (token.isDualStageComplete &&
-        needsRevalidation(token)) {
-        return 'needs_revalidation';
-    }
+  if (token.isDualStageComplete && needsRevalidation(token)) {
+    return 'needs_revalidation';
+  }
 
-    if (token.provider === 'google' &&
-        !token.isDualStageComplete) {
-        return 'needs_university_auth';
-    }
+  if (token.provider === 'google' && !token.isDualStageComplete) {
+    return 'needs_university_auth';
+  }
 
-    return 'partial_auth';
+  return 'partial_auth';
 }
 ```
 
 ### 5.5 Session Management
 
 #### 5.5.1 Session Configuration
+
 - **Token Type**: JWT (JSON Web Token)
 - **Session Duration**: 30 days
 - **Refresh Strategy**: Automatic on API calls
@@ -994,6 +1066,7 @@ function determineSmartFlow(token: JWT | null): AuthFlow {
 - **CSRF Protection**: Double-submit cookie pattern
 
 #### 5.5.2 Session Tracking
+
 ```sql
 -- Active session monitoring
 SELECT
@@ -1012,13 +1085,13 @@ The system provides localized error messages for Hebrew-speaking users:
 
 ```typescript
 const HEBREW_AUTH_ERRORS = {
-    InvalidCredentials: "שם משתמש או סיסמה שגויים",
-    AccountLocked: "החשבון ננעל זמנית עקב ניסיונות כושלים",
-    SessionExpired: "תוקף ההתחברות פג, אנא התחבר מחדש",
-    UniversityNotSupported: "האוניברסיטה עדיין לא נתמכת במערכת",
-    EmailNotVerified: "כתובת הדוא״ל טרם אומתה",
-    NetworkError: "שגיאת רשת, אנא נסה שוב",
-    MaintenanceMode: "המערכת בתחזוקה, נסה שוב מאוחר יותר"
+  InvalidCredentials: 'שם משתמש או סיסמה שגויים',
+  AccountLocked: 'החשבון ננעל זמנית עקב ניסיונות כושלים',
+  SessionExpired: 'תוקף ההתחברות פג, אנא התחבר מחדש',
+  UniversityNotSupported: 'האוניברסיטה עדיין לא נתמכת במערכת',
+  EmailNotVerified: 'כתובת הדוא״ל טרם אומתה',
+  NetworkError: 'שגיאת רשת, אנא נסה שוב',
+  MaintenanceMode: 'המערכת בתחזוקה, נסה שוב מאוחר יותר',
 };
 ```
 
@@ -1028,7 +1101,8 @@ const HEBREW_AUTH_ERRORS = {
 
 ### 6.1 Next.js App Router Structure
 
-The frontend uses Next.js 14's App Router with the following directory structure:
+The frontend uses Next.js 14's App Router with the following directory
+structure:
 
 ```
 apps/web/app/
@@ -1107,105 +1181,107 @@ components/
 ### 6.3 State Management
 
 #### 6.3.1 Client State (Zustand)
+
 ```typescript
 // User store example
 interface UserStore {
-    user: User | null;
-    isLoading: boolean;
-    error: string | null;
-    setUser: (user: User) => void;
-    clearUser: () => void;
-    fetchUser: () => Promise<void>;
+  user: User | null;
+  isLoading: boolean;
+  error: string | null;
+  setUser: (user: User) => void;
+  clearUser: () => void;
+  fetchUser: () => Promise<void>;
 }
 
 const useUserStore = create<UserStore>((set, get) => ({
-    user: null,
-    isLoading: false,
-    error: null,
+  user: null,
+  isLoading: false,
+  error: null,
 
-    setUser: (user) => set({ user }),
-    clearUser: () => set({ user: null }),
+  setUser: (user) => set({ user }),
+  clearUser: () => set({ user: null }),
 
-    fetchUser: async () => {
-        set({ isLoading: true, error: null });
-        try {
-            const response = await fetch('/api/user/profile');
-            const user = await response.json();
-            set({ user, isLoading: false });
-        } catch (error) {
-            set({ error: error.message, isLoading: false });
-        }
+  fetchUser: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await fetch('/api/user/profile');
+      const user = await response.json();
+      set({ user, isLoading: false });
+    } catch (error) {
+      set({ error: error.message, isLoading: false });
     }
+  },
 }));
 ```
 
 #### 6.3.2 Server State (React Query)
+
 ```typescript
 // Course data fetching
 const useCourses = (filters?: CourseFilters) => {
-    return useQuery({
-        queryKey: ['courses', filters],
-        queryFn: async () => {
-            const params = new URLSearchParams(filters);
-            const response = await fetch(`/api/user/courses?${params}`);
-            if (!response.ok) throw new Error('Failed to fetch courses');
-            return response.json();
-        },
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        cacheTime: 10 * 60 * 1000, // 10 minutes
-    });
+  return useQuery({
+    queryKey: ['courses', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams(filters);
+      const response = await fetch(`/api/user/courses?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch courses');
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+  });
 };
 ```
 
 ### 6.4 Styling System
 
 #### 6.4.1 Tailwind Configuration
+
 ```javascript
 // tailwind.config.js
 module.exports = {
-    content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
-    theme: {
-        extend: {
-            fontFamily: {
-                hebrew: ['Rubik', 'system-ui', 'sans-serif'],
-            },
-            animation: {
-                'slide-in-right': 'slideInRight 0.3s ease-out',
-                'slide-in-left': 'slideInLeft 0.3s ease-out',
-            },
-        },
+  content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
+  theme: {
+    extend: {
+      fontFamily: {
+        hebrew: ['Rubik', 'system-ui', 'sans-serif'],
+      },
+      animation: {
+        'slide-in-right': 'slideInRight 0.3s ease-out',
+        'slide-in-left': 'slideInLeft 0.3s ease-out',
+      },
     },
-    plugins: [
-        require('tailwindcss-animate'),
-        require('tailwindcss-rtl'),
-    ],
+  },
+  plugins: [require('tailwindcss-animate'), require('tailwindcss-rtl')],
 };
 ```
 
 #### 6.4.2 CSS Variables for Theming
+
 ```css
 :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --radius: 0.5rem;
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --radius: 0.5rem;
 }
 
-[dir="rtl"] {
-    --direction: rtl;
+[dir='rtl'] {
+  --direction: rtl;
 }
 ```
 
 ### 6.5 Routing and Navigation
 
 #### 6.5.1 Dynamic Routes
+
 ```typescript
 // app/courses/[id]/page.tsx
 export default async function CoursePage({
@@ -1225,6 +1301,7 @@ export default async function CoursePage({
 ```
 
 #### 6.5.2 Navigation Component
+
 ```typescript
 // components/layout/Navigation.tsx
 export function Navigation() {
@@ -1260,6 +1337,7 @@ export function Navigation() {
 ### 6.6 Performance Optimizations
 
 #### 6.6.1 Code Splitting
+
 ```typescript
 // Lazy loading heavy components
 const HeavyChart = dynamic(
@@ -1272,6 +1350,7 @@ const HeavyChart = dynamic(
 ```
 
 #### 6.6.2 Image Optimization
+
 ```typescript
 // Using Next.js Image component
 import Image from 'next/image';
@@ -1289,6 +1368,7 @@ import Image from 'next/image';
 ```
 
 #### 6.6.3 Prefetching
+
 ```typescript
 // Prefetch data on hover
 <Link
@@ -1306,15 +1386,19 @@ import Image from 'next/image';
 
 ### 7.1 RTL Design Strategy
 
-The Spike platform implements a comprehensive Hebrew-first design approach with full RTL (Right-to-Left) support throughout the application.
+The Spike platform implements a comprehensive Hebrew-first design approach with
+full RTL (Right-to-Left) support throughout the application.
 
 #### 7.1.1 Core Principles
+
 1. **Hebrew as Primary Language**: All UI text defaults to Hebrew
 2. **Logical Properties**: Use CSS logical properties instead of directional
 3. **Mirrored Layouts**: UI layouts flip appropriately for RTL
-4. **Cultural Considerations**: Date formats, number systems, and academic terminology
+4. **Cultural Considerations**: Date formats, number systems, and academic
+   terminology
 
 #### 7.1.2 Implementation Layers
+
 ```mermaid
 graph TD
     A[HTML dir attribute] --> B[CSS Logical Properties]
@@ -1327,6 +1411,7 @@ graph TD
 ### 7.2 Technical Implementation
 
 #### 7.2.1 HTML Direction
+
 ```typescript
 // app/layout.tsx
 export default function RootLayout({ children }) {
@@ -1344,32 +1429,34 @@ export default function RootLayout({ children }) {
 ```
 
 #### 7.2.2 CSS Logical Properties
+
 ```css
 /* Instead of margin-left/right */
 .card {
-    margin-inline-start: 1rem;  /* Becomes margin-right in RTL */
-    margin-inline-end: 2rem;    /* Becomes margin-left in RTL */
+  margin-inline-start: 1rem; /* Becomes margin-right in RTL */
+  margin-inline-end: 2rem; /* Becomes margin-left in RTL */
 }
 
 /* Instead of padding-left/right */
 .button {
-    padding-inline-start: 1.5rem;
-    padding-inline-end: 1.5rem;
+  padding-inline-start: 1.5rem;
+  padding-inline-end: 1.5rem;
 }
 
 /* Instead of left/right positioning */
 .modal {
-    inset-inline-start: 0;  /* Becomes right: 0 in RTL */
+  inset-inline-start: 0; /* Becomes right: 0 in RTL */
 }
 
 /* Border radius logical */
 .card {
-    border-start-start-radius: 0.5rem;  /* top-right in RTL */
-    border-end-start-radius: 0.5rem;    /* bottom-right in RTL */
+  border-start-start-radius: 0.5rem; /* top-right in RTL */
+  border-end-start-radius: 0.5rem; /* bottom-right in RTL */
 }
 ```
 
 #### 7.2.3 Tailwind RTL Utilities
+
 ```typescript
 // Custom Tailwind utilities for RTL
 <div className="ms-4 me-2">  {/* margin-start, margin-end */}
@@ -1382,24 +1469,29 @@ export default function RootLayout({ children }) {
 ### 7.3 Typography and Fonts
 
 #### 7.3.1 Hebrew Font Stack
+
 ```css
 @font-face {
-    font-family: 'Rubik';
-    src: url('/fonts/Rubik-Variable.woff2') format('woff2');
-    font-weight: 300 900;
-    font-display: swap;
-    unicode-range: U+0590-05FF, U+FB00-FB4F; /* Hebrew range */
+  font-family: 'Rubik';
+  src: url('/fonts/Rubik-Variable.woff2') format('woff2');
+  font-weight: 300 900;
+  font-display: swap;
+  unicode-range: U+0590-05FF, U+FB00-FB4F; /* Hebrew range */
 }
 
 .font-hebrew {
-    font-family: 'Rubik', 'Segoe UI', 'Arial Hebrew', 'Noto Sans Hebrew', sans-serif;
-    font-feature-settings: 'liga' 1, 'calt' 1;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+  font-family:
+    'Rubik', 'Segoe UI', 'Arial Hebrew', 'Noto Sans Hebrew', sans-serif;
+  font-feature-settings:
+    'liga' 1,
+    'calt' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 ```
 
 #### 7.3.2 Mixed Content Handling
+
 ```typescript
 // Component for mixed Hebrew/English content
 export function MixedContent({ hebrew, english }: MixedContentProps) {
@@ -1421,6 +1513,7 @@ export function MixedContent({ hebrew, english }: MixedContentProps) {
 ### 7.4 Form Components
 
 #### 7.4.1 Hebrew Form Fields
+
 ```typescript
 // Hebrew-aware form input
 export function HebrewInput({
@@ -1449,6 +1542,7 @@ export function HebrewInput({
 ```
 
 #### 7.4.2 Hebrew Date Picker
+
 ```typescript
 // Hebrew calendar integration
 export function HebrewDatePicker({
@@ -1484,69 +1578,72 @@ export function HebrewDatePicker({
 ### 7.5 Academic Terminology
 
 #### 7.5.1 Translation Mappings
+
 ```typescript
 const ACADEMIC_TERMS = {
-    // Degree types
-    bachelor: 'תואר ראשון',
-    master: 'תואר שני',
-    doctorate: 'דוקטורט',
+  // Degree types
+  bachelor: 'תואר ראשון',
+  master: 'תואר שני',
+  doctorate: 'דוקטורט',
 
-    // Semesters
-    fall: 'סמסטר א׳',
-    spring: 'סמסטר ב׳',
-    summer: 'סמסטר קיץ',
+  // Semesters
+  fall: 'סמסטר א׳',
+  spring: 'סמסטר ב׳',
+  summer: 'סמסטר קיץ',
 
-    // Course status
-    active: 'פעיל',
-    completed: 'הושלם',
-    dropped: 'נטישה',
+  // Course status
+  active: 'פעיל',
+  completed: 'הושלם',
+  dropped: 'נטישה',
 
-    // Assignment status
-    pending: 'ממתין',
-    submitted: 'הוגש',
-    graded: 'נבדק',
-    overdue: 'באיחור',
+  // Assignment status
+  pending: 'ממתין',
+  submitted: 'הוגש',
+  graded: 'נבדק',
+  overdue: 'באיחור',
 
-    // Grades
-    pass: 'עובר',
-    fail: 'נכשל',
-    incomplete: 'לא הושלם',
+  // Grades
+  pass: 'עובר',
+  fail: 'נכשל',
+  incomplete: 'לא הושלם',
 
-    // Academic roles
-    student: 'סטודנט',
-    lecturer: 'מרצה',
-    assistant: 'מתרגל',
-    coordinator: 'רכז',
+  // Academic roles
+  student: 'סטודנט',
+  lecturer: 'מרצה',
+  assistant: 'מתרגל',
+  coordinator: 'רכז',
 };
 ```
 
 #### 7.5.2 Number Formatting
+
 ```typescript
 // Hebrew number formatting
 export function formatHebrewNumber(
-    value: number,
-    type: 'grade' | 'credits' | 'year'
+  value: number,
+  type: 'grade' | 'credits' | 'year'
 ): string {
-    switch(type) {
-        case 'grade':
-            return value.toLocaleString('he-IL', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 1
-            });
-        case 'credits':
-            return `${value} נ״ז`;  // נקודות זכות
-        case 'year':
-            const yearMap = ['א׳', 'ב׳', 'ג׳', 'ד׳'];
-            return `שנה ${yearMap[value - 1] || value}`;
-        default:
-            return value.toString();
-    }
+  switch (type) {
+    case 'grade':
+      return value.toLocaleString('he-IL', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 1,
+      });
+    case 'credits':
+      return `${value} נ״ז`; // נקודות זכות
+    case 'year':
+      const yearMap = ['א׳', 'ב׳', 'ג׳', 'ד׳'];
+      return `שנה ${yearMap[value - 1] || value}`;
+    default:
+      return value.toString();
+  }
 }
 ```
 
 ### 7.6 Icons and Directional Elements
 
 #### 7.6.1 Directional Icons
+
 ```typescript
 // RTL-aware icon component
 export function DirectionalIcon({
@@ -1570,6 +1667,7 @@ export function DirectionalIcon({
 ```
 
 #### 7.6.2 Progress Indicators
+
 ```typescript
 // RTL progress bar
 export function HebrewProgress({ value, max = 100 }) {
@@ -1590,45 +1688,47 @@ export function HebrewProgress({ value, max = 100 }) {
 ### 7.7 Testing Hebrew/RTL
 
 #### 7.7.1 RTL Testing Utilities
+
 ```typescript
 // Test utilities for RTL
 export const rtlTestUtils = {
-    // Check if element has correct direction
-    expectRTL: (element: HTMLElement) => {
-        expect(element).toHaveAttribute('dir', 'rtl');
-        expect(getComputedStyle(element).direction).toBe('rtl');
-    },
+  // Check if element has correct direction
+  expectRTL: (element: HTMLElement) => {
+    expect(element).toHaveAttribute('dir', 'rtl');
+    expect(getComputedStyle(element).direction).toBe('rtl');
+  },
 
-    // Check logical properties
-    expectLogicalMargin: (element: HTMLElement, start: string, end: string) => {
-        const styles = getComputedStyle(element);
-        expect(styles.marginInlineStart).toBe(start);
-        expect(styles.marginInlineEnd).toBe(end);
-    },
+  // Check logical properties
+  expectLogicalMargin: (element: HTMLElement, start: string, end: string) => {
+    const styles = getComputedStyle(element);
+    expect(styles.marginInlineStart).toBe(start);
+    expect(styles.marginInlineEnd).toBe(end);
+  },
 
-    // Check Hebrew content
-    expectHebrewText: (element: HTMLElement, text: string) => {
-        expect(element.textContent).toContain(text);
-        expect(element.lang).toBe('he');
-    }
+  // Check Hebrew content
+  expectHebrewText: (element: HTMLElement, text: string) => {
+    expect(element.textContent).toContain(text);
+    expect(element.lang).toBe('he');
+  },
 };
 ```
 
 #### 7.7.2 Visual Regression Tests
+
 ```typescript
 // Playwright test for RTL layout
 test('Hebrew dashboard displays correctly', async ({ page }) => {
-    await page.goto('/dashboard');
+  await page.goto('/dashboard');
 
-    // Check RTL direction
-    const html = page.locator('html');
-    await expect(html).toHaveAttribute('dir', 'rtl');
+  // Check RTL direction
+  const html = page.locator('html');
+  await expect(html).toHaveAttribute('dir', 'rtl');
 
-    // Check Hebrew content
-    await expect(page.locator('h1')).toContainText('לוח בקרה');
+  // Check Hebrew content
+  await expect(page.locator('h1')).toContainText('לוח בקרה');
 
-    // Visual regression
-    await expect(page).toHaveScreenshot('dashboard-hebrew.png');
+  // Visual regression
+  await expect(page).toHaveScreenshot('dashboard-hebrew.png');
 });
 ```
 
@@ -1638,7 +1738,8 @@ test('Hebrew dashboard displays correctly', async ({ page }) => {
 
 ### 8.1 Integration Architecture
 
-The BGU Moodle integration is a critical component that synchronizes academic data between BGU's Moodle LMS and the Spike platform.
+The BGU Moodle integration is a critical component that synchronizes academic
+data between BGU's Moodle LMS and the Spike platform.
 
 ```mermaid
 graph TB
@@ -1666,6 +1767,7 @@ graph TB
 ### 8.2 Scraping Service Implementation
 
 #### 8.2.1 Python Scraper Architecture
+
 ```python
 # apps/scraper/main.py structure
 class BGUMoodleScraper:
@@ -1692,6 +1794,7 @@ class BGUMoodleScraper:
 ```
 
 #### 8.2.2 BGU Configuration
+
 ```python
 # apps/scraper/src/config/bgu_config_updated.py
 BGU_CONFIG = {
@@ -1719,6 +1822,7 @@ BGU_CONFIG = {
 ### 8.3 Data Synchronization Process
 
 #### 8.3.1 Sync Flow Diagram
+
 ```mermaid
 sequenceDiagram
     participant User
@@ -1749,6 +1853,7 @@ sequenceDiagram
 ```
 
 #### 8.3.2 Data Mapping
+
 ```typescript
 // Moodle to Spike data mapping
 interface MoodleToSpikeMapper {
@@ -1788,73 +1893,76 @@ interface MoodleToSpikeMapper {
 ### 8.4 Background Synchronization
 
 #### 8.4.1 Sync Job Management
+
 ```typescript
 // lib/background-sync.ts
 export async function startBackgroundSync(
-    userId: string,
-    credentials: UniversityCredentials
+  userId: string,
+  credentials: UniversityCredentials
 ): Promise<SyncJob> {
-    const jobId = `sync_${userId}_${Date.now()}`;
+  const jobId = `sync_${userId}_${Date.now()}`;
 
-    // Create job record
-    const job = await createSyncJob({
-        id: jobId,
-        user_id: userId,
-        status: 'queued',
-        progress: 0,
-        message: 'Initializing synchronization...'
-    });
+  // Create job record
+  const job = await createSyncJob({
+    id: jobId,
+    user_id: userId,
+    status: 'queued',
+    progress: 0,
+    message: 'Initializing synchronization...',
+  });
 
-    // Queue async job
-    await queueSyncTask({
-        jobId,
-        userId,
-        credentials,
-        syncType: 'full'
-    });
+  // Queue async job
+  await queueSyncTask({
+    jobId,
+    userId,
+    credentials,
+    syncType: 'full',
+  });
 
-    return job;
+  return job;
 }
 ```
 
 #### 8.4.2 Progressive Sync Updates
+
 ```typescript
 // Real-time sync progress updates
 class SyncProgressTracker {
-    private progress: number = 0;
-    private total: number = 0;
+  private progress: number = 0;
+  private total: number = 0;
 
-    async updateProgress(
-        jobId: string,
-        completed: number,
-        total: number,
-        message: string
-    ) {
-        this.progress = completed;
-        this.total = total;
+  async updateProgress(
+    jobId: string,
+    completed: number,
+    total: number,
+    message: string
+  ) {
+    this.progress = completed;
+    this.total = total;
 
-        await updateSyncJob(jobId, {
-            progress: Math.round((completed / total) * 100),
-            message,
-            data: {
-                completed_tasks: completed,
-                total_tasks: total
-            }
-        });
+    await updateSyncJob(jobId, {
+      progress: Math.round((completed / total) * 100),
+      message,
+      data: {
+        completed_tasks: completed,
+        total_tasks: total,
+      },
+    });
 
-        // Emit websocket event for real-time updates
-        await emitSyncProgress(jobId, {
-            progress: this.progress,
-            total: this.total,
-            message
-        });
-    }
+    // Emit websocket event for real-time updates
+    await emitSyncProgress(jobId, {
+      progress: this.progress,
+      total: this.total,
+      message,
+    });
+  }
 }
 ```
 
 ### 8.5 Error Handling and Recovery
 
 #### 8.5.1 Retry Logic
+
 ```python
 # Retry decorator for network operations
 def retry_on_failure(max_retries=3, delay=1):
@@ -1879,41 +1987,42 @@ async def fetch_with_retry(url: str):
 ```
 
 #### 8.5.2 Error Recovery
+
 ```typescript
 // Graceful error recovery
 export async function recoverFailedSync(
-    jobId: string,
-    lastSuccessfulItem?: string
+  jobId: string,
+  lastSuccessfulItem?: string
 ): Promise<void> {
-    const job = await getSyncJob(jobId);
+  const job = await getSyncJob(jobId);
 
-    if (job.status !== 'failed') {
-        throw new Error('Job is not in failed state');
-    }
+  if (job.status !== 'failed') {
+    throw new Error('Job is not in failed state');
+  }
 
-    // Resume from last successful item
-    const resumePoint = lastSuccessfulItem ||
-        job.data?.last_successful_item ||
-        null;
+  // Resume from last successful item
+  const resumePoint =
+    lastSuccessfulItem || job.data?.last_successful_item || null;
 
-    await updateSyncJob(jobId, {
-        status: 'recovering',
-        message: 'Attempting to recover sync...'
-    });
+  await updateSyncJob(jobId, {
+    status: 'recovering',
+    message: 'Attempting to recover sync...',
+  });
 
-    // Re-queue with resume point
-    await queueSyncTask({
-        jobId,
-        userId: job.user_id,
-        syncType: 'recovery',
-        resumeFrom: resumePoint
-    });
+  // Re-queue with resume point
+  await queueSyncTask({
+    jobId,
+    userId: job.user_id,
+    syncType: 'recovery',
+    resumeFrom: resumePoint,
+  });
 }
 ```
 
 ### 8.6 Data Validation
 
 #### 8.6.1 Moodle Data Validators
+
 ```python
 # apps/scraper/src/validators/dev_real_validator.py
 class MoodleDataValidator:
@@ -1948,6 +2057,7 @@ class MoodleDataValidator:
 ```
 
 #### 8.6.2 Data Integrity Checks
+
 ```sql
 -- Verify sync data integrity
 WITH sync_summary AS (
@@ -1983,7 +2093,8 @@ ORDER BY s.error_count DESC;
 
 ### 9.1 Testing Architecture
 
-The Spike platform implements a comprehensive testing strategy across multiple levels:
+The Spike platform implements a comprehensive testing strategy across multiple
+levels:
 
 ```mermaid
 graph TD
@@ -2011,6 +2122,7 @@ graph TD
 ### 9.2 Unit Testing
 
 #### 9.2.1 Vitest Configuration
+
 ```typescript
 // vitest.config.ts
 import { defineConfig } from 'vitest/config';
@@ -2018,328 +2130,338 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
-    plugins: [react()],
-    test: {
-        environment: 'jsdom',
-        globals: true,
-        setupFiles: ['./tests/setup.ts'],
-        coverage: {
-            reporter: ['text', 'json', 'html'],
-            exclude: ['node_modules/', 'tests/', '*.config.*']
-        },
-        include: ['**/*.{test,spec}.{js,ts,jsx,tsx}']
+  plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./tests/setup.ts'],
+    coverage: {
+      reporter: ['text', 'json', 'html'],
+      exclude: ['node_modules/', 'tests/', '*.config.*'],
     },
-    resolve: {
-        alias: {
-            '@': path.resolve(__dirname, './apps/web'),
-            '@/lib': path.resolve(__dirname, './apps/web/lib'),
-            '@/components': path.resolve(__dirname, './apps/web/components')
-        }
-    }
+    include: ['**/*.{test,spec}.{js,ts,jsx,tsx}'],
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './apps/web'),
+      '@/lib': path.resolve(__dirname, './apps/web/lib'),
+      '@/components': path.resolve(__dirname, './apps/web/components'),
+    },
+  },
 });
 ```
 
 #### 9.2.2 Unit Test Examples
+
 ```typescript
 // tests/unit/auth-utils.test.ts
 describe('Authentication Utilities', () => {
-    describe('validateUniversityEmail', () => {
-        it('should accept valid BGU email', () => {
-            const result = validateUniversityEmail('student@post.bgu.ac.il');
-            expect(result.isValid).toBe(true);
-            expect(result.university?.id).toBe('bgu');
-        });
-
-        it('should reject non-university email', () => {
-            const result = validateUniversityEmail('user@gmail.com');
-            expect(result.isValid).toBe(false);
-            expect(result.error).toBe('Email domain not recognized');
-        });
+  describe('validateUniversityEmail', () => {
+    it('should accept valid BGU email', () => {
+      const result = validateUniversityEmail('student@post.bgu.ac.il');
+      expect(result.isValid).toBe(true);
+      expect(result.university?.id).toBe('bgu');
     });
 
-    describe('encryptCredentials', () => {
-        it('should encrypt and decrypt credentials correctly', () => {
-            const original = { username: 'user', password: 'pass123' };
-            const encrypted = CredentialsEncryption.encryptCredentials(
-                original.username,
-                original.password
-            );
-
-            expect(encrypted.encryptedPassword).toBeDefined();
-            expect(encrypted.iv).toBeDefined();
-
-            const decrypted = CredentialsEncryption.decryptCredentials(
-                encrypted
-            );
-            expect(decrypted.password).toBe(original.password);
-        });
+    it('should reject non-university email', () => {
+      const result = validateUniversityEmail('user@gmail.com');
+      expect(result.isValid).toBe(false);
+      expect(result.error).toBe('Email domain not recognized');
     });
+  });
+
+  describe('encryptCredentials', () => {
+    it('should encrypt and decrypt credentials correctly', () => {
+      const original = { username: 'user', password: 'pass123' };
+      const encrypted = CredentialsEncryption.encryptCredentials(
+        original.username,
+        original.password
+      );
+
+      expect(encrypted.encryptedPassword).toBeDefined();
+      expect(encrypted.iv).toBeDefined();
+
+      const decrypted = CredentialsEncryption.decryptCredentials(encrypted);
+      expect(decrypted.password).toBe(original.password);
+    });
+  });
 });
 ```
 
 ### 9.3 Integration Testing
 
 #### 9.3.1 API Integration Tests
+
 ```typescript
 // tests/integration/api-sync.test.ts
 describe('Sync API Integration', () => {
-    let testUser: User;
-    let authToken: string;
+  let testUser: User;
+  let authToken: string;
 
-    beforeEach(async () => {
-        testUser = await createTestUser();
-        authToken = await getAuthToken(testUser);
+  beforeEach(async () => {
+    testUser = await createTestUser();
+    authToken = await getAuthToken(testUser);
+  });
+
+  it('should trigger sync and track progress', async () => {
+    const response = await fetch('/api/sync/trigger', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ syncType: 'full' }),
     });
 
-    it('should trigger sync and track progress', async () => {
-        const response = await fetch('/api/sync/trigger', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ syncType: 'full' })
-        });
+    expect(response.status).toBe(200);
+    const { jobId } = await response.json();
 
-        expect(response.status).toBe(200);
-        const { jobId } = await response.json();
+    // Poll for completion
+    let status = 'running';
+    while (status === 'running') {
+      const statusResponse = await fetch(`/api/sync-status/${jobId}`);
+      const jobStatus = await statusResponse.json();
+      status = jobStatus.status;
+      await sleep(1000);
+    }
 
-        // Poll for completion
-        let status = 'running';
-        while (status === 'running') {
-            const statusResponse = await fetch(`/api/sync-status/${jobId}`);
-            const jobStatus = await statusResponse.json();
-            status = jobStatus.status;
-            await sleep(1000);
-        }
-
-        expect(status).toBe('completed');
-    });
+    expect(status).toBe('completed');
+  });
 });
 ```
 
 ### 9.4 End-to-End Testing
 
 #### 9.4.1 Playwright Configuration
+
 ```typescript
 // playwright.config.ts
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-    testDir: './tests/e2e',
-    fullyParallel: true,
-    forbidOnly: !!process.env.CI,
-    retries: process.env.CI ? 2 : 0,
-    workers: process.env.CI ? 1 : undefined,
-    reporter: 'html',
-    use: {
-        baseURL: 'http://localhost:3000',
-        trace: 'on-first-retry',
-        screenshot: 'only-on-failure'
+  testDir: './tests/e2e',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: 'html',
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+  },
+  projects: [
+    {
+      name: 'Desktop Chrome',
+      use: { ...devices['Desktop Chrome'] },
     },
-    projects: [
-        {
-            name: 'Desktop Chrome',
-            use: { ...devices['Desktop Chrome'] }
-        },
-        {
-            name: 'Mobile Safari',
-            use: { ...devices['iPhone 12'] }
-        },
-        {
-            name: 'Hebrew RTL Desktop',
-            use: {
-                ...devices['Desktop Chrome'],
-                locale: 'he-IL',
-                timezoneId: 'Asia/Jerusalem'
-            }
-        }
-    ],
-    webServer: {
-        command: 'npm run dev',
-        url: 'http://localhost:3000',
-        reuseExistingServer: !process.env.CI
-    }
+    {
+      name: 'Mobile Safari',
+      use: { ...devices['iPhone 12'] },
+    },
+    {
+      name: 'Hebrew RTL Desktop',
+      use: {
+        ...devices['Desktop Chrome'],
+        locale: 'he-IL',
+        timezoneId: 'Asia/Jerusalem',
+      },
+    },
+  ],
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+  },
 });
 ```
 
 #### 9.4.2 E2E Test Scenarios
+
 ```typescript
 // tests/e2e/auth-flow.spec.ts
 import { test, expect } from '@playwright/test';
 
 test.describe('Authentication Flow', () => {
-    test('complete dual-stage authentication', async ({ page }) => {
-        // Stage 1: Google OAuth
-        await page.goto('/');
-        await page.click('text=התחבר עם Google');
+  test('complete dual-stage authentication', async ({ page }) => {
+    // Stage 1: Google OAuth
+    await page.goto('/');
+    await page.click('text=התחבר עם Google');
 
-        // Handle Google OAuth (mocked in test environment)
-        await page.fill('#email', 'test@post.bgu.ac.il');
-        await page.fill('#password', 'testpass');
-        await page.click('#submit');
+    // Handle Google OAuth (mocked in test environment)
+    await page.fill('#email', 'test@post.bgu.ac.il');
+    await page.fill('#password', 'testpass');
+    await page.click('#submit');
 
-        // Should redirect to onboarding
-        await expect(page).toHaveURL('/onboarding');
+    // Should redirect to onboarding
+    await expect(page).toHaveURL('/onboarding');
 
-        // Stage 2: University credentials
-        await page.fill('#username', 'testuser');
-        await page.fill('#password', 'univpass');
-        await page.click('text=המשך');
+    // Stage 2: University credentials
+    await page.fill('#username', 'testuser');
+    await page.fill('#password', 'univpass');
+    await page.click('text=המשך');
 
-        // Wait for validation
-        await page.waitForSelector('text=מאמת נתונים');
+    // Wait for validation
+    await page.waitForSelector('text=מאמת נתונים');
 
-        // Should redirect to dashboard
-        await expect(page).toHaveURL('/dashboard');
-        await expect(page.locator('h1')).toContainText('לוח בקרה');
-    });
+    // Should redirect to dashboard
+    await expect(page).toHaveURL('/dashboard');
+    await expect(page.locator('h1')).toContainText('לוח בקרה');
+  });
 });
 ```
 
 ### 9.5 Hebrew/RTL Testing
 
 #### 9.5.1 Hebrew Content Tests
+
 ```typescript
 // tests/e2e/hebrew-content.spec.ts
 test.describe('Hebrew Content and RTL Layout', () => {
-    test('displays Hebrew content correctly', async ({ page }) => {
-        await page.goto('/dashboard');
+  test('displays Hebrew content correctly', async ({ page }) => {
+    await page.goto('/dashboard');
 
-        // Check RTL direction
-        const html = page.locator('html');
-        await expect(html).toHaveAttribute('dir', 'rtl');
-        await expect(html).toHaveAttribute('lang', 'he');
+    // Check RTL direction
+    const html = page.locator('html');
+    await expect(html).toHaveAttribute('dir', 'rtl');
+    await expect(html).toHaveAttribute('lang', 'he');
 
-        // Verify Hebrew text rendering
-        const heading = page.locator('h1');
-        await expect(heading).toContainText('לוח בקרה');
+    // Verify Hebrew text rendering
+    const heading = page.locator('h1');
+    await expect(heading).toContainText('לוח בקרה');
 
-        // Check Hebrew date format
-        const dateElement = page.locator('.date-display');
-        await expect(dateElement).toContainText(/\d{1,2} ב[א-ת]+ \d{4}/);
-    });
+    // Check Hebrew date format
+    const dateElement = page.locator('.date-display');
+    await expect(dateElement).toContainText(/\d{1,2} ב[א-ת]+ \d{4}/);
+  });
 
-    test('form inputs handle Hebrew correctly', async ({ page }) => {
-        await page.goto('/profile');
+  test('form inputs handle Hebrew correctly', async ({ page }) => {
+    await page.goto('/profile');
 
-        const nameInput = page.locator('#name');
-        await nameInput.fill('ישראל ישראלי');
+    const nameInput = page.locator('#name');
+    await nameInput.fill('ישראל ישראלי');
 
-        // Verify RTL text alignment
-        const styles = await nameInput.evaluate(el =>
-            window.getComputedStyle(el)
-        );
-        expect(styles.direction).toBe('rtl');
-        expect(styles.textAlign).toBe('right');
-    });
+    // Verify RTL text alignment
+    const styles = await nameInput.evaluate((el) =>
+      window.getComputedStyle(el)
+    );
+    expect(styles.direction).toBe('rtl');
+    expect(styles.textAlign).toBe('right');
+  });
 });
 ```
 
 ### 9.6 Performance Testing
 
 #### 9.6.1 Load Time Tests
+
 ```typescript
 // tests/performance/load-time.spec.ts
 test.describe('Performance Metrics', () => {
-    test('dashboard loads within acceptable time', async ({ page }) => {
-        const startTime = Date.now();
+  test('dashboard loads within acceptable time', async ({ page }) => {
+    const startTime = Date.now();
 
-        await page.goto('/dashboard', { waitUntil: 'networkidle' });
+    await page.goto('/dashboard', { waitUntil: 'networkidle' });
 
-        const loadTime = Date.now() - startTime;
-        expect(loadTime).toBeLessThan(3000); // 3 seconds max
+    const loadTime = Date.now() - startTime;
+    expect(loadTime).toBeLessThan(3000); // 3 seconds max
 
-        // Check Core Web Vitals
-        const metrics = await page.evaluate(() => ({
-            FCP: performance.getEntriesByName('first-contentful-paint')[0]?.startTime,
-            LCP: performance.getEntriesByName('largest-contentful-paint')[0]?.startTime,
-            CLS: performance.getEntriesByName('layout-shift')[0]?.value || 0
-        }));
+    // Check Core Web Vitals
+    const metrics = await page.evaluate(() => ({
+      FCP: performance.getEntriesByName('first-contentful-paint')[0]?.startTime,
+      LCP: performance.getEntriesByName('largest-contentful-paint')[0]
+        ?.startTime,
+      CLS: performance.getEntriesByName('layout-shift')[0]?.value || 0,
+    }));
 
-        expect(metrics.FCP).toBeLessThan(1800); // 1.8s
-        expect(metrics.LCP).toBeLessThan(2500); // 2.5s
-        expect(metrics.CLS).toBeLessThan(0.1);  // 0.1
-    });
+    expect(metrics.FCP).toBeLessThan(1800); // 1.8s
+    expect(metrics.LCP).toBeLessThan(2500); // 2.5s
+    expect(metrics.CLS).toBeLessThan(0.1); // 0.1
+  });
 });
 ```
 
 ### 9.7 Accessibility Testing
 
 #### 9.7.1 WCAG Compliance Tests
+
 ```typescript
 // tests/a11y/accessibility.spec.ts
 import { test, expect } from '@playwright/test';
 import { injectAxe, checkA11y } from 'axe-playwright';
 
 test.describe('Accessibility Compliance', () => {
-    test('dashboard meets WCAG 2.1 AA standards', async ({ page }) => {
-        await page.goto('/dashboard');
-        await injectAxe(page);
+  test('dashboard meets WCAG 2.1 AA standards', async ({ page }) => {
+    await page.goto('/dashboard');
+    await injectAxe(page);
 
-        await checkA11y(page, null, {
-            detailedReport: true,
-            detailedReportOptions: {
-                html: true
-            }
-        });
+    await checkA11y(page, null, {
+      detailedReport: true,
+      detailedReportOptions: {
+        html: true,
+      },
     });
+  });
 
-    test('keyboard navigation works correctly', async ({ page }) => {
-        await page.goto('/dashboard');
+  test('keyboard navigation works correctly', async ({ page }) => {
+    await page.goto('/dashboard');
 
-        // Tab through interactive elements
-        await page.keyboard.press('Tab');
-        const firstFocus = await page.evaluate(() =>
-            document.activeElement?.tagName
-        );
-        expect(['A', 'BUTTON', 'INPUT']).toContain(firstFocus);
+    // Tab through interactive elements
+    await page.keyboard.press('Tab');
+    const firstFocus = await page.evaluate(
+      () => document.activeElement?.tagName
+    );
+    expect(['A', 'BUTTON', 'INPUT']).toContain(firstFocus);
 
-        // Test skip links
-        await page.keyboard.press('Tab');
-        const skipLink = page.locator('text=דלג לתוכן הראשי');
-        await expect(skipLink).toBeFocused();
-    });
+    // Test skip links
+    await page.keyboard.press('Tab');
+    const skipLink = page.locator('text=דלג לתוכן הראשי');
+    await expect(skipLink).toBeFocused();
+  });
 });
 ```
 
 ### 9.8 Test Data Management
 
 #### 9.8.1 Test Data Factories
+
 ```typescript
 // tests/factories/user.factory.ts
 export class UserFactory {
-    static create(overrides?: Partial<User>): User {
-        return {
-            id: faker.datatype.uuid(),
-            email: `test-${faker.datatype.number()}@post.bgu.ac.il`,
-            name: faker.name.findName(),
-            student_id: faker.datatype.number({ min: 100000, max: 999999 }).toString(),
-            faculty: 'מדעי הטבע',
-            department: 'מדעי המחשב',
-            year_of_study: faker.datatype.number({ min: 1, max: 4 }),
-            ...overrides
-        };
-    }
+  static create(overrides?: Partial<User>): User {
+    return {
+      id: faker.datatype.uuid(),
+      email: `test-${faker.datatype.number()}@post.bgu.ac.il`,
+      name: faker.name.findName(),
+      student_id: faker.datatype
+        .number({ min: 100000, max: 999999 })
+        .toString(),
+      faculty: 'מדעי הטבע',
+      department: 'מדעי המחשב',
+      year_of_study: faker.datatype.number({ min: 1, max: 4 }),
+      ...overrides,
+    };
+  }
 
-    static createWithCourses(courseCount: number = 5): UserWithCourses {
-        const user = this.create();
-        const courses = CourseFactory.createMany(courseCount);
+  static createWithCourses(courseCount: number = 5): UserWithCourses {
+    const user = this.create();
+    const courses = CourseFactory.createMany(courseCount);
 
-        return {
-            ...user,
-            courses,
-            enrollments: courses.map(course =>
-                EnrollmentFactory.create({ user_id: user.id, course_id: course.id })
-            )
-        };
-    }
+    return {
+      ...user,
+      courses,
+      enrollments: courses.map((course) =>
+        EnrollmentFactory.create({ user_id: user.id, course_id: course.id })
+      ),
+    };
+  }
 }
 ```
 
 ### 9.9 Continuous Integration Tests
 
 #### 9.9.1 GitHub Actions Workflow
+
 ```yaml
 # .github/workflows/test.yml
 name: Test Suite
@@ -2360,9 +2482,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: postgres
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
           --health-retries 5
 
     steps:
@@ -2434,6 +2554,7 @@ graph TB
 ### 10.2 Environment Configuration
 
 #### 10.2.1 Environment Variables
+
 ```bash
 # .env.production
 # Application
@@ -2479,6 +2600,7 @@ MAINTENANCE_MODE=false
 ### 10.3 Docker Deployment
 
 #### 10.3.1 Production Dockerfile
+
 ```dockerfile
 # Dockerfile
 FROM node:18-alpine AS deps
@@ -2525,6 +2647,7 @@ CMD ["node", "server.js"]
 ### 10.4 Kubernetes Deployment
 
 #### 10.4.1 Kubernetes Manifests
+
 ```yaml
 # k8s/deployment.yaml
 apiVersion: apps/v1
@@ -2543,37 +2666,37 @@ spec:
         app: spike-web
     spec:
       containers:
-      - name: spike-web
-        image: spike/web:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: NODE_ENV
-          value: "production"
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: spike-secrets
-              key: database-url
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /api/health
-            port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /api/health
-            port: 3000
-          initialDelaySeconds: 5
-          periodSeconds: 5
+        - name: spike-web
+          image: spike/web:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: 'production'
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: spike-secrets
+                  key: database-url
+          resources:
+            requests:
+              memory: '512Mi'
+              cpu: '250m'
+            limits:
+              memory: '1Gi'
+              cpu: '500m'
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
 ---
 apiVersion: v1
 kind: Service
@@ -2584,14 +2707,15 @@ spec:
   selector:
     app: spike-web
   ports:
-  - port: 80
-    targetPort: 3000
+    - port: 80
+      targetPort: 3000
   type: LoadBalancer
 ```
 
 ### 10.5 Database Migration
 
 #### 10.5.1 Migration Strategy
+
 ```bash
 #!/bin/bash
 # scripts/migrate-production.sh
@@ -2614,6 +2738,7 @@ echo "Migration complete!"
 ### 10.6 CI/CD Pipeline
 
 #### 10.6.1 GitHub Actions Deployment
+
 ```yaml
 # .github/workflows/deploy.yml
 name: Deploy to Production
@@ -2666,6 +2791,7 @@ jobs:
 ### 10.7 Monitoring and Observability
 
 #### 10.7.1 Monitoring Stack Configuration
+
 ```yaml
 # docker-compose.monitoring.yml
 version: '3.8'
@@ -2680,7 +2806,7 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.retention.time=30d'
     ports:
-      - "9090:9090"
+      - '9090:9090'
 
   grafana:
     image: grafana/grafana:latest
@@ -2691,15 +2817,15 @@ services:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
     ports:
-      - "3001:3000"
+      - '3001:3000'
 
   jaeger:
     image: jaegertracing/all-in-one:latest
     environment:
       - COLLECTOR_OTLP_ENABLED=true
     ports:
-      - "16686:16686"
-      - "4317:4317"
+      - '16686:16686'
+      - '4317:4317'
 
 volumes:
   prometheus_data:
@@ -2709,6 +2835,7 @@ volumes:
 ### 10.8 Backup and Recovery
 
 #### 10.8.1 Automated Backup Script
+
 ```bash
 #!/bin/bash
 # scripts/backup.sh
@@ -2734,6 +2861,7 @@ echo "Backup complete!"
 ### 10.9 SSL/TLS Configuration
 
 #### 10.9.1 Nginx SSL Configuration
+
 ```nginx
 # nginx/sites-available/spike
 server {
@@ -2779,6 +2907,7 @@ server {
 ### 11.1 Git Workflow
 
 #### 11.1.1 Branch Strategy
+
 ```mermaid
 gitGraph
     commit
@@ -2809,6 +2938,7 @@ gitGraph
 ```
 
 #### 11.1.2 Commit Convention
+
 ```bash
 # Format: <type>(<scope>): <subject>
 
@@ -2834,23 +2964,28 @@ test(auth): add integration tests for login flow
 ### 11.2 Code Review Process
 
 #### 11.2.1 Pull Request Template
+
 ```markdown
 ## Description
+
 Brief description of changes
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Breaking change
 - [ ] Documentation update
 
 ## Testing
+
 - [ ] Unit tests pass
 - [ ] Integration tests pass
 - [ ] E2E tests pass
 - [ ] Hebrew/RTL tests pass
 
 ## Checklist
+
 - [ ] Code follows style guidelines
 - [ ] Self-review completed
 - [ ] Comments added for complex code
@@ -2859,15 +2994,18 @@ Brief description of changes
 - [ ] Hebrew translations added
 
 ## Screenshots (if applicable)
+
 [Add screenshots here]
 
 ## Related Issues
+
 Closes #123
 ```
 
 ### 11.3 Development Environment Setup
 
 #### 11.3.1 Initial Setup Script
+
 ```bash
 #!/bin/bash
 # scripts/setup-dev.sh
@@ -2906,38 +3044,40 @@ echo "Run 'npm run dev' to start the application"
 ### 11.4 Code Standards
 
 #### 11.4.1 TypeScript Guidelines
+
 ```typescript
 // ✅ GOOD: Use interfaces for objects
 interface User {
-    id: string;
-    email: string;
-    name: string;
+  id: string;
+  email: string;
+  name: string;
 }
 
 // ❌ BAD: Avoid type for objects
 type User = {
-    id: string;
-    email: string;
-    name: string;
-}
+  id: string;
+  email: string;
+  name: string;
+};
 
 // ✅ GOOD: Use explicit return types
 function calculateGrade(score: number, max: number): number {
-    return (score / max) * 100;
+  return (score / max) * 100;
 }
 
 // ✅ GOOD: Use proper error handling
 async function fetchData(): Promise<Result<Data, Error>> {
-    try {
-        const data = await api.getData();
-        return { success: true, data };
-    } catch (error) {
-        return { success: false, error };
-    }
+  try {
+    const data = await api.getData();
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, error };
+  }
 }
 ```
 
 #### 11.4.2 React Component Guidelines
+
 ```typescript
 // ✅ GOOD: Typed props with interface
 interface ButtonProps {
@@ -2972,30 +3112,31 @@ export function Button({
 ### 11.5 Debugging Tools
 
 #### 11.5.1 Debug Configuration
+
 ```json
 // .vscode/launch.json
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Next.js: debug server",
-            "type": "node",
-            "request": "launch",
-            "runtimeExecutable": "npm",
-            "runtimeArgs": ["run", "dev"],
-            "port": 9229,
-            "env": {
-                "NODE_OPTIONS": "--inspect"
-            }
-        },
-        {
-            "name": "Next.js: debug client",
-            "type": "chrome",
-            "request": "launch",
-            "url": "http://localhost:3000",
-            "webRoot": "${workspaceFolder}/apps/web"
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Next.js: debug server",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 9229,
+      "env": {
+        "NODE_OPTIONS": "--inspect"
+      }
+    },
+    {
+      "name": "Next.js: debug client",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/apps/web"
+    }
+  ]
 }
 ```
 
@@ -3029,6 +3170,7 @@ graph TB
 ### 12.2 Authentication Security
 
 #### 12.2.1 Password Security
+
 - Passwords encrypted using AES-256-GCM
 - PBKDF2 with 100,000 iterations for key derivation
 - Unique salt per credential
@@ -3036,28 +3178,31 @@ graph TB
 - Automatic credential expiration after 30 days
 
 #### 12.2.2 Session Security
+
 ```typescript
 // Session configuration
 const sessionConfig = {
-    secret: process.env.AUTH_SECRET,
-    cookie: {
-        httpOnly: true,
-        secure: true, // HTTPS only
-        sameSite: 'strict',
-        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-    },
-    rolling: true, // Reset expiry on activity
+  secret: process.env.AUTH_SECRET,
+  cookie: {
+    httpOnly: true,
+    secure: true, // HTTPS only
+    sameSite: 'strict',
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  },
+  rolling: true, // Reset expiry on activity
 };
 ```
 
 ### 12.3 Data Protection
 
 #### 12.3.1 Encryption at Rest
+
 - Database encryption using Supabase's built-in encryption
 - Sensitive fields encrypted at application level
 - Encryption keys rotated quarterly
 
 #### 12.3.2 Encryption in Transit
+
 - All traffic over HTTPS (TLS 1.2+)
 - Certificate pinning for mobile apps (future)
 - Secure WebSocket connections for real-time updates
@@ -3065,6 +3210,7 @@ const sessionConfig = {
 ### 12.4 Access Control
 
 #### 12.4.1 Row-Level Security
+
 ```sql
 -- Example RLS policy
 CREATE POLICY "users_own_data" ON user_data
@@ -3074,11 +3220,12 @@ CREATE POLICY "users_own_data" ON user_data
 ```
 
 #### 12.4.2 API Rate Limiting
+
 ```typescript
 const rateLimiter = {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP'
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP',
 };
 ```
 
@@ -3087,46 +3234,49 @@ const rateLimiter = {
 ```typescript
 // Security headers configuration
 const securityHeaders = [
-    {
-        key: 'X-DNS-Prefetch-Control',
-        value: 'on'
-    },
-    {
-        key: 'Strict-Transport-Security',
-        value: 'max-age=63072000; includeSubDomains; preload'
-    },
-    {
-        key: 'X-XSS-Protection',
-        value: '1; mode=block'
-    },
-    {
-        key: 'X-Frame-Options',
-        value: 'SAMEORIGIN'
-    },
-    {
-        key: 'X-Content-Type-Options',
-        value: 'nosniff'
-    },
-    {
-        key: 'Referrer-Policy',
-        value: 'origin-when-cross-origin'
-    },
-    {
-        key: 'Content-Security-Policy',
-        value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline';"
-    }
+  {
+    key: 'X-DNS-Prefetch-Control',
+    value: 'on',
+  },
+  {
+    key: 'Strict-Transport-Security',
+    value: 'max-age=63072000; includeSubDomains; preload',
+  },
+  {
+    key: 'X-XSS-Protection',
+    value: '1; mode=block',
+  },
+  {
+    key: 'X-Frame-Options',
+    value: 'SAMEORIGIN',
+  },
+  {
+    key: 'X-Content-Type-Options',
+    value: 'nosniff',
+  },
+  {
+    key: 'Referrer-Policy',
+    value: 'origin-when-cross-origin',
+  },
+  {
+    key: 'Content-Security-Policy',
+    value:
+      "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline';",
+  },
 ];
 ```
 
 ### 12.6 Compliance
 
 #### 12.6.1 GDPR Compliance
+
 - User consent for data processing
 - Right to data portability
 - Right to deletion
 - Data minimization principles
 
 #### 12.6.2 Israeli Privacy Protection
+
 - Compliance with Israeli Privacy Protection Law
 - Data residency in approved regions
 - Notification of data breaches within 72 hours
@@ -3138,6 +3288,7 @@ const securityHeaders = [
 ### 13.1 Frontend Optimization
 
 #### 13.1.1 Code Splitting
+
 ```typescript
 // Dynamic imports for route-based splitting
 const DashboardCharts = dynamic(
@@ -3150,6 +3301,7 @@ const DashboardCharts = dynamic(
 ```
 
 #### 13.1.2 Image Optimization
+
 - Next.js Image component with automatic optimization
 - WebP format with fallbacks
 - Lazy loading by default
@@ -3158,6 +3310,7 @@ const DashboardCharts = dynamic(
 ### 13.2 Database Optimization
 
 #### 13.2.1 Query Optimization
+
 ```sql
 -- Optimized query with proper indexing
 CREATE INDEX CONCURRENTLY idx_assignments_user_course_date
@@ -3166,33 +3319,36 @@ WHERE status != 'completed';
 ```
 
 #### 13.2.2 Connection Pooling
+
 ```typescript
 const poolConfig = {
-    min: 2,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+  min: 2,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 };
 ```
 
 ### 13.3 Caching Strategy
 
 #### 13.3.1 Redis Caching
+
 ```typescript
 // Cache implementation
 class CacheService {
-    async get<T>(key: string): Promise<T | null> {
-        const cached = await redis.get(key);
-        return cached ? JSON.parse(cached) : null;
-    }
+  async get<T>(key: string): Promise<T | null> {
+    const cached = await redis.get(key);
+    return cached ? JSON.parse(cached) : null;
+  }
 
-    async set<T>(key: string, value: T, ttl: number = 3600): Promise<void> {
-        await redis.setex(key, ttl, JSON.stringify(value));
-    }
+  async set<T>(key: string, value: T, ttl: number = 3600): Promise<void> {
+    await redis.setex(key, ttl, JSON.stringify(value));
+  }
 }
 ```
 
 #### 13.3.2 CDN Configuration
+
 - Static assets served from CDN
 - Edge caching for API responses
 - Geographic distribution for Israeli users
@@ -3202,19 +3358,19 @@ class CacheService {
 ```javascript
 // next.config.js
 module.exports = {
-    webpack: (config, { isServer }) => {
-        if (!isServer) {
-            config.resolve.alias = {
-                ...config.resolve.alias,
-                '@sentry/node': '@sentry/browser'
-            };
-        }
-        return config;
-    },
-    experimental: {
-        optimizeCss: true,
-        optimizePackageImports: ['@radix-ui/*']
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@sentry/node': '@sentry/browser',
+      };
     }
+    return config;
+  },
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['@radix-ui/*'],
+  },
 };
 ```
 
@@ -3227,6 +3383,7 @@ module.exports = {
 #### 14.1.1 Authentication Issues
 
 **Problem**: User cannot complete dual-stage authentication
+
 ```bash
 # Debug steps:
 1. Check browser console for errors
@@ -3239,6 +3396,7 @@ module.exports = {
 ```
 
 **Solution**:
+
 ```typescript
 // Clear user session and retry
 await clearUserSession(userId);
@@ -3249,6 +3407,7 @@ await invalidateCredentials(userId);
 #### 14.1.2 Sync Failures
 
 **Problem**: Moodle sync fails repeatedly
+
 ```sql
 -- Check sync job status
 SELECT * FROM sync_jobs
@@ -3258,6 +3417,7 @@ ORDER BY created_at DESC;
 ```
 
 **Solution**:
+
 ```bash
 # Manual sync trigger
 npm run sync:manual -- --user-id=<user-id> --debug
@@ -3266,13 +3426,14 @@ npm run sync:manual -- --user-id=<user-id> --debug
 #### 14.1.3 Hebrew Display Issues
 
 **Problem**: Hebrew text appears as question marks or boxes
+
 ```css
 /* Ensure proper font loading */
 @font-face {
-    font-family: 'Rubik';
-    src: url('/fonts/Rubik-Variable.woff2') format('woff2');
-    font-display: swap;
-    unicode-range: U+0590-05FF;
+  font-family: 'Rubik';
+  src: url('/fonts/Rubik-Variable.woff2') format('woff2');
+  font-display: swap;
+  unicode-range: U+0590-05FF;
 }
 ```
 
@@ -3300,14 +3461,14 @@ npm run profile:cpu
 
 ### 14.3 Error Codes
 
-| Code | Description | Solution |
-|------|-------------|----------|
-| AUTH_001 | Invalid credentials | Verify username/password |
-| AUTH_002 | Session expired | Re-authenticate |
-| SYNC_001 | Sync timeout | Retry with smaller batch |
-| SYNC_002 | Invalid Moodle response | Check Moodle availability |
-| DB_001 | Connection timeout | Check database status |
-| DB_002 | Query timeout | Optimize query or increase timeout |
+| Code     | Description             | Solution                           |
+| -------- | ----------------------- | ---------------------------------- |
+| AUTH_001 | Invalid credentials     | Verify username/password           |
+| AUTH_002 | Session expired         | Re-authenticate                    |
+| SYNC_001 | Sync timeout            | Retry with smaller batch           |
+| SYNC_002 | Invalid Moodle response | Check Moodle availability          |
+| DB_001   | Connection timeout      | Check database status              |
+| DB_002   | Query timeout           | Optimize query or increase timeout |
 
 ---
 
@@ -3318,39 +3479,39 @@ npm run profile:cpu
 ```typescript
 // Complete authentication example
 async function authenticateUser() {
-    // Step 1: Google OAuth
-    const googleAuth = await signIn('google', {
-        redirect: false
-    });
+  // Step 1: Google OAuth
+  const googleAuth = await signIn('google', {
+    redirect: false,
+  });
 
-    if (!googleAuth?.ok) {
-        throw new Error('Google authentication failed');
-    }
+  if (!googleAuth?.ok) {
+    throw new Error('Google authentication failed');
+  }
 
-    // Step 2: University credentials
-    const credentialsResponse = await fetch('/api/auth/credentials/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            username: 'student123',
-            password: 'password',
-            universityId: 'bgu',
-            googleUserId: googleAuth.user.id
-        })
-    });
+  // Step 2: University credentials
+  const credentialsResponse = await fetch('/api/auth/credentials/validate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: 'student123',
+      password: 'password',
+      universityId: 'bgu',
+      googleUserId: googleAuth.user.id,
+    }),
+  });
 
-    if (!credentialsResponse.ok) {
-        throw new Error('University authentication failed');
-    }
+  if (!credentialsResponse.ok) {
+    throw new Error('University authentication failed');
+  }
 
-    // Step 3: Start sync
-    const syncResponse = await fetch('/api/sync/trigger', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ syncType: 'full' })
-    });
+  // Step 3: Start sync
+  const syncResponse = await fetch('/api/sync/trigger', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ syncType: 'full' }),
+  });
 
-    return syncResponse.json();
+  return syncResponse.json();
 }
 ```
 
@@ -3359,25 +3520,25 @@ async function authenticateUser() {
 ```typescript
 // Fetch user courses with caching
 const useCourses = () => {
-    return useQuery({
-        queryKey: ['courses'],
-        queryFn: async () => {
-            const response = await fetch('/api/user/courses');
-            if (!response.ok) throw new Error('Failed to fetch courses');
-            return response.json();
-        },
-        staleTime: 5 * 60 * 1000, // 5 minutes
-    });
+  return useQuery({
+    queryKey: ['courses'],
+    queryFn: async () => {
+      const response = await fetch('/api/user/courses');
+      if (!response.ok) throw new Error('Failed to fetch courses');
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 };
 
 // Fetch assignments with filters
 async function fetchAssignments(filters: AssignmentFilters) {
-    const params = new URLSearchParams();
-    if (filters.courseId) params.append('courseId', filters.courseId);
-    if (filters.status) params.append('status', filters.status);
+  const params = new URLSearchParams();
+  if (filters.courseId) params.append('courseId', filters.courseId);
+  if (filters.status) params.append('status', filters.status);
 
-    const response = await fetch(`/api/user/assignments?${params}`);
-    return response.json();
+  const response = await fetch(`/api/user/assignments?${params}`);
+  return response.json();
 }
 ```
 
@@ -3386,31 +3547,31 @@ async function fetchAssignments(filters: AssignmentFilters) {
 ```typescript
 // Real-time sync updates
 class SyncWebSocket {
-    private ws: WebSocket | null = null;
+  private ws: WebSocket | null = null;
 
-    connect(jobId: string) {
-        this.ws = new WebSocket(`wss://api.spike.bgu.ac.il/sync/${jobId}`);
+  connect(jobId: string) {
+    this.ws = new WebSocket(`wss://api.spike.bgu.ac.il/sync/${jobId}`);
 
-        this.ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            console.log('Sync progress:', data.progress);
+    this.ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log('Sync progress:', data.progress);
 
-            if (data.status === 'completed') {
-                this.disconnect();
-            }
-        };
+      if (data.status === 'completed') {
+        this.disconnect();
+      }
+    };
 
-        this.ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-        };
+    this.ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+  }
+
+  disconnect() {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
     }
-
-    disconnect() {
-        if (this.ws) {
-            this.ws.close();
-            this.ws = null;
-        }
-    }
+  }
 }
 ```
 
@@ -3420,47 +3581,48 @@ class SyncWebSocket {
 
 ### 16.1 Glossary
 
-| Term | Hebrew | Description |
-|------|---------|------------|
-| Assignment | מטלה | Academic task or homework |
-| Course | קורס | Academic course |
-| Credits | נקודות זכות (נ״ז) | Academic credit points |
-| Dashboard | לוח בקרה | Main application interface |
-| Dual-stage | דו-שלבי | Two-step authentication |
-| Enrollment | רישום | Course registration |
-| Faculty | פקולטה | Academic faculty |
-| Grade | ציון | Academic score |
-| Moodle | מודל | Learning Management System |
-| Semester | סמסטר | Academic term |
-| Sync | סנכרון | Data synchronization |
-| Transcript | גיליון ציונים | Grade sheet |
+| Term       | Hebrew            | Description                |
+| ---------- | ----------------- | -------------------------- |
+| Assignment | מטלה              | Academic task or homework  |
+| Course     | קורס              | Academic course            |
+| Credits    | נקודות זכות (נ״ז) | Academic credit points     |
+| Dashboard  | לוח בקרה          | Main application interface |
+| Dual-stage | דו-שלבי           | Two-step authentication    |
+| Enrollment | רישום             | Course registration        |
+| Faculty    | פקולטה            | Academic faculty           |
+| Grade      | ציון              | Academic score             |
+| Moodle     | מודל              | Learning Management System |
+| Semester   | סמסטר             | Academic term              |
+| Sync       | סנכרון            | Data synchronization       |
+| Transcript | גיליון ציונים     | Grade sheet                |
 
 ### 16.2 Technology Versions
 
-| Technology | Version | Purpose |
-|-----------|---------|----------|
-| Node.js | 18.0+ LTS | Runtime environment |
-| Next.js | 14.0+ | Web framework |
-| React | 18.0+ | UI library |
-| TypeScript | 5.0+ | Type safety |
-| PostgreSQL | 15.0+ | Database |
-| Redis | 7.0+ | Caching |
-| Docker | 20.0+ | Containerization |
-| Python | 3.11+ | Web scraping |
+| Technology | Version   | Purpose             |
+| ---------- | --------- | ------------------- |
+| Node.js    | 18.0+ LTS | Runtime environment |
+| Next.js    | 14.0+     | Web framework       |
+| React      | 18.0+     | UI library          |
+| TypeScript | 5.0+      | Type safety         |
+| PostgreSQL | 15.0+     | Database            |
+| Redis      | 7.0+      | Caching             |
+| Docker     | 20.0+     | Containerization    |
+| Python     | 3.11+     | Web scraping        |
 
 ### 16.3 External Services
 
-| Service | Purpose | Documentation |
-|---------|---------|---------------|
-| Google OAuth | Authentication | https://developers.google.com/identity |
-| Supabase | Database hosting | https://supabase.com/docs |
-| BGU Moodle | Academic data | Internal documentation |
-| Sentry | Error tracking | https://docs.sentry.io |
-| Vercel | Hosting (optional) | https://vercel.com/docs |
+| Service      | Purpose            | Documentation                          |
+| ------------ | ------------------ | -------------------------------------- |
+| Google OAuth | Authentication     | https://developers.google.com/identity |
+| Supabase     | Database hosting   | https://supabase.com/docs              |
+| BGU Moodle   | Academic data      | Internal documentation                 |
+| Sentry       | Error tracking     | https://docs.sentry.io                 |
+| Vercel       | Hosting (optional) | https://vercel.com/docs                |
 
 ### 16.4 Configuration Files
 
 #### 16.4.1 TypeScript Configuration
+
 ```json
 // tsconfig.json
 {
@@ -3490,25 +3652,24 @@ class SyncWebSocket {
 ```
 
 #### 16.4.2 ESLint Configuration
+
 ```javascript
 // .eslintrc.js
 module.exports = {
-  extends: [
-    'next/core-web-vitals',
-    'plugin:@typescript-eslint/recommended'
-  ],
+  extends: ['next/core-web-vitals', 'plugin:@typescript-eslint/recommended'],
   rules: {
     // Hebrew/RTL specific rules
     'no-restricted-syntax': [
       'error',
       {
-        selector: 'CallExpression[callee.property.name=/^(marginLeft|marginRight|paddingLeft|paddingRight)$/]',
-        message: 'Use logical properties for RTL support'
-      }
+        selector:
+          'CallExpression[callee.property.name=/^(marginLeft|marginRight|paddingLeft|paddingRight)$/]',
+        message: 'Use logical properties for RTL support',
+      },
     ],
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-    '@typescript-eslint/explicit-function-return-type': 'warn'
-  }
+    '@typescript-eslint/explicit-function-return-type': 'warn',
+  },
 };
 ```
 
@@ -3535,17 +3696,18 @@ This project is proprietary software. All rights reserved.
 
 ## Version History
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 0.1.0 | 2024-09 | Initial documentation |
-| 0.1.1 | 2024-10 | Added Hebrew/RTL section |
-| 0.1.2 | 2024-11 | Updated API documentation |
-| 0.1.3 | 2024-12 | Added troubleshooting guide |
+| Version | Date    | Changes                     |
+| ------- | ------- | --------------------------- |
+| 0.1.0   | 2024-09 | Initial documentation       |
+| 0.1.1   | 2024-10 | Added Hebrew/RTL section    |
+| 0.1.2   | 2024-11 | Updated API documentation   |
+| 0.1.3   | 2024-12 | Added troubleshooting guide |
 
 ---
 
-*This documentation is maintained by the Spike Platform development team. For updates or corrections, please submit a pull request or contact the technical lead.*
+_This documentation is maintained by the Spike Platform development team. For
+updates or corrections, please submit a pull request or contact the technical
+lead._
 
-**Last Updated**: September 2025
-**Document Version**: 1.0.0
-**Status**: Production
+**Last Updated**: September 2025 **Document Version**: 1.0.0 **Status**:
+Production

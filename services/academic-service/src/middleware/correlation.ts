@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../config/logging';
 
@@ -13,7 +13,7 @@ export const correlationMiddleware = (req: Request, res: Response, next: NextFun
     correlationId,
     method: req.method,
     path: req.path,
-    userAgent: req.get('User-Agent')
+    userAgent: req.get('User-Agent'),
   });
 
   // Log incoming request
@@ -23,9 +23,9 @@ export const correlationMiddleware = (req: Request, res: Response, next: NextFun
     ip: req.ip,
     headers: {
       'content-type': req.get('Content-Type'),
-      'authorization': req.get('Authorization') ? 'present' : 'missing',
-      'x-tenant-id': req.get('X-Tenant-ID')
-    }
+      authorization: req.get('Authorization') ? 'present' : 'missing',
+      'x-tenant-id': req.get('X-Tenant-ID'),
+    },
   });
 
   next();

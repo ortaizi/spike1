@@ -1,7 +1,7 @@
-import amqp, { Connection, Channel, ConsumeMessage } from 'amqplib';
+import amqp, { Channel, Connection, ConsumeMessage } from 'amqplib';
+import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../config/logging';
 import { DomainEvent } from '../types';
-import { v4 as uuidv4 } from 'uuid';
 
 export class EventBus {
   private static instance: EventBus;
@@ -50,7 +50,7 @@ export class EventBus {
       this.isInitialized = true;
       logger.info('Event bus initialized', {
         exchangeName: this.exchangeName,
-        rabbitmqUrl: rabbitmqUrl.replace(/\/\/.*@/, '//***@') // Hide credentials in logs
+        rabbitmqUrl: rabbitmqUrl.replace(/\/\/.*@/, '//***@'), // Hide credentials in logs
       });
     } catch (error) {
       logger.error('Failed to initialize event bus:', error);
@@ -69,36 +69,31 @@ export class EventBus {
       eventId: event.eventId || uuidv4(),
       timestamp: event.timestamp || new Date().toISOString(),
       version: event.version || 1,
-      source: 'academic-service'
+      source: 'academic-service',
     };
 
     const messageBuffer = Buffer.from(JSON.stringify(message));
 
     try {
-      const published = this.channel.publish(
-        this.exchangeName,
-        routingKey,
-        messageBuffer,
-        {
-          persistent: true,
-          headers: {
-            'x-tenant-id': event.tenantId,
-            'x-event-type': eventType,
-            'x-correlation-id': event.correlationId,
-            'x-user-id': event.userId,
-            'x-source-service': 'academic-service'
-          },
-          messageId: message.eventId,
-          timestamp: Date.now(),
-          contentType: 'application/json'
-        }
-      );
+      const published = this.channel.publish(this.exchangeName, routingKey, messageBuffer, {
+        persistent: true,
+        headers: {
+          'x-tenant-id': event.tenantId,
+          'x-event-type': eventType,
+          'x-correlation-id': event.correlationId,
+          'x-user-id': event.userId,
+          'x-source-service': 'academic-service',
+        },
+        messageId: message.eventId,
+        timestamp: Date.now(),
+        contentType: 'application/json',
+      });
 
       if (!published) {
         logger.warn('Event publish may have been buffered', {
           eventType,
           routingKey,
-          eventId: message.eventId
+          eventId: message.eventId,
         });
       }
 
@@ -107,13 +102,13 @@ export class EventBus {
         routingKey,
         eventId: message.eventId,
         tenantId: event.tenantId,
-        correlationId: event.correlationId
+        correlationId: event.correlationId,
       });
     } catch (error) {
       logger.error('Failed to publish event:', {
         eventType,
         routingKey,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -151,8 +146,8 @@ export class EventBus {
         arguments: {
           'x-dead-letter-exchange': this.dlxExchangeName,
           'x-dead-letter-routing-key': `dlx.${eventPattern}`,
-          'x-message-ttl': 24 * 60 * 60 * 1000 // 24 hours
-        }
+          'x-message-ttl': 24 * 60 * 60 * 1000, // 24 hours
+        },
       });
 
       // Bind queue to exchange with pattern
@@ -177,7 +172,7 @@ export class EventBus {
               eventId: event.eventId,
               tenantId: event.tenantId,
               queue: queue.queue,
-              redelivered: msg.fields.redelivered
+              redelivered: msg.fields.redelivered,
             });
 
             // Execute handler
@@ -190,14 +185,14 @@ export class EventBus {
 
             logger.debug('Event processed successfully', {
               eventType: event.eventType,
-              eventId: event.eventId
+              eventId: event.eventId,
             });
           } catch (error) {
             logger.error('Event processing failed:', {
               error: error instanceof Error ? error.message : 'Unknown error',
               queue: queue.queue,
               routingKey: msg.fields.routingKey,
-              redelivered: msg.fields.redelivered
+              redelivered: msg.fields.redelivered,
             });
 
             if (!autoAck) {
@@ -219,13 +214,13 @@ export class EventBus {
         eventPattern,
         queueName: queue.queue,
         durable,
-        exclusive
+        exclusive,
       });
     } catch (error) {
       logger.error('Failed to create event subscription:', {
         eventPattern,
         queueName,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -255,7 +250,7 @@ export class EventBus {
           this.channel?.ack(msg);
         } catch (error) {
           logger.error('Dead letter processing failed:', {
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
           this.channel?.nack(msg, false, true); // Requeue for retry
         }
@@ -294,17 +289,17 @@ export class EventBus {
 
     // Main events exchange (topic)
     await this.channel.assertExchange(this.exchangeName, 'topic', {
-      durable: true
+      durable: true,
     });
 
     // Dead letter exchange
     await this.channel.assertExchange(this.dlxExchangeName, 'topic', {
-      durable: true
+      durable: true,
     });
 
     logger.info('Event exchanges created', {
       mainExchange: this.exchangeName,
-      dlxExchange: this.dlxExchangeName
+      dlxExchange: this.dlxExchangeName,
     });
   }
 
@@ -334,7 +329,7 @@ export function EventHandler(eventType: string) {
         handlerClass: target.constructor.name,
         handlerMethod: propertyKey,
         eventId: event.eventId,
-        tenantId: event.tenantId
+        tenantId: event.tenantId,
       });
 
       try {
@@ -344,7 +339,7 @@ export function EventHandler(eventType: string) {
           eventType,
           handlerClass: target.constructor.name,
           handlerMethod: propertyKey,
-          eventId: event.eventId
+          eventId: event.eventId,
         });
 
         return result;
@@ -354,7 +349,7 @@ export function EventHandler(eventType: string) {
           handlerClass: target.constructor.name,
           handlerMethod: propertyKey,
           eventId: event.eventId,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
         throw error;
       }
@@ -371,7 +366,7 @@ export class AcademicEventHandlers {
     // Update read models, trigger notifications, etc.
     logger.info('Handling course created event', {
       courseId: event.aggregateId,
-      tenantId: event.tenantId
+      tenantId: event.tenantId,
     });
   }
 
@@ -381,7 +376,7 @@ export class AcademicEventHandlers {
     logger.info('Handling assignment created event', {
       assignmentId: event.aggregateId,
       courseId: event.eventData.assignment.courseId,
-      tenantId: event.tenantId
+      tenantId: event.tenantId,
     });
   }
 
@@ -391,7 +386,7 @@ export class AcademicEventHandlers {
     logger.info('Handling grade updated event', {
       gradeId: event.aggregateId,
       userId: event.eventData.grade.userId,
-      tenantId: event.tenantId
+      tenantId: event.tenantId,
     });
   }
 }

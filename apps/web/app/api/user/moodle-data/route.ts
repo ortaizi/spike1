@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../lib/auth/auth-provider';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'לא מורשה' }, { status: 401 });
     }
@@ -12,10 +12,10 @@ export async function GET(request: NextRequest) {
     // Check if Supabase is available (not using placeholder values)
     const supabaseUrl = process.env['SUPABASE_URL'] || '';
     const supabaseKey = process.env['SUPABASE_ANON_KEY'] || '';
-    
+
     if (supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
       console.log('Using mock Moodle data (Supabase not configured)');
-      
+
       // Return mock data
       const mockMoodleData = {
         courses: [
@@ -30,15 +30,15 @@ export async function GET(request: NextRequest) {
                 id: 1,
                 name: 'תרגיל 1 - משתנים ולולאות',
                 grade: 90,
-                dueDate: '2024-11-15'
+                dueDate: '2024-11-15',
               },
               {
                 id: 2,
                 name: 'תרגיל 2 - פונקציות ומערכים',
                 grade: 85,
-                dueDate: '2024-11-30'
-              }
-            ]
+                dueDate: '2024-11-30',
+              },
+            ],
           },
           {
             id: '2',
@@ -51,9 +51,9 @@ export async function GET(request: NextRequest) {
                 id: 3,
                 name: 'תרגיל 1 - מטריצות',
                 grade: 80,
-                dueDate: '2024-11-20'
-              }
-            ]
+                dueDate: '2024-11-20',
+              },
+            ],
           },
           {
             id: '3',
@@ -66,23 +66,23 @@ export async function GET(request: NextRequest) {
                 id: 4,
                 name: 'תרגיל 1 - מכניקה',
                 grade: 95,
-                dueDate: '2024-11-25'
-              }
-            ]
-          }
+                dueDate: '2024-11-25',
+              },
+            ],
+          },
         ],
         profile: {
           studentId: session.user.studentId || '123456789',
           fullName: session.user.name || 'משתמש דוגמה',
           email: session.user.email || 'user@example.com',
           department: 'מדעי המחשב',
-          year: 1
-        }
+          year: 1,
+        },
       };
 
       return NextResponse.json({
         success: true,
-        data: mockMoodleData
+        data: mockMoodleData,
       });
     }
 
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       .select('*')
       .eq('id', session.user.id)
       .single();
-    
+
     if (error) {
       console.error('Error fetching user:', error);
       return NextResponse.json({ error: 'Failed to fetch user data' }, { status: 500 });
@@ -113,14 +113,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: moodleData
+      data: moodleData,
     });
-
   } catch (error) {
     console.error('Error fetching Moodle data:', error);
-    return NextResponse.json(
-      { error: 'שגיאה בקבלת נתוני מודל' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'שגיאה בקבלת נתוני מודל' }, { status: 500 });
   }
-} 
+}

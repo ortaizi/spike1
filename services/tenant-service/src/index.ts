@@ -1,18 +1,18 @@
-import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
+import express from 'express';
 import rateLimit from 'express-rate-limit';
-import { setupTracing } from './tracing/setup';
-import { logger } from './utils/logger';
-import { tenantRoutes } from './routes/tenants';
-import { provisioningRoutes } from './routes/provisioning';
-import { resourceRoutes } from './routes/resources';
-import { healthRoute } from './routes/health';
-import { errorHandler } from './middleware/error-handler';
-import { requestLogger } from './middleware/request-logger';
+import helmet from 'helmet';
+import { ConsulConfig } from './config/consul';
 import { DatabaseConnection } from './database/connection';
 import { KubernetesManager } from './kubernetes/manager';
-import { ConsulConfig } from './config/consul';
+import { errorHandler } from './middleware/error-handler';
+import { requestLogger } from './middleware/request-logger';
+import { healthRoute } from './routes/health';
+import { provisioningRoutes } from './routes/provisioning';
+import { resourceRoutes } from './routes/resources';
+import { tenantRoutes } from './routes/tenants';
+import { setupTracing } from './tracing/setup';
+import { logger } from './utils/logger';
 
 // Initialize distributed tracing
 const sdk = setupTracing('tenant-service');
@@ -26,36 +26,40 @@ const k8sManager = new KubernetesManager();
 const consulConfig = new ConsulConfig();
 
 // Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+      },
     },
-  },
-}));
+  })
+);
 
 // CORS configuration
-app.use(cors({
-  origin: (origin, callback) => {
-    const allowedOrigins = [
-      'https://admin.spike-platform.com',
-      'https://bgu.spike-platform.com',
-      'https://tau.spike-platform.com',
-      'https://huji.spike-platform.com',
-      'http://localhost:3000', // Development
-    ];
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        'https://admin.spike-platform.com',
+        'https://bgu.spike-platform.com',
+        'https://tau.spike-platform.com',
+        'https://huji.spike-platform.com',
+        'http://localhost:3000', // Development
+      ];
 
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+  })
+);
 
 // Rate limiting
 const limiter = rateLimit({
@@ -108,24 +112,30 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 // Background tasks
 async function startBackgroundTasks() {
   // Resource usage monitoring (every 5 minutes)
-  setInterval(async () => {
-    try {
-      // This would monitor tenant resource usage
-      logger.debug('Running resource usage check...');
-    } catch (error) {
-      logger.error('Resource monitoring error:', error);
-    }
-  }, 5 * 60 * 1000);
+  setInterval(
+    async () => {
+      try {
+        // This would monitor tenant resource usage
+        logger.debug('Running resource usage check...');
+      } catch (error) {
+        logger.error('Resource monitoring error:', error);
+      }
+    },
+    5 * 60 * 1000
+  );
 
   // Tenant health checks (every 10 minutes)
-  setInterval(async () => {
-    try {
-      logger.debug('Running tenant health checks...');
-      // Implementation would check tenant service health
-    } catch (error) {
-      logger.error('Tenant health check error:', error);
-    }
-  }, 10 * 60 * 1000);
+  setInterval(
+    async () => {
+      try {
+        logger.debug('Running tenant health checks...');
+        // Implementation would check tenant service health
+      } catch (error) {
+        logger.error('Tenant health check error:', error);
+      }
+    },
+    10 * 60 * 1000
+  );
 }
 
 // Start server
@@ -152,7 +162,6 @@ async function startServer() {
       logger.info(`Tenant Service running on port ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });
-
   } catch (error) {
     logger.error('Failed to start Tenant Service:', error);
     process.exit(1);

@@ -26,8 +26,8 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     metadata: {
       description: 'Route authentication to microservice instead of monolith',
       phase: 'Phase 1',
-      rolloutDate: '2024-01-15'
-    }
+      rolloutDate: '2024-01-15',
+    },
   },
 
   USE_TENANT_SERVICE: {
@@ -38,8 +38,8 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     metadata: {
       description: 'Use tenant management microservice for tenant operations',
       phase: 'Phase 1',
-      rolloutDate: '2024-01-15'
-    }
+      rolloutDate: '2024-01-15',
+    },
   },
 
   USE_UNIVERSITY_INTEGRATION_SERVICE: {
@@ -50,8 +50,8 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     metadata: {
       description: 'Route scraping jobs to university integration microservice',
       phase: 'Phase 2',
-      plannedRollout: '2024-03-01'
-    }
+      plannedRollout: '2024-03-01',
+    },
   },
 
   USE_ACADEMIC_SERVICE: {
@@ -62,8 +62,8 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     metadata: {
       description: 'Handle academic data through dedicated microservice',
       phase: 'Phase 3',
-      plannedRollout: '2024-05-01'
-    }
+      plannedRollout: '2024-05-01',
+    },
   },
 
   // Traffic Percentage Flags
@@ -73,8 +73,8 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     percentage: 100,
     tenants: ['bgu', 'tau', 'huji'],
     metadata: {
-      description: 'Percentage of auth traffic routed to microservice'
-    }
+      description: 'Percentage of auth traffic routed to microservice',
+    },
   },
 
   TRAFFIC_PERCENTAGE_TENANT: {
@@ -83,8 +83,8 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     percentage: 100,
     tenants: ['bgu', 'tau', 'huji'],
     metadata: {
-      description: 'Percentage of tenant management traffic to microservice'
-    }
+      description: 'Percentage of tenant management traffic to microservice',
+    },
   },
 
   // University-Specific Features
@@ -94,8 +94,8 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     percentage: 100,
     tenants: ['bgu'],
     metadata: {
-      description: 'Enable BGU-specific features and integrations'
-    }
+      description: 'Enable BGU-specific features and integrations',
+    },
   },
 
   ENABLE_TAU_INTEGRATION: {
@@ -105,8 +105,8 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     tenants: ['tau'],
     metadata: {
       description: 'Enable TAU-specific features and integrations',
-      plannedRollout: '2024-02-01'
-    }
+      plannedRollout: '2024-02-01',
+    },
   },
 
   ENABLE_HUJI_INTEGRATION: {
@@ -116,8 +116,8 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     tenants: ['huji'],
     metadata: {
       description: 'Enable HUJI-specific features and integrations',
-      plannedRollout: '2024-03-01'
-    }
+      plannedRollout: '2024-03-01',
+    },
   },
 
   // Feature-Specific Flags
@@ -127,8 +127,8 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     percentage: 100,
     tenants: ['bgu', 'tau', 'huji'],
     metadata: {
-      description: 'Enable Hebrew RTL UI components'
-    }
+      description: 'Enable Hebrew RTL UI components',
+    },
   },
 
   ENABLE_DUAL_WRITE: {
@@ -138,8 +138,8 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     tenants: [],
     metadata: {
       description: 'Enable dual-write pattern during migration',
-      usage: 'Used when migrating data between monolith and microservices'
-    }
+      usage: 'Used when migrating data between monolith and microservices',
+    },
   },
 
   ENABLE_SHADOW_MODE: {
@@ -149,8 +149,8 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     tenants: ['bgu'],
     metadata: {
       description: 'Send shadow traffic to new services for validation',
-      usage: 'Testing new services without affecting production'
-    }
+      usage: 'Testing new services without affecting production',
+    },
   },
 
   ENABLE_CIRCUIT_BREAKER: {
@@ -159,8 +159,8 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     percentage: 100,
     tenants: ['bgu', 'tau', 'huji'],
     metadata: {
-      description: 'Enable circuit breaker for service resilience'
-    }
+      description: 'Enable circuit breaker for service resilience',
+    },
   },
 
   // Performance and Monitoring
@@ -170,8 +170,8 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     percentage: 10,
     tenants: ['bgu'],
     metadata: {
-      description: 'Enable detailed logging for debugging'
-    }
+      description: 'Enable detailed logging for debugging',
+    },
   },
 
   ENABLE_PERFORMANCE_MONITORING: {
@@ -180,8 +180,8 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     percentage: 100,
     tenants: ['bgu', 'tau', 'huji'],
     metadata: {
-      description: 'Enable performance metrics collection'
-    }
+      description: 'Enable performance metrics collection',
+    },
   },
 
   // Emergency Controls
@@ -192,9 +192,9 @@ export const DEFAULT_FEATURE_FLAGS: Record<string, FeatureFlag> = {
     tenants: [],
     metadata: {
       description: 'Emergency flag to route all traffic back to monolith',
-      usage: 'Use only in case of critical microservice failures'
-    }
-  }
+      usage: 'Use only in case of critical microservice failures',
+    },
+  },
 };
 
 // Feature Flag Manager Class
@@ -209,12 +209,12 @@ export class FeatureFlagManager {
     this.refreshInterval = config.refreshInterval;
 
     // Initialize with default flags
-    Object.values(DEFAULT_FEATURE_FLAGS).forEach(flag => {
+    Object.values(DEFAULT_FEATURE_FLAGS).forEach((flag) => {
       this.flags.set(flag.key, flag);
     });
 
     // Override with config flags
-    Object.values(config.flags).forEach(flag => {
+    Object.values(config.flags).forEach((flag) => {
       this.flags.set(flag.key, flag);
     });
 
@@ -258,7 +258,7 @@ export class FeatureFlagManager {
   private isInPercentageRollout(flagKey: string, percentage: number, identifier: string): boolean {
     // Use consistent hashing to determine if identifier is in rollout
     const hash = this.hashString(flagKey + identifier);
-    return (hash % 100) < percentage;
+    return hash % 100 < percentage;
   }
 
   // Simple string hash function
@@ -266,7 +266,7 @@ export class FeatureFlagManager {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash);
@@ -291,7 +291,7 @@ export class FeatureFlagManager {
       const updatedFlag: FeatureFlag = {
         ...existingFlag,
         ...updates,
-        key: flagKey // Ensure key cannot be changed
+        key: flagKey, // Ensure key cannot be changed
       };
 
       this.flags.set(flagKey, updatedFlag);
@@ -400,7 +400,7 @@ export function getFeatureFlags(): FeatureFlagManager {
     globalFeatureFlagManager = new FeatureFlagManager({
       flags: DEFAULT_FEATURE_FLAGS,
       provider: 'environment',
-      refreshInterval: 60000 // 1 minute
+      refreshInterval: 60000, // 1 minute
     });
   }
   return globalFeatureFlagManager;

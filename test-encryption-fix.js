@@ -31,9 +31,11 @@ try {
   const encrypted2 = CredentialsEncryption.encryptCredentials(username, password);
 
   // The encrypted values should be different because of unique IVs
-  if (encrypted1.encryptedUsername !== encrypted2.encryptedUsername &&
-      encrypted1.encryptedPassword !== encrypted2.encryptedPassword &&
-      encrypted1.iv !== encrypted2.iv) {
+  if (
+    encrypted1.encryptedUsername !== encrypted2.encryptedUsername &&
+    encrypted1.encryptedPassword !== encrypted2.encryptedPassword &&
+    encrypted1.iv !== encrypted2.iv
+  ) {
     console.log('✅ SUCCESS: IV randomization working correctly!');
     console.log('✅ Same plaintext produces different ciphertext (proper IV usage)');
   } else {
@@ -56,14 +58,17 @@ try {
     encrypted2.iv
   );
 
-  if (decrypted1.username === username && decrypted1.password === password &&
-      decrypted2.username === username && decrypted2.password === password) {
+  if (
+    decrypted1.username === username &&
+    decrypted1.password === password &&
+    decrypted2.username === username &&
+    decrypted2.password === password
+  ) {
     console.log('✅ SUCCESS: Both encrypted versions decrypt correctly!');
   } else {
     console.log('❌ FAILED: Decryption failed for one or both versions');
     process.exit(1);
   }
-
 } catch (error) {
   console.error('❌ ERROR: IV randomization test failed:', error);
   process.exit(1);

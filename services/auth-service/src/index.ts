@@ -1,17 +1,17 @@
-import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
+import express from 'express';
 import rateLimit from 'express-rate-limit';
-import { setupTracing } from './tracing/setup';
-import { logger } from './utils/logger';
-import { authRoutes } from './routes/auth';
-import { sessionRoutes } from './routes/session';
-import { credentialsRoutes } from './routes/credentials';
-import { healthRoute } from './routes/health';
+import helmet from 'helmet';
+import { RedisConnection } from './cache/redis';
+import { DatabaseConnection } from './database/connection';
 import { errorHandler } from './middleware/error-handler';
 import { requestLogger } from './middleware/request-logger';
-import { DatabaseConnection } from './database/connection';
-import { RedisConnection } from './cache/redis';
+import { authRoutes } from './routes/auth';
+import { credentialsRoutes } from './routes/credentials';
+import { healthRoute } from './routes/health';
+import { sessionRoutes } from './routes/session';
+import { setupTracing } from './tracing/setup';
+import { logger } from './utils/logger';
 
 // Initialize distributed tracing
 const sdk = setupTracing('auth-service');
@@ -24,36 +24,40 @@ const dbConnection = new DatabaseConnection();
 const redisConnection = new RedisConnection();
 
 // Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+      },
     },
-  },
-}));
+  })
+);
 
 // CORS configuration for multi-tenant support
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests from tenant subdomains
-    const allowedOrigins = [
-      'https://bgu.spike-platform.com',
-      'https://tau.spike-platform.com',
-      'https://huji.spike-platform.com',
-      'http://localhost:3000', // Development
-    ];
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests from tenant subdomains
+      const allowedOrigins = [
+        'https://bgu.spike-platform.com',
+        'https://tau.spike-platform.com',
+        'https://huji.spike-platform.com',
+        'http://localhost:3000', // Development
+      ];
 
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+  })
+);
 
 // Rate limiting
 const limiter = rateLimit({
@@ -119,7 +123,6 @@ async function startServer() {
       logger.info(`Auth Service running on port ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });
-
   } catch (error) {
     logger.error('Failed to start Auth Service:', error);
     process.exit(1);

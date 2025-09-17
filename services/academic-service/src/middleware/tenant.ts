@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { logger } from '../config/logging';
 
@@ -60,13 +60,13 @@ export const tenantMiddleware = async (req: Request, res: Response, next: NextFu
       hostname: req.hostname,
       headers: {
         authorization: req.headers.authorization ? 'present' : 'missing',
-        'x-tenant-id': req.headers['x-tenant-id']
-      }
+        'x-tenant-id': req.headers['x-tenant-id'],
+      },
     });
 
     res.status(400).json({
       error: 'Tenant identification failed',
-      message: 'Unable to determine tenant from request'
+      message: 'Unable to determine tenant from request',
     });
   }
 };

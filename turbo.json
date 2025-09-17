@@ -11,13 +11,7 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**",
-        "dist/**",
-        "build/**",
-        "out/**"
-      ],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**", "out/**"],
       "env": [
         "NODE_ENV",
         "NEXT_PUBLIC_SUPABASE_URL",
@@ -45,48 +39,25 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": [
-        "coverage/**",
-        "test-results/**",
-        "playwright-report/**"
-      ],
-      "env": [
-        "NODE_ENV",
-        "E2E_BASE_URL",
-        "PLAYWRIGHT_BASE_URL"
-      ]
+      "outputs": ["coverage/**", "test-results/**", "playwright-report/**"],
+      "env": ["NODE_ENV", "E2E_BASE_URL", "PLAYWRIGHT_BASE_URL"]
     },
     "test:unit": {
       "dependsOn": ["^build"],
-      "outputs": [
-        "coverage/**",
-        "test-results/**"
-      ]
+      "outputs": ["coverage/**", "test-results/**"]
     },
     "test:e2e": {
       "dependsOn": ["^build"],
-      "outputs": [
-        "test-results/**",
-        "playwright-report/**"
-      ],
-      "env": [
-        "NODE_ENV",
-        "E2E_BASE_URL",
-        "PLAYWRIGHT_BASE_URL"
-      ]
+      "outputs": ["test-results/**", "playwright-report/**"],
+      "env": ["NODE_ENV", "E2E_BASE_URL", "PLAYWRIGHT_BASE_URL"]
     },
     "test:visual": {
       "dependsOn": ["^build"],
-      "outputs": [
-        "test-results/**",
-        "playwright-report/**"
-      ]
+      "outputs": ["test-results/**", "playwright-report/**"]
     },
     "test:coverage": {
       "dependsOn": ["^build"],
-      "outputs": [
-        "coverage/**"
-      ]
+      "outputs": ["coverage/**"]
     },
     "clean": {
       "cache": false,
@@ -94,10 +65,7 @@
     },
     "db:generate": {
       "dependsOn": ["^build"],
-      "outputs": [
-        "packages/database/types/**",
-        "apps/web/types/database.d.ts"
-      ]
+      "outputs": ["packages/database/types/**", "apps/web/types/database.d.ts"]
     },
     "db:push": {
       "dependsOn": ["^build"],

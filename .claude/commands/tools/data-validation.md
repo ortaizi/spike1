@@ -57,4 +57,5 @@ Implement validation including:
    - File upload validation
    - Real-time validation
 
-Include data quality metrics, monitoring dashboards, and alerting. Make it extensible for custom validation rules.
+Include data quality metrics, monitoring dashboards, and alerting. Make it
+extensible for custom validation rules.

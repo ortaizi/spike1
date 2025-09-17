@@ -3,8 +3,8 @@
  * K6 performance tests to validate system under load
  */
 
-import http from 'k6/http';
 import { check, sleep } from 'k6';
+import http from 'k6/http';
 import { Rate, Trend } from 'k6/metrics';
 
 // Custom metrics
@@ -15,31 +15,31 @@ export const responseTime = new Trend('response_time');
 export const options = {
   stages: [
     // Phase 1: Warm up
-    { duration: '2m', target: 100 },   // Ramp up to 100 users over 2 minutes
-    { duration: '5m', target: 100 },   // Stay at 100 users for 5 minutes
+    { duration: '2m', target: 100 }, // Ramp up to 100 users over 2 minutes
+    { duration: '5m', target: 100 }, // Stay at 100 users for 5 minutes
 
     // Phase 2: Load test
-    { duration: '2m', target: 500 },   // Ramp up to 500 users over 2 minutes
-    { duration: '10m', target: 500 },  // Stay at 500 users for 10 minutes
+    { duration: '2m', target: 500 }, // Ramp up to 500 users over 2 minutes
+    { duration: '10m', target: 500 }, // Stay at 500 users for 10 minutes
 
     // Phase 3: Stress test
-    { duration: '2m', target: 1000 },  // Ramp up to 1000 users over 2 minutes
-    { duration: '5m', target: 1000 },  // Stay at 1000 users for 5 minutes
+    { duration: '2m', target: 1000 }, // Ramp up to 1000 users over 2 minutes
+    { duration: '5m', target: 1000 }, // Stay at 1000 users for 5 minutes
 
     // Phase 4: Spike test
-    { duration: '1m', target: 2000 },  // Spike to 2000 users over 1 minute
-    { duration: '3m', target: 2000 },  // Stay at 2000 users for 3 minutes
+    { duration: '1m', target: 2000 }, // Spike to 2000 users over 1 minute
+    { duration: '3m', target: 2000 }, // Stay at 2000 users for 3 minutes
 
     // Phase 5: Cool down
-    { duration: '2m', target: 100 },   // Ramp down to 100 users
-    { duration: '2m', target: 0 },     // Ramp down to 0 users
+    { duration: '2m', target: 100 }, // Ramp down to 100 users
+    { duration: '2m', target: 0 }, // Ramp down to 0 users
   ],
   thresholds: {
     // Performance requirements from migration plan
-    http_req_duration: ['p(95)<200'],     // 95% of requests under 200ms
-    http_req_failed: ['rate<0.1'],        // Error rate under 10%
-    error_rate: ['rate<0.05'],           // Custom error rate under 5%
-    response_time: ['p(95)<200'],        // 95th percentile under 200ms
+    http_req_duration: ['p(95)<200'], // 95% of requests under 200ms
+    http_req_failed: ['rate<0.1'], // Error rate under 10%
+    error_rate: ['rate<0.05'], // Custom error rate under 5%
+    response_time: ['p(95)<200'], // 95th percentile under 200ms
   },
   ext: {
     loadimpact: {
@@ -60,7 +60,7 @@ const TENANTS = ['bgu', 'tau', 'huji'];
 const TEST_USERS = {
   bgu: { email: 'loadtest@bgu.ac.il', password: 'loadtest123' },
   tau: { email: 'loadtest@tau.ac.il', password: 'loadtest123' },
-  huji: { email: 'loadtest@huji.ac.il', password: 'loadtest123' }
+  huji: { email: 'loadtest@huji.ac.il', password: 'loadtest123' },
 };
 
 // Utility function to get random tenant
@@ -72,7 +72,7 @@ function getRandomTenant() {
 function authenticate(tenant) {
   const loginPayload = {
     email: TEST_USERS[tenant].email,
-    password: TEST_USERS[tenant].password
+    password: TEST_USERS[tenant].password,
   };
 
   const loginParams = {
@@ -104,7 +104,7 @@ function authenticate(tenant) {
     return {
       token: authData.token,
       userId: authData.user.id,
-      tenant: tenant
+      tenant: tenant,
     };
   }
 
@@ -122,7 +122,7 @@ export default function () {
   }
 
   const authHeaders = {
-    'Authorization': `Bearer ${auth.token}`,
+    Authorization: `Bearer ${auth.token}`,
     'Content-Type': 'application/json',
     'X-Tenant-ID': auth.tenant,
   };
@@ -168,9 +168,12 @@ export default function () {
       const courses = coursesResponse.json();
       const randomCourse = courses[Math.floor(Math.random() * courses.length)];
 
-      const assignmentsResponse = http.get(`${BASE_URL}/academic/courses/${randomCourse.id}/assignments`, {
-        headers: authHeaders,
-      });
+      const assignmentsResponse = http.get(
+        `${BASE_URL}/academic/courses/${randomCourse.id}/assignments`,
+        {
+          headers: authHeaders,
+        }
+      );
 
       const assignmentsSuccess = check(assignmentsResponse, {
         'assignments load successfully': (r) => r.status === 200,
@@ -251,7 +254,7 @@ export function stressTestDatabaseConnections() {
   if (!auth) return;
 
   const authHeaders = {
-    'Authorization': `Bearer ${auth.token}`,
+    Authorization: `Bearer ${auth.token}`,
     'Content-Type': 'application/json',
     'X-Tenant-ID': auth.tenant,
   };
@@ -288,7 +291,7 @@ export function stressTestMemoryUsage() {
   if (!auth) return;
 
   const authHeaders = {
-    'Authorization': `Bearer ${auth.token}`,
+    Authorization: `Bearer ${auth.token}`,
     'Content-Type': 'application/json',
     'X-Tenant-ID': auth.tenant,
   };
@@ -313,24 +316,28 @@ export function stressTestMemoryUsage() {
 // Tenant isolation stress test
 export function stressTestTenantIsolation() {
   const tenants = ['bgu', 'tau', 'huji'];
-  const auths = tenants.map(tenant => ({ tenant, auth: authenticate(tenant) }));
+  const auths = tenants.map((tenant) => ({ tenant, auth: authenticate(tenant) }));
 
   group('Tenant Isolation Stress Test', function () {
     auths.forEach(({ tenant, auth }) => {
       if (!auth) return;
 
       const authHeaders = {
-        'Authorization': `Bearer ${auth.token}`,
+        Authorization: `Bearer ${auth.token}`,
         'Content-Type': 'application/json',
         'X-Tenant-ID': tenant,
       };
 
       // Create tenant-specific data rapidly
-      const createResponse = http.post(`${BASE_URL}/academic/courses`, JSON.stringify({
-        name: `Stress Test Course ${Math.random()}`,
-        code: `${tenant.toUpperCase()}-STRESS-${Math.floor(Math.random() * 1000)}`,
-        faculty: 'Load Testing'
-      }), { headers: authHeaders });
+      const createResponse = http.post(
+        `${BASE_URL}/academic/courses`,
+        JSON.stringify({
+          name: `Stress Test Course ${Math.random()}`,
+          code: `${tenant.toUpperCase()}-STRESS-${Math.floor(Math.random() * 1000)}`,
+          faculty: 'Load Testing',
+        }),
+        { headers: authHeaders }
+      );
 
       const success = check(createResponse, {
         [`${tenant} data creation successful`]: (r) => r.status === 201,
@@ -354,8 +361,12 @@ export function handleSummary(data) {
   console.log(`   • Availability: > 99.9%`);
 
   console.log(`\n📈 Test Results:`);
-  console.log(`   • Average Response Time: ${data.metrics.http_req_duration.values.avg.toFixed(2)}ms`);
-  console.log(`   • 95th Percentile: ${data.metrics.http_req_duration.values['p(95)'].toFixed(2)}ms`);
+  console.log(
+    `   • Average Response Time: ${data.metrics.http_req_duration.values.avg.toFixed(2)}ms`
+  );
+  console.log(
+    `   • 95th Percentile: ${data.metrics.http_req_duration.values['p(95)'].toFixed(2)}ms`
+  );
   console.log(`   • Error Rate: ${(data.metrics.http_req_failed.values.rate * 100).toFixed(2)}%`);
   console.log(`   • Total Requests: ${data.metrics.http_reqs.values.count}`);
   console.log(`   • Failed Requests: ${data.metrics.http_req_failed.values.fails}`);

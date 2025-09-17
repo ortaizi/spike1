@@ -8,21 +8,21 @@ import { DualStageSessionManager } from '../../../../../lib/auth/dual-stage-sess
 export async function GET(_request: NextRequest) {
   try {
     const session = await DualStageSessionManager.getDualStageSession();
-    
+
     if (!session) {
       return NextResponse.json({
         authenticated: false,
         stage: 'not_authenticated',
         nextStep: '/',
-        message: 'לא מחובר למערכת'
+        message: 'לא מחובר למערכת',
       });
     }
-    
+
     // Determine current stage and next step
     let stage: string;
     let nextStep: string;
     let message: string;
-    
+
     if (!session.user.isDualStageComplete) {
       if (session.user.provider === 'google') {
         stage = 'google_complete';
@@ -36,7 +36,7 @@ export async function GET(_request: NextRequest) {
     } else {
       // Check if credentials are still valid
       const credentialsValid = session.user.credentialsValid !== false;
-      
+
       if (credentialsValid) {
         stage = 'dual_stage_complete';
         nextStep = '/dashboard';
@@ -47,7 +47,7 @@ export async function GET(_request: NextRequest) {
         message = 'פרטי האימות פגי תוקף, נדרש אימות מחדש';
       }
     }
-    
+
     return NextResponse.json({
       authenticated: true,
       stage,
@@ -62,18 +62,17 @@ export async function GET(_request: NextRequest) {
         universityName: session.user.universityName,
         lastSync: session.user.lastSync,
         hasValidCredentials: session.user.hasValidCredentials,
-        credentialsExpiry: session.user.credentialsExpiry
-      }
+        credentialsExpiry: session.user.credentialsExpiry,
+      },
     });
-    
   } catch (error) {
     console.error('Dual-stage status error:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'שגיאה פנימית בשרת',
         authenticated: false,
         stage: 'error',
-        nextStep: '/'
+        nextStep: '/',
       },
       { status: 500 }
     );

@@ -1,16 +1,9 @@
 import Queue from 'bull';
 import Redis from 'ioredis';
-import { logger } from '../config/logging';
-import { JobManager } from './job-manager';
-import {
-  SyncJob,
-  SyncJobData,
-  QueueJobOptions,
-  SyncJobStatus,
-  JobPriority,
-  WorkerMetrics
-} from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../config/logging';
+import { QueueJobOptions, SyncJob, SyncJobData, SyncJobStatus, WorkerMetrics } from '../types';
+import { JobManager } from './job-manager';
 
 export class QueueManager {
   private static instance: QueueManager;
@@ -52,7 +45,7 @@ export class QueueManager {
       averageJobDuration: 0,
       memoryUsage: 0,
       cpuUsage: 0,
-      lastHeartbeat: new Date()
+      lastHeartbeat: new Date(),
     };
 
     this.setupEventHandlers();
@@ -71,7 +64,7 @@ export class QueueManager {
     logger.info('Queue manager initialized', {
       redisHost: process.env.REDIS_HOST || 'localhost',
       redisPort: process.env.REDIS_PORT || '6379',
-      workerId: this.workerMetrics.workerId
+      workerId: this.workerMetrics.workerId,
     });
 
     // Clean up old jobs on startup
@@ -85,7 +78,7 @@ export class QueueManager {
       tenantId: job.tenantId,
       type: job.type,
       config: job.config,
-      correlationId
+      correlationId,
     };
 
     const options: QueueJobOptions = {
@@ -94,10 +87,10 @@ export class QueueManager {
       attempts: job.maxRetries + 1, // +1 for initial attempt
       backoff: {
         type: 'exponential',
-        delay: 60000 // Start with 1 minute
+        delay: 60000, // Start with 1 minute
       },
       removeOnComplete: 10,
-      removeOnFail: 20
+      removeOnFail: 20,
     };
 
     await this.syncQueue.add(jobData, options);
@@ -110,7 +103,7 @@ export class QueueManager {
       type: job.type,
       priority: job.priority,
       scheduledAt: job.scheduledAt.toISOString(),
-      correlationId
+      correlationId,
     });
   }
 
@@ -136,7 +129,7 @@ export class QueueManager {
       this.syncQueue.getActive(),
       this.syncQueue.getCompleted(),
       this.syncQueue.getFailed(),
-      this.syncQueue.getDelayed()
+      this.syncQueue.getDelayed(),
     ]);
 
     return {
@@ -144,7 +137,7 @@ export class QueueManager {
       active: active.length,
       completed: completed.length,
       failed: failed.length,
-      delayed: delayed.length
+      delayed: delayed.length,
     };
   }
 
@@ -155,7 +148,7 @@ export class QueueManager {
   async cancelQueueJob(jobId: string): Promise<boolean> {
     try {
       const jobs = await this.syncQueue.getJobs(['waiting', 'delayed'], 0, -1);
-      const job = jobs.find(j => j.data.jobId === jobId);
+      const job = jobs.find((j) => j.data.jobId === jobId);
 
       if (job) {
         await job.remove();
@@ -167,7 +160,7 @@ export class QueueManager {
     } catch (error) {
       logger.error('Failed to cancel queue job', {
         jobId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       return false;
     }
@@ -191,7 +184,7 @@ export class QueueManager {
         jobId: job.data.jobId,
         type: job.data.type,
         duration: Date.now() - job.processedOn!,
-        result: result?.success ? 'success' : 'failed'
+        result: result?.success ? 'success' : 'failed',
       });
     });
 
@@ -203,7 +196,7 @@ export class QueueManager {
         type: job.data.type,
         error: error.message,
         attemptsMade: job.attemptsMade,
-        maxAttempts: job.opts.attempts
+        maxAttempts: job.opts.attempts,
       });
     });
 
@@ -213,7 +206,7 @@ export class QueueManager {
       logger.info('Queue job started', {
         jobId: job.data.jobId,
         type: job.data.type,
-        workerId: this.workerMetrics.workerId
+        workerId: this.workerMetrics.workerId,
       });
     });
 
@@ -221,14 +214,14 @@ export class QueueManager {
       logger.warn('Queue job stalled', {
         jobId: job.data.jobId,
         type: job.data.type,
-        processedOn: job.processedOn
+        processedOn: job.processedOn,
       });
     });
 
     this.syncQueue.on('error', (error: Error) => {
       logger.error('Queue error', {
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
     });
   }
@@ -236,7 +229,7 @@ export class QueueManager {
   private async cleanupStaleJobs(): Promise<void> {
     try {
       // Find jobs that have been running for too long (> 1 hour)
-      const staleJobsThreshold = Date.now() - (60 * 60 * 1000);
+      const staleJobsThreshold = Date.now() - 60 * 60 * 1000;
       const activeJobs = await this.syncQueue.getActive();
 
       for (const job of activeJobs) {
@@ -251,13 +244,13 @@ export class QueueManager {
 
           logger.warn('Cleaned up stale job', {
             jobId: job.data.jobId,
-            processedOn: new Date(job.processedOn).toISOString()
+            processedOn: new Date(job.processedOn).toISOString(),
           });
         }
       }
     } catch (error) {
       logger.error('Failed to cleanup stale jobs', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -285,11 +278,14 @@ export class QueueManager {
     this.workerMetrics.lastHeartbeat = new Date();
 
     // Update active jobs count
-    this.syncQueue.getActive().then(activeJobs => {
-      this.workerMetrics.activeJobs = activeJobs.length;
-    }).catch(error => {
-      logger.error('Failed to update active jobs count', { error: error.message });
-    });
+    this.syncQueue
+      .getActive()
+      .then((activeJobs) => {
+        this.workerMetrics.activeJobs = activeJobs.length;
+      })
+      .catch((error) => {
+        logger.error('Failed to update active jobs count', { error: error.message });
+      });
   }
 
   private async publishWorkerHeartbeat(): Promise<void> {
@@ -302,7 +298,7 @@ export class QueueManager {
     } catch (error) {
       logger.error('Failed to publish worker heartbeat', {
         workerId: this.workerMetrics.workerId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }

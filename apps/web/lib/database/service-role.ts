@@ -1,5 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
-import { env } from "../env"
+
+// Use absolute import to avoid module resolution issues in tests
+let env: any;
+try {
+  env = require('../env').env;
+} catch {
+  // Fallback for tests - use environment variables directly
+  env = {
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321',
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || 'test-service-role-key',
+  };
+}
 
 // Create a Supabase client with service role key for admin operations
 export const supabaseAdmin = createClient(

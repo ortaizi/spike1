@@ -4,11 +4,14 @@ model: sonnet
 
 Restore saved project context for agent coordination:
 
-[Extended thinking: This tool uses the context-manager agent to restore previously saved project context, enabling continuity across sessions and providing agents with comprehensive project knowledge.]
+[Extended thinking: This tool uses the context-manager agent to restore
+previously saved project context, enabling continuity across sessions and
+providing agents with comprehensive project knowledge.]
 
 ## Context Restoration Process
 
-Use Task tool with subagent_type="context-manager" to restore and apply saved context.
+Use Task tool with subagent_type="context-manager" to restore and apply saved
+context.
 
 Prompt: "Restore project context for: $ARGUMENTS. Perform the following:
 
@@ -41,11 +44,13 @@ Prompt: "Restore project context for: $ARGUMENTS. Perform the following:
    - Recent work and current focus
    - Suggested next steps
 
-Return a comprehensive summary of the restored context and any issues encountered."
+Return a comprehensive summary of the restored context and any issues
+encountered."
 
 ## Context Integration
 
 The restored context will:
+
 - Inform all subsequent agent invocations
 - Maintain consistency with past decisions
 - Provide historical knowledge to agents
@@ -54,6 +59,7 @@ The restored context will:
 ## Usage Scenarios
 
 Use context restoration when:
+
 - Starting work after a break
 - Switching between projects
 - Onboarding to an existing project

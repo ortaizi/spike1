@@ -35,8 +35,8 @@ describe('SecureTenantIdValidator', () => {
   describe('Invalid Tenant IDs - SQL Injection Prevention', () => {
     test('should reject SQL injection attempts', () => {
       expect(() => validator.validateAndSanitize("'; DROP TABLE users; --")).toThrow();
-      expect(() => validator.validateAndSanitize('admin\'; SELECT * FROM secrets; --')).toThrow();
-      expect(() => validator.validateAndSanitize('1\' OR 1=1 --')).toThrow();
+      expect(() => validator.validateAndSanitize("admin'; SELECT * FROM secrets; --")).toThrow();
+      expect(() => validator.validateAndSanitize("1' OR 1=1 --")).toThrow();
     });
 
     test('should reject tenant IDs with SQL keywords', () => {
@@ -55,7 +55,7 @@ describe('SecureTenantIdValidator', () => {
       expect(() => validator.validateAndSanitize('tenant.123')).toThrow();
       expect(() => validator.validateAndSanitize('tenant space')).toThrow();
       expect(() => validator.validateAndSanitize('tenant;123')).toThrow();
-      expect(() => validator.validateAndSanitize('tenant\'123')).toThrow();
+      expect(() => validator.validateAndSanitize("tenant'123")).toThrow();
       expect(() => validator.validateAndSanitize('tenant\"123')).toThrow();
     });
 
@@ -101,7 +101,7 @@ describe('SecureTenantIdValidator', () => {
       "1'; DROP DATABASE academic; --",
       "test'; UPDATE users SET password='hacked' --",
       "'; INSERT INTO admin (username) VALUES ('hacker') --",
-      "' OR 1=1; DELETE FROM courses; --"
+      "' OR 1=1; DELETE FROM courses; --",
     ];
 
     test.each(commonAttacks)('should reject SQL injection attempt: %s', (attack) => {

@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { logger } from '../config/logging';
 
@@ -21,7 +21,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   if (!authHeader?.startsWith('Bearer ')) {
     return res.status(401).json({
       error: 'Authentication required',
-      message: 'No valid authentication token provided'
+      message: 'No valid authentication token provided',
     });
   }
 
@@ -35,12 +35,12 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
       logger.warn('Tenant mismatch in token:', {
         tokenTenant: decoded.tenantId,
         requestTenant: req.tenantId,
-        userId: decoded.userId
+        userId: decoded.userId,
       });
 
       return res.status(403).json({
         error: 'Tenant access denied',
-        message: 'Token tenant does not match request tenant'
+        message: 'Token tenant does not match request tenant',
       });
     }
 
@@ -51,26 +51,26 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   } catch (error) {
     logger.error('Authentication failed:', {
       error: error instanceof Error ? error.message : 'Unknown error',
-      tenantId: req.tenantId
+      tenantId: req.tenantId,
     });
 
     if (error instanceof jwt.TokenExpiredError) {
       return res.status(401).json({
         error: 'Token expired',
-        message: 'Authentication token has expired'
+        message: 'Authentication token has expired',
       });
     }
 
     if (error instanceof jwt.JsonWebTokenError) {
       return res.status(401).json({
         error: 'Invalid token',
-        message: 'Authentication token is invalid'
+        message: 'Authentication token is invalid',
       });
     }
 
     return res.status(401).json({
       error: 'Authentication failed',
-      message: 'Unable to verify authentication token'
+      message: 'Unable to verify authentication token',
     });
   }
 };

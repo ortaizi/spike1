@@ -1,8 +1,8 @@
-import { describe, beforeAll, afterAll, beforeEach, it, expect } from '@jest/globals';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from '@jest/globals';
 import request from 'supertest';
 import { DatabaseManager } from '../../src/config/database';
-import { EventBus } from '../../src/services/event-bus';
 import { ViewManager } from '../../src/cqrs/view-manager';
+import { EventBus } from '../../src/services/event-bus';
 
 describe('Academic Service Integration Tests', () => {
   let app: any;
@@ -36,11 +36,7 @@ describe('Academic Service Integration Tests', () => {
 
     // Create test auth token
     const jwt = require('jsonwebtoken');
-    authToken = jwt.sign(
-      { userId: testUserId, tenantId: testTenant },
-      'test-secret',
-      { expiresIn: '1h' }
-    );
+    authToken = jwt.sign({ userId: testUserId, tenantId: testTenant }, 'test-secret', { expiresIn: '1h' });
   });
 
   afterAll(async () => {
@@ -52,13 +48,16 @@ describe('Academic Service Integration Tests', () => {
 
   beforeEach(async () => {
     // Clean up test data
-    await dbManager.executeQuery(testTenant, `
+    await dbManager.executeQuery(
+      testTenant,
+      `
       TRUNCATE TABLE academic_${testTenant}.courses CASCADE;
       TRUNCATE TABLE academic_${testTenant}.assignments CASCADE;
       TRUNCATE TABLE academic_${testTenant}.enrollments CASCADE;
       TRUNCATE TABLE academic_${testTenant}.grades CASCADE;
       TRUNCATE TABLE academic_${testTenant}.events CASCADE;
-    `);
+    `
+    );
   });
 
   describe('Course Management', () => {
@@ -70,7 +69,7 @@ describe('Academic Service Integration Tests', () => {
         academicYear: 2024,
         semester: 'fall',
         credits: 3,
-        instructor: 'Dr. Test'
+        instructor: 'Dr. Test',
       };
 
       const response = await request(app)
@@ -86,12 +85,13 @@ describe('Academic Service Integration Tests', () => {
           code: courseData.code,
           name: courseData.name,
           faculty: courseData.faculty,
-          tenantId: testTenant
-        }
+          tenantId: testTenant,
+        },
       });
 
       // Verify course was stored in database
-      const dbResult = await dbManager.executeQuery(testTenant,
+      const dbResult = await dbManager.executeQuery(
+        testTenant,
         `SELECT * FROM academic_${testTenant}.courses WHERE code = $1`,
         [courseData.code]
       );
@@ -103,15 +103,23 @@ describe('Academic Service Integration Tests', () => {
     it('should retrieve courses for a user', async () => {
       // Create test course and enrollment
       const courseId = 'course-test-123';
-      await dbManager.executeQuery(testTenant, `
+      await dbManager.executeQuery(
+        testTenant,
+        `
         INSERT INTO academic_${testTenant}.courses (id, code, name, faculty, academic_year, semester, credits, tenant_id)
         VALUES ($1, 'CS-101', 'Test Course', 'CS', 2024, 'fall', 3, $2)
-      `, [courseId, testTenant]);
+      `,
+        [courseId, testTenant]
+      );
 
-      await dbManager.executeQuery(testTenant, `
+      await dbManager.executeQuery(
+        testTenant,
+        `
         INSERT INTO academic_${testTenant}.enrollments (id, user_id, course_id, status, tenant_id)
         VALUES ($1, $2, $3, 'active', $4)
-      `, ['enroll-test-123', testUserId, courseId, testTenant]);
+      `,
+        ['enroll-test-123', testUserId, courseId, testTenant]
+      );
 
       const response = await request(app)
         .get('/api/courses')
@@ -128,18 +136,28 @@ describe('Academic Service Integration Tests', () => {
       const otherTenant = 'other';
 
       // Create course in other tenant
-      await dbManager.executeQuery('default', `
+      await dbManager.executeQuery(
+        'default',
+        `
         CREATE SCHEMA IF NOT EXISTS academic_${otherTenant}
-      `);
+      `
+      );
 
-      await dbManager.executeQuery('default', `
+      await dbManager.executeQuery(
+        'default',
+        `
         CREATE TABLE IF NOT EXISTS academic_${otherTenant}.courses (LIKE academic_${testTenant}.courses INCLUDING ALL)
-      `);
+      `
+      );
 
-      await dbManager.executeQuery('default', `
+      await dbManager.executeQuery(
+        'default',
+        `
         INSERT INTO academic_${otherTenant}.courses (id, code, name, faculty, academic_year, semester, credits, tenant_id)
         VALUES ('other-course', 'OTHER-101', 'Other Course', 'Other', 2024, 'fall', 3, $1)
-      `, [otherTenant]);
+      `,
+        [otherTenant]
+      );
 
       // Request with test tenant should not see other tenant's courses
       const response = await request(app)
@@ -160,15 +178,23 @@ describe('Academic Service Integration Tests', () => {
 
     beforeEach(async () => {
       courseId = 'course-test-assignment';
-      await dbManager.executeQuery(testTenant, `
+      await dbManager.executeQuery(
+        testTenant,
+        `
         INSERT INTO academic_${testTenant}.courses (id, code, name, faculty, academic_year, semester, credits, tenant_id)
         VALUES ($1, 'CS-102', 'Test Course for Assignments', 'CS', 2024, 'fall', 3, $2)
-      `, [courseId, testTenant]);
+      `,
+        [courseId, testTenant]
+      );
 
-      await dbManager.executeQuery(testTenant, `
+      await dbManager.executeQuery(
+        testTenant,
+        `
         INSERT INTO academic_${testTenant}.enrollments (id, user_id, course_id, status, tenant_id)
         VALUES ($1, $2, $3, 'active', $4)
-      `, ['enroll-assignment-test', testUserId, courseId, testTenant]);
+      `,
+        ['enroll-assignment-test', testUserId, courseId, testTenant]
+      );
     });
 
     it('should create an assignment', async () => {
@@ -178,7 +204,7 @@ describe('Academic Service Integration Tests', () => {
         description: 'A test assignment for integration testing',
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         weight: 20,
-        maxGrade: 100
+        maxGrade: 100,
       };
 
       const response = await request(app)
@@ -196,10 +222,14 @@ describe('Academic Service Integration Tests', () => {
     it('should get user assignments', async () => {
       // Create test assignment
       const assignmentId = 'assignment-test-123';
-      await dbManager.executeQuery(testTenant, `
+      await dbManager.executeQuery(
+        testTenant,
+        `
         INSERT INTO academic_${testTenant}.assignments (id, course_id, title, status, weight, max_grade, tenant_id)
         VALUES ($1, $2, 'Test Assignment', 'published', 20, 100, $3)
-      `, [assignmentId, courseId, testTenant]);
+      `,
+        [assignmentId, courseId, testTenant]
+      );
 
       const response = await request(app)
         .get('/api/assignments')
@@ -222,7 +252,7 @@ describe('Academic Service Integration Tests', () => {
         academicYear: 2024,
         semester: 'fall',
         credits: 3,
-        instructor: 'Dr. Event'
+        instructor: 'Dr. Event',
       };
 
       await request(app)
@@ -232,12 +262,15 @@ describe('Academic Service Integration Tests', () => {
         .send(courseData);
 
       // Check that domain event was created
-      const events = await dbManager.executeQuery(testTenant, `
+      const events = await dbManager.executeQuery(
+        testTenant,
+        `
         SELECT * FROM academic_${testTenant}.events
         WHERE event_type = 'course.created'
         ORDER BY event_time DESC
         LIMIT 1
-      `);
+      `
+      );
 
       expect(events.rows).toHaveLength(1);
 
@@ -257,25 +290,41 @@ describe('Academic Service Integration Tests', () => {
       const assignmentId = 'assignment-cqrs-test';
 
       // Create test data
-      await dbManager.executeQuery(testTenant, `
+      await dbManager.executeQuery(
+        testTenant,
+        `
         INSERT INTO academic_${testTenant}.courses (id, code, name, faculty, academic_year, semester, credits, tenant_id)
         VALUES ($1, 'CS-CQRS', 'CQRS Test Course', 'CS', 2024, 'fall', 3, $2)
-      `, [courseId, testTenant]);
+      `,
+        [courseId, testTenant]
+      );
 
-      await dbManager.executeQuery(testTenant, `
+      await dbManager.executeQuery(
+        testTenant,
+        `
         INSERT INTO academic_${testTenant}.enrollments (id, user_id, course_id, status, tenant_id)
         VALUES ($1, $2, $3, 'active', $4)
-      `, ['enroll-cqrs-test', testUserId, courseId, testTenant]);
+      `,
+        ['enroll-cqrs-test', testUserId, courseId, testTenant]
+      );
 
-      await dbManager.executeQuery(testTenant, `
+      await dbManager.executeQuery(
+        testTenant,
+        `
         INSERT INTO academic_${testTenant}.assignments (id, course_id, title, status, weight, max_grade, tenant_id)
         VALUES ($1, $2, 'CQRS Assignment', 'published', 30, 100, $3)
-      `, [assignmentId, courseId, testTenant]);
+      `,
+        [assignmentId, courseId, testTenant]
+      );
 
-      await dbManager.executeQuery(testTenant, `
+      await dbManager.executeQuery(
+        testTenant,
+        `
         INSERT INTO academic_${testTenant}.grades (id, user_id, assignment_id, course_id, score, max_score, tenant_id)
         VALUES ($1, $2, $3, $4, 85, 100, $5)
-      `, ['grade-cqrs-test', testUserId, assignmentId, courseId, testTenant]);
+      `,
+        ['grade-cqrs-test', testUserId, assignmentId, courseId, testTenant]
+      );
 
       // Refresh materialized views
       await viewManager.refreshViewsForTenant(testTenant);
@@ -295,29 +344,23 @@ describe('Academic Service Integration Tests', () => {
 
   describe('Error Handling', () => {
     it('should handle missing authorization', async () => {
-      const response = await request(app)
-        .get('/api/courses')
-        .set('X-Tenant-ID', testTenant);
+      const response = await request(app).get('/api/courses').set('X-Tenant-ID', testTenant);
 
       expect(response.status).toBe(401);
       expect(response.body.error).toContain('Authentication required');
     });
 
     it('should handle missing tenant ID', async () => {
-      const response = await request(app)
-        .get('/api/courses')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/courses').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(400);
       expect(response.body.error).toContain('Tenant identification failed');
     });
 
     it('should handle invalid tenant in token', async () => {
-      const invalidToken = require('jsonwebtoken').sign(
-        { userId: testUserId, tenantId: 'invalid' },
-        'test-secret',
-        { expiresIn: '1h' }
-      );
+      const invalidToken = require('jsonwebtoken').sign({ userId: testUserId, tenantId: 'invalid' }, 'test-secret', {
+        expiresIn: '1h',
+      });
 
       const response = await request(app)
         .get('/api/courses')
@@ -343,19 +386,20 @@ describe('Academic Service Integration Tests', () => {
             academicYear: 2024,
             semester: 'fall',
             credits: 3,
-            instructor: 'Dr. Performance'
+            instructor: 'Dr. Performance',
           })
       );
 
       const responses = await Promise.all(coursePromises);
 
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect(response.status).toBe(201);
         expect(response.body.success).toBe(true);
       });
 
       // Verify all courses were created
-      const dbResult = await dbManager.executeQuery(testTenant,
+      const dbResult = await dbManager.executeQuery(
+        testTenant,
         `SELECT COUNT(*) as count FROM academic_${testTenant}.courses WHERE code LIKE 'PERF-%'`
       );
 

@@ -4,13 +4,17 @@ model: sonnet
 
 Write comprehensive failing tests following TDD red phase principles:
 
-[Extended thinking: This tool uses the test-automator agent to generate comprehensive failing tests that properly define expected behavior. It ensures tests fail for the right reasons and establishes a solid foundation for implementation.]
+[Extended thinking: This tool uses the test-automator agent to generate
+comprehensive failing tests that properly define expected behavior. It ensures
+tests fail for the right reasons and establishes a solid foundation for
+implementation.]
 
 ## Test Generation Process
 
 Use Task tool with subagent_type="test-automator" to generate failing tests.
 
-Prompt: "Generate comprehensive FAILING tests for: $ARGUMENTS. Follow TDD red phase principles:
+Prompt: "Generate comprehensive FAILING tests for: $ARGUMENTS. Follow TDD red
+phase principles:
 
 1. **Test Structure Setup**
    - Choose appropriate testing framework for the language/stack
@@ -27,7 +31,8 @@ Prompt: "Generate comprehensive FAILING tests for: $ARGUMENTS. Follow TDD red ph
 
 3. **Test Implementation**
    - Write descriptive test names that document intent
-   - Keep tests focused on single behaviors (one assertion per test when possible)
+   - Keep tests focused on single behaviors (one assertion per test when
+     possible)
    - Use Arrange-Act-Assert (AAA) pattern consistently
    - Implement test data builders for complex objects
    - Avoid test interdependencies - each test must be isolated
@@ -54,14 +59,12 @@ Prompt: "Generate comprehensive FAILING tests for: $ARGUMENTS. Follow TDD red ph
    - **Go**: Table-driven tests and subtests
    - **Ruby**: RSpec expectations and contexts
 
-7. **Test Quality Checklist**
-   ✓ Tests are readable and self-documenting
-   ✓ Failure messages clearly indicate what went wrong
-   ✓ Tests follow DRY principle with appropriate abstractions
-   ✓ Coverage includes positive, negative, and edge cases
-   ✓ Tests can serve as living documentation
-   ✓ No implementation details leaked into tests
-   ✓ Tests use meaningful test data, not 'foo' and 'bar'
+7. **Test Quality Checklist** ✓ Tests are readable and self-documenting ✓
+   Failure messages clearly indicate what went wrong ✓ Tests follow DRY
+   principle with appropriate abstractions ✓ Coverage includes positive,
+   negative, and edge cases ✓ Tests can serve as living documentation ✓ No
+   implementation details leaked into tests ✓ Tests use meaningful test data,
+   not 'foo' and 'bar'
 
 8. **Common Anti-Patterns to Avoid**
    - Writing tests that pass immediately
@@ -73,6 +76,7 @@ Prompt: "Generate comprehensive FAILING tests for: $ARGUMENTS. Follow TDD red ph
    - Tests without clear assertions
 
 Output should include:
+
 - Complete test file(s) with all necessary imports
 - Clear documentation of what each test validates
 - Verification commands to run tests and see failures
@@ -82,6 +86,7 @@ Output should include:
 ## Validation Steps
 
 After test generation:
+
 1. Run tests to confirm they fail
 2. Verify failure messages are helpful
 3. Check test independence and isolation
@@ -91,6 +96,7 @@ After test generation:
 ## Recovery Process
 
 If tests don't fail properly:
+
 - Debug import/syntax issues first
 - Ensure test framework is properly configured
 - Verify assertions are actually checking behavior

@@ -18,9 +18,9 @@ const nextConfig = {
       config.watchOptions = {
         poll: 1000,
         aggregateTimeout: 300,
-      }
+      };
     }
-    
+
     // Simplified fallback configuration
     config.resolve.fallback = {
       ...config.resolve.fallback,
@@ -28,9 +28,9 @@ const nextConfig = {
       net: false,
       tls: false,
       global: false,
-    }
-    
-    return config
+    };
+
+    return config;
   },
   // Reduce memory usage
   onDemandEntries: {
@@ -39,4 +39,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;

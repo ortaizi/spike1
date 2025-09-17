@@ -1,18 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 import { authOptions } from '../../../lib/auth/server-auth';
-import { env } from "../../../lib/env"
+import { env } from '../../../lib/env';
 
 export async function POST(request: NextRequest) {
   try {
     // בדיקת הרשאות משתמש
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { success: false, error: 'לא מורשה' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'לא מורשה' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -30,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     // קריאה ל-API הסנכרון
     const syncApiUrl = env.SYNC_API_URL || 'http://localhost:8000';
-    
+
     const syncResponse = await fetch(`${syncApiUrl}/sync/user`, {
       method: 'POST',
       headers: {
@@ -40,7 +37,7 @@ export async function POST(request: NextRequest) {
         user_id,
         moodle_username,
         moodle_password,
-        force_sync
+        force_sync,
       }),
     });
 
@@ -57,28 +54,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'סנכרון הושלם בהצלחה',
-      data: syncResult
+      data: syncResult,
     });
-
   } catch (error) {
     console.error('שגיאה בסנכרון נתונים:', error);
-    return NextResponse.json(
-      { success: false, error: 'שגיאה פנימית בשרת' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'שגיאה פנימית בשרת' }, { status: 500 });
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // בדיקת הרשאות משתמש
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { success: false, error: 'לא מורשה' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'לא מורשה' }, { status: 401 });
     }
 
     const user_id = `user_${session.user.email.replace('@', '_').replace('.', '_')}`;
@@ -86,7 +76,7 @@ export async function GET(request: NextRequest) {
 
     // בדיקת סטטוס סנכרון
     const statusResponse = await fetch(`${syncApiUrl}/user/${user_id}/status`);
-    
+
     if (!statusResponse.ok) {
       return NextResponse.json(
         { success: false, error: 'לא ניתן לבדוק סטטוס' },
@@ -98,14 +88,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: statusData
+      data: statusData,
     });
-
   } catch (error) {
     console.error('שגיאה בבדיקת סטטוס:', error);
-    return NextResponse.json(
-      { success: false, error: 'שגיאה פנימית בשרת' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'שגיאה פנימית בשרת' }, { status: 500 });
   }
-} 
+}

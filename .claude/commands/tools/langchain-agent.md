@@ -57,4 +57,5 @@ Implement a complete agent system including:
    - Decision tracking
    - Debug mode
 
-Include error handling, testing strategies, and deployment considerations. Use the latest LangChain/LangGraph best practices.
+Include error handling, testing strategies, and deployment considerations. Use
+the latest LangChain/LangGraph best practices.

@@ -1,16 +1,10 @@
 import cron from 'node-cron';
+import { v4 as uuidv4 } from 'uuid';
 import { DatabaseManager } from '../config/database';
+import { logger } from '../config/logging';
+import { JobPriority, ScheduleSyncJobRequest, SyncSchedule } from '../types';
 import { JobManager } from './job-manager';
 import { QueueManager } from './queue-manager';
-import { logger } from '../config/logging';
-import {
-  SyncSchedule,
-  SyncJobType,
-  SyncJobConfig,
-  JobPriority,
-  ScheduleSyncJobRequest
-} from '../types';
-import { v4 as uuidv4 } from 'uuid';
 
 export class SchedulerService {
   private static instance: SchedulerService;
@@ -72,7 +66,7 @@ export class SchedulerService {
       isActive: true,
       nextRunAt: this.calculateNextRun(request.cronExpression),
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     // Store in database
@@ -97,7 +91,7 @@ export class SchedulerService {
       schedule.isActive,
       schedule.nextRunAt,
       schedule.createdAt,
-      schedule.updatedAt
+      schedule.updatedAt,
     ];
 
     await this.dbManager.executeQuery('default', query, values);
@@ -110,7 +104,7 @@ export class SchedulerService {
       name: schedule.name,
       cronExpression: schedule.cronExpression,
       tenantId,
-      userId
+      userId,
     });
 
     return schedule;
@@ -118,7 +112,12 @@ export class SchedulerService {
 
   async updateSchedule(
     scheduleId: string,
-    updates: Partial<Pick<SyncSchedule, 'name' | 'description' | 'cronExpression' | 'timezone' | 'isActive' | 'config'>>
+    updates: Partial<
+      Pick<
+        SyncSchedule,
+        'name' | 'description' | 'cronExpression' | 'timezone' | 'isActive' | 'config'
+      >
+    >
   ): Promise<SyncSchedule | null> {
     const schedule = await this.getSchedule(scheduleId);
     if (!schedule) {
@@ -194,7 +193,7 @@ export class SchedulerService {
     logger.info('Sync schedule updated', {
       scheduleId,
       changes: Object.keys(updates),
-      isActive: updatedSchedule.isActive
+      isActive: updatedSchedule.isActive,
     });
 
     return updatedSchedule;
@@ -301,7 +300,7 @@ export class SchedulerService {
         },
         {
           scheduled: false,
-          timezone: schedule.timezone
+          timezone: schedule.timezone,
         }
       );
 
@@ -312,12 +311,12 @@ export class SchedulerService {
         scheduleId: schedule.id,
         name: schedule.name,
         cronExpression: schedule.cronExpression,
-        nextRun: schedule.nextRunAt?.toISOString()
+        nextRun: schedule.nextRunAt?.toISOString(),
       });
     } catch (error) {
       logger.error('Failed to start scheduled task', {
         scheduleId: schedule.id,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -338,7 +337,7 @@ export class SchedulerService {
       scheduleId: schedule.id,
       name: schedule.name,
       type: schedule.jobType,
-      correlationId
+      correlationId,
     });
 
     try {
@@ -352,8 +351,8 @@ export class SchedulerService {
           priority: JobPriority.NORMAL,
           metadata: {
             scheduledBy: schedule.id,
-            scheduleName: schedule.name
-          }
+            scheduleName: schedule.name,
+          },
         },
         correlationId
       );
@@ -366,13 +365,13 @@ export class SchedulerService {
       logger.info('Scheduled job created and enqueued', {
         scheduleId: schedule.id,
         jobId: job.id,
-        correlationId
+        correlationId,
       });
     } catch (error) {
       logger.error('Failed to execute scheduled job', {
         scheduleId: schedule.id,
         error: error instanceof Error ? error.message : 'Unknown error',
-        correlationId
+        correlationId,
       });
     }
   }
@@ -395,7 +394,8 @@ export class SchedulerService {
   }
 
   private startCleanupJob(): void {
-    cron.schedule('0 * * * *', async () => { // Every hour
+    cron.schedule('0 * * * *', async () => {
+      // Every hour
       if (this.isRunning) {
         await this.jobManager.cleanupOldJobs(7); // Keep jobs for 7 days
       }
@@ -405,7 +405,8 @@ export class SchedulerService {
   }
 
   private startHeartbeatMonitoring(): void {
-    cron.schedule('*/5 * * * *', async () => { // Every 5 minutes
+    cron.schedule('*/5 * * * *', async () => {
+      // Every 5 minutes
       if (this.isRunning) {
         await this.monitorWorkerHeartbeats();
       }
@@ -435,7 +436,7 @@ export class SchedulerService {
       lastRunAt: row.last_run_at,
       nextRunAt: row.next_run_at,
       createdAt: row.created_at,
-      updatedAt: row.updated_at
+      updatedAt: row.updated_at,
     };
   }
 }

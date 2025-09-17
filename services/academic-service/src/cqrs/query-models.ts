@@ -388,9 +388,12 @@ GROUP BY e.user_id, c.id, c.code, c.name, e.status, e.enrolled_at, e.tenant_id;
 
 // Refresh functions for materialized views
 export const REFRESH_QUERIES = {
-  dashboard: (tenantId: string) => `REFRESH MATERIALIZED VIEW CONCURRENTLY academic_${tenantId}.dashboard_summary;`,
-  courses: (tenantId: string) => `REFRESH MATERIALIZED VIEW CONCURRENTLY academic_${tenantId}.course_summary;`,
-  studentProgress: (tenantId: string) => `REFRESH MATERIALIZED VIEW CONCURRENTLY academic_${tenantId}.student_progress;`
+  dashboard: (tenantId: string) =>
+    `REFRESH MATERIALIZED VIEW CONCURRENTLY academic_${tenantId}.dashboard_summary;`,
+  courses: (tenantId: string) =>
+    `REFRESH MATERIALIZED VIEW CONCURRENTLY academic_${tenantId}.course_summary;`,
+  studentProgress: (tenantId: string) =>
+    `REFRESH MATERIALIZED VIEW CONCURRENTLY academic_${tenantId}.student_progress;`,
 };
 
 // Query model update triggers

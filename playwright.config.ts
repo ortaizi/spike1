@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * 🎓 SPIKE ACADEMIC PLATFORM - PLAYWRIGHT E2E CONFIGURATION
- * 
+ *
  * Enterprise-grade E2E testing setup with Hebrew/RTL support
  * and academic platform specific scenarios
  */
@@ -12,83 +12,86 @@ export default defineConfig({
   // 📁 TEST ORGANIZATION
   // ================================================================================================
   testDir: './tests/e2e',
-  
+
   // Run tests in files that match this pattern
   testMatch: '**/*.{test,spec}.{js,ts}',
-  
+
   // ================================================================================================
   // ⚡ PERFORMANCE & PARALLELIZATION
   // ================================================================================================
-  
+
   // Run tests in parallel
   fullyParallel: true,
-  
+
   // Fail the build on CI if you accidentally left test.only in the source code
   forbidOnly: !!process.env.CI,
-  
+
   // Retry on CI only
   retries: process.env.CI ? 2 : 0,
-  
+
   // Opt out of parallel tests on CI
   workers: process.env.CI ? 1 : undefined,
-  
+
   // ================================================================================================
   // 📊 REPORTING
   // ================================================================================================
-  
+
   reporter: [
-    ['html', { 
-      outputFolder: 'playwright-report',
-      open: process.env.CI ? 'never' : 'on-failure',
-    }],
+    [
+      'html',
+      {
+        outputFolder: 'playwright-report',
+        open: process.env.CI ? 'never' : 'on-failure',
+      },
+    ],
     ['json', { outputFile: 'test-results/results.json' }],
     ['junit', { outputFile: 'test-results/results.xml' }],
     ['line'],
   ],
-  
+
   // ================================================================================================
   // 🌍 GLOBAL SETTINGS (Hebrew/RTL Focus)
   // ================================================================================================
-  
+
   use: {
     // Base URL for all tests
     baseURL: process.env.E2E_BASE_URL || 'http://localhost:3000',
-    
+
     // Hebrew locale and RTL support
     locale: 'he-IL',
     timezoneId: 'Asia/Jerusalem',
-    
+
     // Browser context options
     ignoreHTTPSErrors: true,
-    
+
     // Video recording
     video: process.env.CI ? 'retain-on-failure' : 'on-first-retry',
-    
+
     // Screenshot settings
     screenshot: 'only-on-failure',
-    
+
     // Trace collection
     trace: process.env.CI ? 'retain-on-failure' : 'on-first-retry',
-    
+
     // ================================================================================================
     // 🎓 ACADEMIC PLATFORM SPECIFIC SETTINGS
     // ================================================================================================
-    
+
     // Viewport (academic dashboard focus)
     viewport: { width: 1280, height: 720 },
-    
+
     // User agent with Hebrew support
     userAgent: 'Spike-E2E-Tests Mozilla/5.0 (compatible; Hebrew/RTL)',
-    
+
     // Extra HTTP headers
     extraHTTPHeaders: {
       'Accept-Language': 'he-IL,he;q=0.9,en;q=0.8',
       'X-Test-Environment': 'e2e',
     },
-    
+
     // Permissions for academic features
     permissions: ['clipboard-read', 'clipboard-write'],
-    
+
     // Academic platform specific storage state
     storageState: {
       cookies: [],
@@ -113,69 +116,69 @@ export default defineConfig({
       ],
     },
   },
-  
+
   // ================================================================================================
   // 🌐 MULTI-BROWSER TESTING
   // ================================================================================================
-  
+
   projects: [
     // ================================================================================================
     // 🖥️ DESKTOP BROWSERS
     // ================================================================================================
-    
+
     {
       name: 'Desktop Chrome',
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
         locale: 'he-IL',
         timezoneId: 'Asia/Jerusalem',
       },
     },
-    
+
     {
       name: 'Desktop Firefox',
-      use: { 
+      use: {
         ...devices['Desktop Firefox'],
         locale: 'he-IL',
         timezoneId: 'Asia/Jerusalem',
       },
     },
-    
+
     {
       name: 'Desktop Safari',
-      use: { 
+      use: {
         ...devices['Desktop Safari'],
         locale: 'he-IL',
         timezoneId: 'Asia/Jerusalem',
       },
     },
-    
+
     // ================================================================================================
     // 📱 MOBILE DEVICES (Hebrew/RTL Focus)
     // ================================================================================================
-    
+
     {
       name: 'Mobile Chrome',
-      use: { 
+      use: {
         ...devices['Pixel 5'],
         locale: 'he-IL',
         timezoneId: 'Asia/Jerusalem',
       },
     },
-    
+
     {
       name: 'Mobile Safari',
-      use: { 
+      use: {
         ...devices['iPhone 12'],
         locale: 'he-IL',
         timezoneId: 'Asia/Jerusalem',
       },
     },
-    
+
     // ================================================================================================
     // 🎓 ACADEMIC PLATFORM SPECIFIC BROWSERS
     // ================================================================================================
-    
+
     {
       name: 'Hebrew RTL Desktop',
       use: {
@@ -188,7 +191,7 @@ export default defineConfig({
         },
       },
     },
-    
+
     {
       name: 'BGU Network Simulation',
       use: {
@@ -201,11 +204,11 @@ export default defineConfig({
         },
       },
     },
-    
+
     // ================================================================================================
     // 📊 ACCESSIBILITY TESTING
     // ================================================================================================
-    
+
     {
       name: 'Accessibility Test',
       use: {
@@ -218,11 +221,11 @@ export default defineConfig({
       },
     },
   ],
-  
+
   // ================================================================================================
   // 🚀 DEVELOPMENT SERVER
   // ================================================================================================
-  
+
   webServer: {
     command: 'npm run dev',
     port: 3000,
@@ -234,46 +237,46 @@ export default defineConfig({
       NEXTAUTH_URL: 'http://localhost:3000',
     },
   },
-  
+
   // ================================================================================================
   // ⚙️ ADVANCED CONFIGURATION
   // ================================================================================================
-  
+
   // Global setup and teardown
   globalSetup: './tests/e2e/global-setup.ts',
   globalTeardown: './tests/e2e/global-teardown.ts',
-  
+
   // Test timeout
   timeout: 30 * 1000, // 30 seconds
-  
+
   // Expect timeout for assertions
   expect: {
     timeout: 10 * 1000, // 10 seconds for Hebrew text loading
-    
+
     // Screenshot comparison
     toMatchScreenshot: {
       threshold: 0.3,
       mode: 'strict',
     },
   },
-  
+
   // ================================================================================================
   // 🎓 ACADEMIC PLATFORM TEST CATEGORIES
   // ================================================================================================
-  
+
   // Test patterns for different academic features
   testIgnore: [
     // Skip tests that require external university systems in CI
     process.env.CI ? '**/moodle-integration.spec.ts' : '',
     process.env.CI ? '**/bgu-sso.spec.ts' : '',
   ].filter(Boolean),
-  
+
   // ================================================================================================
   // 🔧 OUTPUT CONFIGURATION
   // ================================================================================================
-  
+
   outputDir: 'test-results',
-  
+
   // Artifacts
   use: {
     ...devices['Desktop Chrome'],
@@ -284,7 +287,7 @@ export default defineConfig({
       snapshots: true,
       sources: true,
     },
-    
+
     // Video recording with Hebrew UI
     video: {
       mode: 'retain-on-failure',

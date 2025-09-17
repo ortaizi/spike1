@@ -48,10 +48,12 @@ export class SecureTenantIdValidator implements TenantIdValidator {
    * @returns true if valid, false otherwise
    */
   isValid(tenantId: string): boolean {
-    return typeof tenantId === 'string' &&
-           tenantId.length > 0 &&
-           tenantId.length <= SecureTenantIdValidator.MAX_LENGTH &&
-           SecureTenantIdValidator.VALID_PATTERN.test(tenantId);
+    return (
+      typeof tenantId === 'string' &&
+      tenantId.length > 0 &&
+      tenantId.length <= SecureTenantIdValidator.MAX_LENGTH &&
+      SecureTenantIdValidator.VALID_PATTERN.test(tenantId)
+    );
   }
 
   /**
@@ -104,15 +106,31 @@ export class SecureTenantIdValidator implements TenantIdValidator {
 
     // Validate the sanitized input
     if (!this.isValid(sanitized)) {
-      throw new Error('Invalid tenantId format. Only alphanumeric characters and underscores are allowed (1-50 chars)');
+      throw new Error(
+        'Invalid tenantId format. Only alphanumeric characters and underscores are allowed (1-50 chars)'
+      );
     }
 
     // Additional safety check - ensure no dangerous SQL keywords
     const upperCased = sanitized.toUpperCase();
     const dangerousKeywords = [
-      'DROP', 'DELETE', 'UPDATE', 'INSERT', 'SELECT', 'ALTER',
-      'CREATE', 'TRUNCATE', 'GRANT', 'REVOKE', 'UNION', 'EXEC',
-      'EXECUTE', 'DECLARE', 'SCRIPT', 'PROCEDURE', 'FUNCTION'
+      'DROP',
+      'DELETE',
+      'UPDATE',
+      'INSERT',
+      'SELECT',
+      'ALTER',
+      'CREATE',
+      'TRUNCATE',
+      'GRANT',
+      'REVOKE',
+      'UNION',
+      'EXEC',
+      'EXECUTE',
+      'DECLARE',
+      'SCRIPT',
+      'PROCEDURE',
+      'FUNCTION',
     ];
 
     for (const keyword of dangerousKeywords) {

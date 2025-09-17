@@ -4,13 +4,17 @@ model: opus
 
 Refactor code with confidence using comprehensive test safety net:
 
-[Extended thinking: This tool uses the tdd-orchestrator agent (opus model) for sophisticated refactoring while maintaining all tests green. It applies design patterns, improves code quality, and optimizes performance with the safety of comprehensive test coverage.]
+[Extended thinking: This tool uses the tdd-orchestrator agent (opus model) for
+sophisticated refactoring while maintaining all tests green. It applies design
+patterns, improves code quality, and optimizes performance with the safety of
+comprehensive test coverage.]
 
 ## Refactoring Process
 
 Use Task tool with subagent_type="tdd-orchestrator" to perform safe refactoring.
 
-Prompt: "Refactor this code while keeping all tests green: $ARGUMENTS. Apply TDD refactor phase excellence:
+Prompt: "Refactor this code while keeping all tests green: $ARGUMENTS. Apply TDD
+refactor phase excellence:
 
 1. **Pre-Refactoring Assessment**
    - Analyze current code structure and identify code smells
@@ -126,6 +130,7 @@ Prompt: "Refactor this code while keeping all tests green: $ARGUMENTS. Apply TDD
     - **Feature Toggles**: Safe production deployment
 
 Output should include:
+
 - Refactored code with all improvements applied
 - Test results confirming all tests remain green
 - Before/after metrics comparison
@@ -139,6 +144,7 @@ Output should include:
 ## Refactoring Safety Checklist
 
 Before committing refactored code:
+
 1. ✓ All tests pass (100% green)
 2. ✓ No functionality regression
 3. ✓ Performance metrics acceptable
@@ -149,6 +155,7 @@ Before committing refactored code:
 ## Recovery Process
 
 If tests fail during refactoring:
+
 - Immediately revert last change
 - Identify which refactoring broke tests
 - Apply smaller, incremental changes

@@ -13,7 +13,7 @@ export const supabaseConfig = {
 // Create a Supabase client helper
 export function createSupabaseClient(serviceRole = false) {
   const { createClient } = require('@supabase/supabase-js');
-  
+
   return createClient(
     supabaseConfig.url,
     serviceRole ? supabaseConfig.serviceRoleKey : supabaseConfig.anonKey,

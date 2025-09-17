@@ -1,19 +1,19 @@
-import express from 'express';
 import cors from 'cors';
+import express from 'express';
 import helmet from 'helmet';
-import { setupTracing } from './config/tracing';
-import { setupLogging } from './config/logging';
 import { DatabaseManager } from './config/database';
-import { QueueManager } from './services/queue-manager';
-import { SchedulerService } from './services/scheduler';
-import { EventBus } from './services/event-bus';
-import { tenantMiddleware } from './middleware/tenant';
+import { setupLogging } from './config/logging';
+import { setupTracing } from './config/tracing';
+import { jobRoutes } from './controllers/jobs';
+import { metricsRoutes } from './controllers/metrics';
+import { scheduleRoutes } from './controllers/schedules';
 import { authMiddleware } from './middleware/auth';
 import { correlationMiddleware } from './middleware/correlation';
 import { errorMiddleware } from './middleware/error';
-import { jobRoutes } from './controllers/jobs';
-import { scheduleRoutes } from './controllers/schedules';
-import { metricsRoutes } from './controllers/metrics';
+import { tenantMiddleware } from './middleware/tenant';
+import { EventBus } from './services/event-bus';
+import { QueueManager } from './services/queue-manager';
+import { SchedulerService } from './services/scheduler';
 
 // Initialize tracing before any imports
 setupTracing('sync-orchestrator');
@@ -24,10 +24,12 @@ const logger = setupLogging();
 
 // Security middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+    credentials: true,
+  })
+);
 
 // Request parsing
 app.use(express.json({ limit: '10mb' }));
@@ -45,7 +47,7 @@ app.get('/health', (req, res) => {
     service: 'sync-orchestrator',
     timestamp: new Date().toISOString(),
     version: process.env.SERVICE_VERSION || '1.0.0',
-    uptime: process.uptime()
+    uptime: process.uptime(),
   });
 });
 
@@ -96,7 +98,6 @@ async function startServer() {
 
       process.exit(0);
     });
-
   } catch (error) {
     logger.error('Failed to start sync orchestrator:', error);
     process.exit(1);

@@ -2,7 +2,10 @@
   "mcpServers": {
     "context7": {
       "command": "node",
-      "args": ["-e", "require('https').request('https://mcp.context7.com/mcp', {headers: {'CONTEXT7_API_KEY': process.env.CONTEXT7_API_KEY}})"],
+      "args": [
+        "-e",
+        "require('https').request('https://mcp.context7.com/mcp', {headers: {'CONTEXT7_API_KEY': process.env.CONTEXT7_API_KEY}})"
+      ],
       "env": {
         "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
       }

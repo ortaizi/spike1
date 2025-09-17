@@ -1,30 +1,35 @@
 # Issue #8: Critical IDOR Security Fix - Insecure Direct Object References
 
-**GitHub Issue**: https://github.com/ortaizi/spike1-1/issues/8
-**Severity**: 🔴 CRITICAL
-**OWASP**: A01:2021 - Broken Access Control
+**GitHub Issue**: https://github.com/ortaizi/spike1-1/issues/8 **Severity**: 🔴
+CRITICAL **OWASP**: A01:2021 - Broken Access Control
 
 ## Problem Analysis
 
 ### Vulnerability Details
+
 - **File**: `/apps/web/app/api/users/[id]/route.ts`
 - **Issue**: GET endpoint allows unauthorized access to any user's data
-- **Risk**: Complete user data exposure, privacy violations, potential data breach
+- **Risk**: Complete user data exposure, privacy violations, potential data
+  breach
 
 ### Current State Analysis
+
 ```typescript
 // VULNERABLE: GET endpoint (lines 7-34)
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   // NO AUTHENTICATION CHECK ❌
   // NO AUTHORIZATION CHECK ❌
   // Direct database query with user-provided ID ❌
   const { data, error } = await supabase
     .from('users')
-    .select('*')  // Exposes ALL user data ❌
+    .select('*') // Exposes ALL user data ❌
     .eq('id', params.id)
-    .single()
+    .single();
 
-  return NextResponse.json(data) // Returns sensitive data ❌
+  return NextResponse.json(data); // Returns sensitive data ❌
 }
 
 // SECURE: PUT endpoint (lines 36-99) ✅
@@ -32,6 +37,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 ```
 
 ### Authorization Pattern in Codebase
+
 ```typescript
 // Standard auth pattern used in PUT/DELETE:
 const session = await getServerSession(unifiedAuthOptions);
@@ -48,27 +54,35 @@ if (session.user.id !== params.id) {
 ## Security Requirements
 
 ### 1. Authentication
+
 - ✅ Verify user is logged in via NextAuth session
 - ✅ Return 401 for unauthenticated requests
 
 ### 2. Authorization (IDOR Prevention)
+
 - ✅ Users can only access their own data
 - ✅ Return 403 for unauthorized access attempts
 - ✅ Log security violations for monitoring
 
 ### 3. Data Minimization
+
 - ✅ Only return necessary user data fields
 - ✅ Exclude sensitive fields (encrypted passwords, etc.)
 
 ### 4. Security Logging
+
 - ✅ Log unauthorized access attempts
 - ✅ Include user IP, attempted resource, timestamp
 
 ## Implementation Plan
 
 ### Step 1: Fix GET Endpoint Authorization
+
 ```typescript
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     // 1. Authentication check
     const session = await getServerSession(unifiedAuthOptions);
@@ -79,14 +93,21 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     // 2. Authorization check (IDOR prevention)
     if (session.user.id !== params.id) {
       // Log security violation
-      console.warn(`SECURITY: User ${session.user.id} attempted unauthorized access to user ${params.id}`);
-      return NextResponse.json({ error: 'Forbidden: You can only access your own profile' }, { status: 403 });
+      console.warn(
+        `SECURITY: User ${session.user.id} attempted unauthorized access to user ${params.id}`
+      );
+      return NextResponse.json(
+        { error: 'Forbidden: You can only access your own profile' },
+        { status: 403 }
+      );
     }
 
     // 3. Secure data query with field selection
     const { data, error } = await supabase
       .from('users')
-      .select('id, email, name, avatar_url, university_id, is_setup_complete, created_at, updated_at')
+      .select(
+        'id, email, name, avatar_url, university_id, is_setup_complete, created_at, updated_at'
+      )
       .eq('id', params.id)
       .single();
 
@@ -98,7 +119,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json(data);
   } catch (error) {
     console.error('GET /api/users/[id] error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 ```
@@ -106,20 +130,24 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 ### Step 2: Add Comprehensive Tests
 
 #### 2.1 Authentication Tests
+
 - Test unauthenticated access returns 401
 - Test malformed session returns 401
 
 #### 2.2 Authorization Tests (IDOR Prevention)
+
 - Test user accessing own data succeeds
 - Test user accessing other user's data returns 403
 - Test admin privileges (if implemented)
 
 #### 2.3 Data Validation Tests
+
 - Test only safe fields are returned
 - Test sensitive fields are excluded
 - Test proper error handling
 
 ### Step 3: Security Audit
+
 - Review all similar endpoints in `/apps/web/app/api/`
 - Check for consistent authorization patterns
 - Verify no other IDOR vulnerabilities exist
@@ -127,6 +155,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 ## Test Implementation
 
 ### Test File: `tests/auth/idor-prevention.test.ts`
+
 ```typescript
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createMocks } from 'node-mocks-http';
@@ -137,7 +166,7 @@ describe('IDOR Prevention - GET /api/users/[id]', () => {
     // Test implementation
   });
 
-  it('should return 403 when user tries to access another user\'s data', async () => {
+  it("should return 403 when user tries to access another user's data", async () => {
     // Test implementation
   });
 
@@ -154,6 +183,7 @@ describe('IDOR Prevention - GET /api/users/[id]', () => {
 ## Related Issues & PRs
 
 Found multiple similar IDOR fixes in the repository:
+
 - PR #52: Book Record Access URLs
 - PR #30: Generic API View
 - PR #48: User and Reading List Endpoints
@@ -165,12 +195,14 @@ This indicates a **systematic IDOR problem** requiring comprehensive audit.
 ## Security Impact Assessment
 
 ### Before Fix
+
 - **Risk Level**: Critical 🔴
 - **Attack Vector**: Direct URL manipulation
 - **Data Exposure**: Complete user profiles
 - **Affected Users**: All users in database
 
 ### After Fix
+
 - **Risk Level**: Mitigated ✅
 - **Protection**: Session-based authorization
 - **Data Exposure**: Own data only
@@ -197,6 +229,7 @@ This indicates a **systematic IDOR problem** requiring comprehensive audit.
 ---
 
 **Next Steps**:
+
 1. Create feature branch
 2. Implement fix with proper authorization
 3. Add comprehensive tests

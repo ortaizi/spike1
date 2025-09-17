@@ -1,7 +1,8 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { supabase } from '../db';
-import bcrypt from 'bcryptjs';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// import bcrypt from 'bcryptjs'; // Unused import
 import type { UniversityConfig } from './types';
 import { env } from "../env"
 
@@ -45,16 +46,16 @@ export const UNIVERSITIES: UniversityConfig[] = [
 // Function to scrape data from Moodle
 async function scrapeMoodleData(
   username: string,
-  password: string,
+  _password: string,
   university: UniversityConfig
 ) {
   try {
     console.log('Scraping Moodle data for:', username, 'at:', university.name);
     
     // Get scraping configuration from environment
-    const timeout = parseInt(env.SCRAPING_TIMEOUT || '30000');
-    const userAgent = env.SCRAPING_USER_AGENT || 'Spike-Platform/1.0';
-    const retryAttempts = parseInt(env.SCRAPING_RETRY_ATTEMPTS || '3');
+    // const timeout = parseInt(env.SCRAPING_TIMEOUT || '30000'); // Reserved for future use
+    // const userAgent = env.SCRAPING_USER_AGENT || 'Spike-Platform/1.0'; // Reserved for future use
+    // const retryAttempts = parseInt(env.SCRAPING_RETRY_ATTEMPTS || '3'); // Reserved for future use
     const delay = parseInt(env.SCRAPING_DELAY || '1000');
     
     // Simulate scraping process
@@ -226,7 +227,7 @@ export const authOptions = {
         password: { label: 'סיסמה', type: 'password' },
         universityId: { label: 'מוסד לימודים', type: 'text' }
       },
-      async authorize(credentials) {
+      async authorize(credentials, _req) {
         if (!credentials?.username || !credentials?.password || !credentials?.universityId) {
           console.log('Missing credentials');
           return null;
@@ -256,7 +257,7 @@ export const authOptions = {
           const university = authResult.university;
 
           // Find existing user by email
-          const { data: existingUsers, error: findError } = await supabase
+          const { data: existingUsers, error: _findError } = await supabase
             .from('users')
             .select('*')
             .eq('email', `${username}@${university.domain}`)
@@ -289,7 +290,7 @@ export const authOptions = {
               console.log('🔄 הפעלת סנכרון אוטומטי עבור משתמש קיים...');
               
               // יצירת job ID ייחודי
-              const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+              // const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`; // Reserved for future use
               
               // הפעלת תהליך רקע אסינכרוני
               const { startBackgroundSync } = await import('../background-sync');
@@ -335,6 +336,7 @@ export const authOptions = {
               studentId: existingUser.studentid || '',
               universityId: universityId,
               universityName: university.name,
+              provider: 'dual-stage-complete',
               moodleData: moodleData
             };
           } else {
@@ -355,6 +357,7 @@ export const authOptions = {
                 studentId: username,
                 universityId: universityId,
                 universityName: university.name,
+                provider: 'dual-stage-complete' as const,
                 moodleData: moodleData
               };
             }
@@ -422,6 +425,7 @@ export const authOptions = {
               studentId: newUser.studentid || '',
               universityId: universityId,
               universityName: university.name,
+              provider: 'dual-stage-complete',
               moodleData: moodleData
             };
           }
@@ -437,22 +441,22 @@ export const authOptions = {
     error: '/auth/error'
   },
   events: {
-    async signIn({ user, account, profile, isNewUser }) {
+    async signIn({ user, account: _account, profile: _profile, isNewUser }: { user: any; account: any; profile: any; isNewUser: boolean }) {
       console.log('SignIn event - user:', user, 'isNewUser:', isNewUser);
     },
     async signOut({ session, token }: any) {
       console.log('SignOut event - session:', session, 'token:', token);
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       console.log('Session event - session:', session, 'token:', token);
     }
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account: _account, profile: _profile }: { user: any; account: any; profile: any }) {
       console.log('SignIn callback called with user:', user);
       return !!user;
     },
-    async redirect({ url, baseUrl }) {
+    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
       console.log('Redirect callback - url:', url, 'baseUrl:', baseUrl);
       
       // Use APP_URL from environment variables
@@ -496,11 +500,11 @@ export const authOptions = {
     }
   },
   session: {
-    strategy: 'jwt',
+    strategy: 'jwt' as const,
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: env.AUTH_SECRET,
-  debug: env.AUTH_DEBUG === 'true',
+  debug: env.AUTH_DEBUG === 'true' ? true : false,
   trustHost: true
 };
 

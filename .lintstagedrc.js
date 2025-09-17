@@ -6,13 +6,13 @@ module.exports = {
   '**/*.{ts,tsx,js,jsx}': [
     // 1. Type checking (critical for production quality)
     () => 'npm run type-check',
-    
+
     // 2. ESLint with automatic fixes
     'eslint --fix --max-warnings 0',
-    
+
     // 3. Prettier formatting
     'prettier --write',
-    
+
     // 4. Unit tests for changed files (if applicable)
     'vitest run --changed --passWithNoTests',
   ],
@@ -36,15 +36,13 @@ module.exports = {
   // ================================================================================================
   // 🎯 ACADEMIC PLATFORM SPECIFIC
   // ================================================================================================
-  
+
   // Hebrew content files (special handling)
   '**/*.json': (filenames) => {
-    const hebrewFiles = filenames.filter(file => 
-      file.includes('hebrew') || 
-      file.includes('he-IL') || 
-      file.includes('locales/he')
+    const hebrewFiles = filenames.filter(
+      (file) => file.includes('hebrew') || file.includes('he-IL') || file.includes('locales/he')
     );
-    
+
     if (hebrewFiles.length > 0) {
       return [
         // Validate Hebrew JSON structure
@@ -61,7 +59,7 @@ module.exports = {
             }
           });
         "`,
-        ...hebrewFiles.map(file => `prettier --write ${file}`),
+        ...hebrewFiles.map((file) => `prettier --write ${file}`),
       ];
     }
     return [`prettier --write ${filenames.join(' ')}`];
@@ -72,7 +70,7 @@ module.exports = {
     // Enhanced validation for API routes
     'eslint --fix --max-warnings 0',
     'prettier --write',
-    
+
     // Custom API validation
     () => `node -e "
       console.log('🔍 Validating API routes...');
@@ -86,7 +84,7 @@ module.exports = {
     // Standard linting and formatting
     'eslint --fix --max-warnings 0',
     'prettier --write',
-    
+
     // Custom Hebrew/RTL validation
     () => `node -e "
       console.log('🌍 Validating Hebrew/RTL support in components...');
@@ -99,7 +97,7 @@ module.exports = {
   'packages/database/**/*.{ts,sql}': [
     'eslint --fix --max-warnings 0',
     'prettier --write',
-    
+
     // Database schema validation
     () => `node -e "
       console.log('🗄️ Validating database schemas...');
@@ -115,12 +113,10 @@ module.exports = {
     // Lint test files
     'eslint --fix --max-warnings 0',
     'prettier --write',
-    
+
     // Run the specific test files
     (filenames) => {
-      const testCommand = filenames
-        .map(filename => `vitest run ${filename}`)
-        .join(' && ');
+      const testCommand = filenames.map((filename) => `vitest run ${filename}`).join(' && ');
       return testCommand;
     },
   ],
@@ -128,7 +124,7 @@ module.exports = {
   // ================================================================================================
   // 🔒 SECURITY & ENVIRONMENT
   // ================================================================================================
-  
+
   // Environment files validation
   '**/.env*': [
     // Validate environment file structure
@@ -172,7 +168,7 @@ module.exports = {
   // ================================================================================================
   // 🚫 PREVENT COMMITS OF SENSITIVE FILES
   // ================================================================================================
-  
+
   // Block commits of files that shouldn't be in version control
   '**/*.{log,tmp,cache}': () => {
     throw new Error('❌ Attempted to commit temporary/cache files. Please remove them first.');
@@ -182,8 +178,8 @@ module.exports = {
   '**/*': (filenames) => {
     const fs = require('fs');
     const maxSize = 5 * 1024 * 1024; // 5MB
-    
-    const largeFiles = filenames.filter(filename => {
+
+    const largeFiles = filenames.filter((filename) => {
       try {
         const stats = fs.statSync(filename);
         return stats.size > maxSize;
@@ -191,11 +187,13 @@ module.exports = {
         return false;
       }
     });
-    
+
     if (largeFiles.length > 0) {
-      throw new Error(`❌ Large files detected (>5MB): ${largeFiles.join(', ')}. Please use Git LFS or reduce file size.`);
+      throw new Error(
+        `❌ Large files detected (>5MB): ${largeFiles.join(', ')}. Please use Git LFS or reduce file size.`
+      );
     }
-    
+
     return [];
   },
 };

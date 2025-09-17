@@ -1,6 +1,6 @@
+import { createHash, randomBytes } from 'crypto';
 import Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
-import { createHash, randomBytes } from 'crypto';
 import { logger } from '../logging/logger';
 
 export interface SessionData {
@@ -66,13 +66,15 @@ export class DistributedSessionManager {
       retryDelayOnFailover: 100,
       enableReadyCheck: true,
       maxRetriesPerRequest: 3,
-      lazyConnect: true
+      lazyConnect: true,
     });
 
-    this.jwtSecret = process.env.JWT_SECRET || (() => {
-      logger.error('JWT_SECRET environment variable not set! Using temporary fallback.');
-      return 'temp-fallback-' + Math.random().toString(36).substring(2, 15);
-    })();
+    this.jwtSecret =
+      process.env.JWT_SECRET ||
+      (() => {
+        logger.error('JWT_SECRET environment variable not set! Using temporary fallback.');
+        return 'temp-fallback-' + Math.random().toString(36).substring(2, 15);
+      })();
 
     this.setupEventHandlers();
   }
@@ -94,7 +96,7 @@ export class DistributedSessionManager {
       this.scheduleCleanup();
     } catch (error) {
       logger.error('Failed to initialize distributed session manager:', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -123,7 +125,7 @@ export class DistributedSessionManager {
       lastAccessedAt: now,
       expiresAt,
       ipAddress: request.ipAddress,
-      userAgent: request.userAgent
+      userAgent: request.userAgent,
     };
 
     // Generate JWT token
@@ -131,7 +133,7 @@ export class DistributedSessionManager {
       {
         sessionId,
         userId: request.userId,
-        tenantId: request.tenantId
+        tenantId: request.tenantId,
       } as SessionToken,
       this.jwtSecret,
       { expiresIn: ttl }
@@ -157,13 +159,17 @@ export class DistributedSessionManager {
 
       // Store session metadata for quick lookups
       const metadataKey = `session_meta:${request.tenantId}:${sessionId}`;
-      multi.setex(metadataKey, ttl, JSON.stringify({
-        userId: request.userId,
-        email: request.email,
-        role: request.role,
-        createdAt: now,
-        ipAddress: request.ipAddress
-      }));
+      multi.setex(
+        metadataKey,
+        ttl,
+        JSON.stringify({
+          userId: request.userId,
+          email: request.email,
+          role: request.role,
+          createdAt: now,
+          ipAddress: request.ipAddress,
+        })
+      );
 
       await multi.exec();
 
@@ -172,19 +178,19 @@ export class DistributedSessionManager {
         userId: request.userId,
         tenantId: request.tenantId,
         ttl,
-        expiresAt: expiresAt.toISOString()
+        expiresAt: expiresAt.toISOString(),
       });
 
       return {
         sessionId,
         token,
-        expiresAt
+        expiresAt,
       };
     } catch (error) {
       logger.error('Failed to create session:', {
         userId: request.userId,
         tenantId: request.tenantId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -203,7 +209,7 @@ export class DistributedSessionManager {
       if (!sessionDataString) {
         return {
           valid: false,
-          error: 'Session not found or expired'
+          error: 'Session not found or expired',
         };
       }
 
@@ -214,13 +220,17 @@ export class DistributedSessionManager {
         await this.deleteSession(tenantId, sessionId);
         return {
           valid: false,
-          error: 'Session expired'
+          error: 'Session expired',
         };
       }
 
       // Update last accessed time
       sessionData.lastAccessedAt = new Date();
-      await this.redis.setex(sessionKey, this.getRemainingTTL(sessionData.expiresAt), JSON.stringify(sessionData));
+      await this.redis.setex(
+        sessionKey,
+        this.getRemainingTTL(sessionData.expiresAt),
+        JSON.stringify(sessionData)
+      );
 
       // Check if session needs refresh
       const requiresRefresh = this.shouldRefreshSession(sessionData.expiresAt);
@@ -229,41 +239,45 @@ export class DistributedSessionManager {
         sessionId,
         userId,
         tenantId,
-        requiresRefresh
+        requiresRefresh,
       });
 
       return {
         valid: true,
         session: sessionData,
-        requiresRefresh
+        requiresRefresh,
       };
     } catch (error) {
       if (error instanceof jwt.TokenExpiredError) {
         return {
           valid: false,
-          error: 'Token expired'
+          error: 'Token expired',
         };
       }
 
       if (error instanceof jwt.JsonWebTokenError) {
         return {
           valid: false,
-          error: 'Invalid token'
+          error: 'Invalid token',
         };
       }
 
       logger.error('Session validation failed:', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       return {
         valid: false,
-        error: 'Session validation failed'
+        error: 'Session validation failed',
       };
     }
   }
 
-  async refreshSession(tenantId: string, sessionId: string, newTtl?: number): Promise<{
+  async refreshSession(
+    tenantId: string,
+    sessionId: string,
+    newTtl?: number
+  ): Promise<{
     token: string;
     expiresAt: Date;
   }> {
@@ -288,7 +302,7 @@ export class DistributedSessionManager {
       {
         sessionId,
         userId: sessionData.userId,
-        tenantId
+        tenantId,
       } as SessionToken,
       this.jwtSecret,
       { expiresIn: ttl }
@@ -301,7 +315,7 @@ export class DistributedSessionManager {
       sessionId,
       userId: sessionData.userId,
       tenantId,
-      newExpiresAt: expiresAt.toISOString()
+      newExpiresAt: expiresAt.toISOString(),
     });
 
     return { token, expiresAt };
@@ -328,7 +342,7 @@ export class DistributedSessionManager {
         logger.info('Session deleted', {
           sessionId,
           userId: sessionData.userId,
-          tenantId
+          tenantId,
         });
 
         return true;
@@ -339,7 +353,7 @@ export class DistributedSessionManager {
       logger.error('Failed to delete session:', {
         tenantId,
         sessionId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -370,7 +384,7 @@ export class DistributedSessionManager {
       logger.info('All user sessions deleted', {
         tenantId,
         userId,
-        sessionCount: sessionIds.length
+        sessionCount: sessionIds.length,
       });
 
       return sessionIds.length;
@@ -378,7 +392,7 @@ export class DistributedSessionManager {
       logger.error('Failed to delete all user sessions:', {
         tenantId,
         userId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -393,18 +407,18 @@ export class DistributedSessionManager {
         return [];
       }
 
-      const sessionKeys = sessionIds.map(id => this.getSessionKey(tenantId, id));
+      const sessionKeys = sessionIds.map((id) => this.getSessionKey(tenantId, id));
       const sessions = await this.redis.mget(...sessionKeys);
 
       return sessions
         .filter((session): session is string => session !== null)
-        .map(session => JSON.parse(session) as SessionData)
-        .filter(session => session.expiresAt && new Date() <= new Date(session.expiresAt));
+        .map((session) => JSON.parse(session) as SessionData)
+        .filter((session) => session.expiresAt && new Date() <= new Date(session.expiresAt));
     } catch (error) {
       logger.error('Failed to get user sessions:', {
         tenantId,
         userId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -425,18 +439,18 @@ export class DistributedSessionManager {
           totalSessions: 0,
           activeSessions: 0,
           activeUsers: 0,
-          expiredSessions: 0
+          expiredSessions: 0,
         };
       }
 
-      const sessionKeys = sessionIds.map(id => this.getSessionKey(tenantId, id));
+      const sessionKeys = sessionIds.map((id) => this.getSessionKey(tenantId, id));
       const sessions = await this.redis.mget(...sessionKeys);
 
       let activeSessions = 0;
       let expiredSessions = 0;
       const activeUserIds = new Set<string>();
 
-      sessions.forEach(sessionString => {
+      sessions.forEach((sessionString) => {
         if (sessionString) {
           const session = JSON.parse(sessionString) as SessionData;
           if (session.expiresAt && new Date() <= new Date(session.expiresAt)) {
@@ -454,12 +468,12 @@ export class DistributedSessionManager {
         totalSessions: sessionIds.length,
         activeSessions,
         activeUsers: activeUserIds.size,
-        expiredSessions
+        expiredSessions,
       };
     } catch (error) {
       logger.error('Failed to get session statistics:', {
         tenantId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -473,7 +487,7 @@ export class DistributedSessionManager {
       logger.info('Distributed session manager shut down');
     } catch (error) {
       logger.error('Error during session manager shutdown:', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -481,10 +495,7 @@ export class DistributedSessionManager {
   // Private helper methods
 
   private generateSessionId(): string {
-    return createHash('sha256')
-      .update(randomBytes(32))
-      .update(Date.now().toString())
-      .digest('hex');
+    return createHash('sha256').update(randomBytes(32)).update(Date.now().toString()).digest('hex');
   }
 
   private getSessionKey(tenantId: string, sessionId: string): string {
@@ -516,7 +527,7 @@ export class DistributedSessionManager {
 
     this.redis.on('error', (error) => {
       logger.error('Session manager Redis error:', {
-        error: error.message
+        error: error.message,
       });
     });
 
@@ -531,15 +542,18 @@ export class DistributedSessionManager {
 
   private scheduleCleanup(): void {
     // Clean up expired sessions every hour
-    setInterval(async () => {
-      try {
-        await this.cleanupExpiredSessions();
-      } catch (error) {
-        logger.error('Session cleanup failed:', {
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
-      }
-    }, 60 * 60 * 1000); // 1 hour
+    setInterval(
+      async () => {
+        try {
+          await this.cleanupExpiredSessions();
+        } catch (error) {
+          logger.error('Session cleanup failed:', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      },
+      60 * 60 * 1000
+    ); // 1 hour
 
     logger.info('Session cleanup scheduled');
   }
@@ -567,7 +581,9 @@ export class DistributedSessionManager {
             multi.del(`session_meta:${tenantId}:${sessionId}`);
 
             // Find and clean from user sessions
-            const userSessionKeys = await this.redis.keys(`${this.USER_SESSIONS_PREFIX}${tenantId}:*`);
+            const userSessionKeys = await this.redis.keys(
+              `${this.USER_SESSIONS_PREFIX}${tenantId}:*`
+            );
             for (const userKey of userSessionKeys) {
               multi.srem(userKey, sessionId);
             }
@@ -580,12 +596,12 @@ export class DistributedSessionManager {
 
       if (totalCleaned > 0) {
         logger.info('Session cleanup completed', {
-          cleanedSessions: totalCleaned
+          cleanedSessions: totalCleaned,
         });
       }
     } catch (error) {
       logger.error('Session cleanup error:', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }

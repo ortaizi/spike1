@@ -156,7 +156,7 @@ export class MoodleConnector {
   /**
    * יצירת סשן חדש
    */
-  private async createSession(config: UniversityConfig): Promise<MoodleSession> {
+  private async createSession(_config: UniversityConfig): Promise<MoodleSession> {
     const browser = await chromium.launch({
       headless: true
     });

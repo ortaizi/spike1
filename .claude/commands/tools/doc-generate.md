@@ -4,12 +4,19 @@ model: sonnet
 
 # Automated Documentation Generation
 
-You are a documentation expert specializing in creating comprehensive, maintainable documentation from code. Generate API docs, architecture diagrams, user guides, and technical references using AI-powered analysis and industry best practices.
+You are a documentation expert specializing in creating comprehensive,
+maintainable documentation from code. Generate API docs, architecture diagrams,
+user guides, and technical references using AI-powered analysis and industry
+best practices.
 
 ## Context
-The user needs automated documentation generation that extracts information from code, creates clear explanations, and maintains consistency across documentation types. Focus on creating living documentation that stays synchronized with code.
+
+The user needs automated documentation generation that extracts information from
+code, creates clear explanations, and maintains consistency across documentation
+types. Focus on creating living documentation that stays synchronized with code.
 
 ## Requirements
+
 $ARGUMENTS
 
 ## Instructions
@@ -19,6 +26,7 @@ $ARGUMENTS
 Extract documentation elements from source code:
 
 **API Documentation Extraction**
+
 ```python
 import ast
 import inspect
@@ -30,13 +38,13 @@ class APIDocExtractor:
         Extract API endpoints and their documentation
         """
         endpoints = []
-        
+
         # FastAPI example
         fastapi_decorators = ['@app.get', '@app.post', '@app.put', '@app.delete']
-        
+
         with open(code_path, 'r') as f:
             tree = ast.parse(f.read())
-            
+
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
                 # Check for route decorators
@@ -52,9 +60,9 @@ class APIDocExtractor:
                             'examples': self._extract_examples(node)
                         }
                         endpoints.append(endpoint)
-                        
+
         return endpoints
-    
+
     def _extract_parameters(self, func_node):
         """
         Extract function parameters with types
@@ -67,17 +75,18 @@ class APIDocExtractor:
                 'required': True,
                 'description': ''
             }
-            
+
             # Extract type annotation
             if arg.annotation:
                 param['type'] = ast.unparse(arg.annotation)
-                
+
             params.append(param)
-            
+
         return params
 ```
 
 **Type and Schema Documentation**
+
 ```python
 # Extract Pydantic models
 def extract_pydantic_schemas(file_path):
@@ -85,10 +94,10 @@ def extract_pydantic_schemas(file_path):
     Extract Pydantic model definitions for API documentation
     """
     schemas = []
-    
+
     with open(file_path, 'r') as f:
         tree = ast.parse(f.read())
-        
+
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef):
             # Check if inherits from BaseModel
@@ -98,7 +107,7 @@ def extract_pydantic_schemas(file_path):
                     'description': ast.get_docstring(node),
                     'fields': []
                 }
-                
+
                 # Extract fields
                 for item in node.body:
                     if isinstance(item, ast.AnnAssign):
@@ -109,24 +118,24 @@ def extract_pydantic_schemas(file_path):
                             'default': ast.unparse(item.value) if item.value else None
                         }
                         schema['fields'].append(field)
-                        
+
                 schemas.append(schema)
-                
+
     return schemas
 
 # TypeScript interface extraction
 function extractTypeScriptInterfaces(code) {
     const interfaces = [];
     const interfaceRegex = /interface\s+(\w+)\s*{([^}]+)}/g;
-    
+
     let match;
     while ((match = interfaceRegex.exec(code)) !== null) {
         const name = match[1];
         const body = match[2];
-        
+
         const fields = [];
         const fieldRegex = /(\w+)(\?)?\s*:\s*([^;]+);/g;
-        
+
         let fieldMatch;
         while ((fieldMatch = fieldRegex.exec(body)) !== null) {
             fields.push({
@@ -135,10 +144,10 @@ function extractTypeScriptInterfaces(code) {
                 type: fieldMatch[3].trim()
             });
         }
-        
+
         interfaces.push({ name, fields });
     }
-    
+
     return interfaces;
 }
 ```
@@ -148,6 +157,7 @@ function extractTypeScriptInterfaces(code) {
 Create comprehensive API documentation:
 
 **OpenAPI/Swagger Generation**
+
 ```yaml
 openapi: 3.0.0
 info:
@@ -155,13 +165,13 @@ info:
   version: ${VERSION}
   description: |
     ${DESCRIPTION}
-    
+
     ## Authentication
     ${AUTH_DESCRIPTION}
-    
+
     ## Rate Limiting
     ${RATE_LIMIT_INFO}
-    
+
   contact:
     email: ${CONTACT_EMAIL}
   license:
@@ -229,9 +239,9 @@ paths:
                 success:
                   value:
                     data:
-                      - id: "123"
-                        email: "user@example.com"
-                        name: "John Doe"
+                      - id: '123'
+                        email: 'user@example.com'
+                        name: 'John Doe'
                     pagination:
                       page: 1
                       limit: 20
@@ -267,7 +277,8 @@ components:
 ```
 
 **API Client SDK Documentation**
-```python
+
+````python
 """
 # API Client Documentation
 
@@ -275,7 +286,7 @@ components:
 
 ```bash
 pip install your-api-client
-```
+````
 
 ## Quick Start
 
@@ -343,13 +354,15 @@ while True:
     response = client.users.list(page=page)
     for user in response.data:
         print(user.email)
-    
+
     if not response.has_next:
         break
     page += 1
 ```
+
 """
-```
+
+````
 
 ### 3. Architecture Documentation
 
@@ -362,31 +375,31 @@ graph TB
         UI[React UI]
         Mobile[Mobile App]
     end
-    
+
     subgraph "API Gateway"
         Gateway[Kong/nginx]
         RateLimit[Rate Limiter]
         Auth[Auth Service]
     end
-    
+
     subgraph "Microservices"
         UserService[User Service]
         OrderService[Order Service]
         PaymentService[Payment Service]
         NotificationService[Notification Service]
     end
-    
+
     subgraph "Data Layer"
         PostgresMain[(PostgreSQL)]
         Redis[(Redis Cache)]
         Elasticsearch[(Elasticsearch)]
         S3[S3 Storage]
     end
-    
+
     subgraph "Message Queue"
         Kafka[Apache Kafka]
     end
-    
+
     UI --> Gateway
     Mobile --> Gateway
     Gateway --> Auth
@@ -401,22 +414,26 @@ graph TB
     OrderService --> PostgresMain
     OrderService --> Elasticsearch
     NotificationService --> S3
-```
+````
 
 **Component Documentation**
-```markdown
+
+````markdown
 ## System Components
 
 ### User Service
+
 **Purpose**: Manages user accounts, authentication, and profiles
 
 **Responsibilities**:
+
 - User registration and authentication
 - Profile management
 - Role-based access control
 - Password reset and account recovery
 
 **Technology Stack**:
+
 - Language: Python 3.11
 - Framework: FastAPI
 - Database: PostgreSQL
@@ -424,6 +441,7 @@ graph TB
 - Authentication: JWT
 
 **API Endpoints**:
+
 - `POST /users` - Create new user
 - `GET /users/{id}` - Get user details
 - `PUT /users/{id}` - Update user
@@ -432,11 +450,13 @@ graph TB
 - `POST /auth/refresh` - Refresh token
 
 **Dependencies**:
+
 - PostgreSQL for user data storage
 - Redis for session caching
 - Email service for notifications
 
 **Configuration**:
+
 ```yaml
 user_service:
   port: 8001
@@ -451,7 +471,9 @@ user_service:
     secret: ${JWT_SECRET}
     expiry: 3600
 ```
-```
+````
+
+````
 
 ### 4. Code Documentation
 
@@ -467,31 +489,31 @@ def generate_function_docs(func):
 def {name}({params}){return_type}:
     """
     {summary}
-    
+
     {description}
-    
+
     Args:
         {args}
-    
+
     Returns:
         {returns}
-    
+
     Raises:
         {raises}
-    
+
     Examples:
         {examples}
-    
+
     Note:
         {notes}
     """
 '''
-    
+
     # Extract function metadata
     sig = inspect.signature(func)
     params = []
     args_doc = []
-    
+
     for param_name, param in sig.parameters.items():
         param_str = param_name
         if param.annotation != param.empty:
@@ -499,14 +521,14 @@ def {name}({params}){return_type}:
         if param.default != param.empty:
             param_str += f" = {param.default}"
         params.append(param_str)
-        
+
         # Generate argument documentation
         args_doc.append(f"{param_name} ({param.annotation.__name__}): Description of {param_name}")
-    
+
     return_type = ""
     if sig.return_annotation != sig.empty:
         return_type = f" -> {sig.return_annotation.__name__}"
-    
+
     return doc_template.format(
         name=func.__name__,
         params=", ".join(params),
@@ -519,10 +541,11 @@ def {name}({params}){return_type}:
         examples=f">>> {func.__name__}(param1, param2)\n        expected_output",
         notes="Additional important information"
     )
-```
+````
 
 **README Generation**
-```markdown
+
+````markdown
 # ${PROJECT_NAME}
 
 ${BADGES}
@@ -560,6 +583,7 @@ ${FEATURES_LIST}
 ```bash
 pip install ${PACKAGE_NAME}
 ```
+````
 
 ### Using Docker
 
@@ -584,7 +608,8 @@ ${QUICK_START_CODE}
 
 ## Documentation
 
-Full documentation is available at [https://docs.example.com](https://docs.example.com)
+Full documentation is available at
+[https://docs.example.com](https://docs.example.com)
 
 ### API Reference
 
@@ -596,12 +621,12 @@ Full documentation is available at [https://docs.example.com](https://docs.examp
 
 ### Environment Variables
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| DATABASE_URL | PostgreSQL connection string | - | Yes |
-| REDIS_URL | Redis connection string | - | Yes |
-| SECRET_KEY | Application secret key | - | Yes |
-| DEBUG | Enable debug mode | false | No |
+| Variable     | Description                  | Default | Required |
+| ------------ | ---------------------------- | ------- | -------- |
+| DATABASE_URL | PostgreSQL connection string | -       | Yes      |
+| REDIS_URL    | Redis connection string      | -       | Yes      |
+| SECRET_KEY   | Application secret key       | -       | Yes      |
+| DEBUG        | Enable debug mode            | false   | No       |
 
 ### Configuration File
 
@@ -634,7 +659,8 @@ python manage.py runserver
 
 ### Code Style
 
-We use [Black](https://github.com/psf/black) for code formatting and [Flake8](https://flake8.pycqa.org/) for linting.
+We use [Black](https://github.com/psf/black) for code formatting and
+[Flake8](https://flake8.pycqa.org/) for linting.
 
 ```bash
 # Format code
@@ -676,7 +702,8 @@ ${K8S_DEPLOYMENT_EXAMPLE}
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of
+conduct and the process for submitting pull requests.
 
 ### Development Workflow
 
@@ -688,12 +715,14 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 
 ## License
 
-This project is licensed under the ${LICENSE} License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the ${LICENSE} License - see the
+[LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
 ${ACKNOWLEDGMENTS}
-```
+
+````
 
 ### 5. User Documentation
 
@@ -708,27 +737,27 @@ Generate end-user documentation:
 ### Creating Your First ${FEATURE}
 
 1. **Navigate to the Dashboard**
-   
+
    Click on the ${FEATURE} tab in the main navigation menu.
-   
+
    ![Dashboard Screenshot](./images/dashboard.png)
 
 2. **Click "Create New"**
-   
+
    You'll find the "Create New" button in the top right corner.
-   
+
    ![Create Button](./images/create-button.png)
 
 3. **Fill in the Details**
-   
+
    - **Name**: Enter a descriptive name
    - **Description**: Add optional details
    - **Settings**: Configure as needed
-   
+
    ![Form Screenshot](./images/form.png)
 
 4. **Save Your Changes**
-   
+
    Click "Save" to create your ${FEATURE}.
 
 ### Common Tasks
@@ -754,7 +783,7 @@ Generate end-user documentation:
 
 **Problem**: Created ${FEATURE} doesn't show in the list
 
-**Solution**: 
+**Solution**:
 1. Check filters - ensure "All" is selected
 2. Refresh the page
 3. Check permissions with your administrator
@@ -766,59 +795,59 @@ Generate end-user documentation:
 | "Name required" | The name field is empty | Enter a name |
 | "Permission denied" | You don't have access | Contact admin |
 | "Server error" | Technical issue | Try again later |
-```
+````
 
 ### 6. Interactive Documentation
 
 Generate interactive documentation elements:
 
 **API Playground**
+
 ```html
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>API Documentation</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest/swagger-ui.css">
-</head>
-<body>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest/swagger-ui.css"
+    />
+  </head>
+  <body>
     <div id="swagger-ui"></div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest/swagger-ui-bundle.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest/swagger-ui-standalone-preset.js"></script>
     <script>
-        window.onload = function() {
-            const ui = SwaggerUIBundle({
-                url: "/api/openapi.json",
-                dom_id: '#swagger-ui',
-                deepLinking: true,
-                presets: [
-                    SwaggerUIBundle.presets.apis,
-                    SwaggerUIStandalonePreset
-                ],
-                plugins: [
-                    SwaggerUIBundle.plugins.DownloadUrl
-                ],
-                layout: "StandaloneLayout",
-                onComplete: function() {
-                    // Add try it out functionality
-                    ui.preauthorizeApiKey("apiKey", "your-api-key");
-                }
-            });
-            window.ui = ui;
-        }
+      window.onload = function () {
+        const ui = SwaggerUIBundle({
+          url: '/api/openapi.json',
+          dom_id: '#swagger-ui',
+          deepLinking: true,
+          presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+          plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+          layout: 'StandaloneLayout',
+          onComplete: function () {
+            // Add try it out functionality
+            ui.preauthorizeApiKey('apiKey', 'your-api-key');
+          },
+        });
+        window.ui = ui;
+      };
     </script>
-</body>
+  </body>
 </html>
 ```
 
 **Code Examples Generator**
+
 ```python
 def generate_code_examples(endpoint, languages=['python', 'javascript', 'curl']):
     """
     Generate code examples for API endpoints
     """
     examples = {}
-    
+
     # Python example
     examples['python'] = f'''
 import requests
@@ -832,7 +861,7 @@ headers = {{
 response = requests.{endpoint['method'].lower()}(url, headers=headers)
 print(response.json())
 '''
-    
+
     # JavaScript example
     examples['javascript'] = f'''
 const response = await fetch('https://api.example.com{endpoint['path']}', {{
@@ -846,14 +875,14 @@ const response = await fetch('https://api.example.com{endpoint['path']}', {{
 const data = await response.json();
 console.log(data);
 '''
-    
+
     # cURL example
     examples['curl'] = f'''
 curl -X {endpoint['method']} https://api.example.com{endpoint['path']} \\
     -H "Authorization: Bearer YOUR_API_KEY" \\
     -H "Content-Type: application/json"
 '''
-    
+
     return examples
 ```
 
@@ -862,6 +891,7 @@ curl -X {endpoint['method']} https://api.example.com{endpoint['path']} \\
 Automate documentation updates:
 
 **GitHub Actions Workflow**
+
 ```yaml
 name: Generate Documentation
 
@@ -876,38 +906,38 @@ on:
 jobs:
   generate-docs:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        pip install -r requirements-docs.txt
-        npm install -g @redocly/cli
-    
-    - name: Generate API documentation
-      run: |
-        python scripts/generate_openapi.py > docs/api/openapi.json
-        redocly build-docs docs/api/openapi.json -o docs/api/index.html
-    
-    - name: Generate code documentation
-      run: |
-        sphinx-build -b html docs/source docs/build
-    
-    - name: Generate architecture diagrams
-      run: |
-        python scripts/generate_diagrams.py
-        
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./docs/build
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-docs.txt
+          npm install -g @redocly/cli
+
+      - name: Generate API documentation
+        run: |
+          python scripts/generate_openapi.py > docs/api/openapi.json
+          redocly build-docs docs/api/openapi.json -o docs/api/index.html
+
+      - name: Generate code documentation
+        run: |
+          sphinx-build -b html docs/source docs/build
+
+      - name: Generate architecture diagrams
+        run: |
+          python scripts/generate_diagrams.py
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/build
 ```
 
 ### 8. Documentation Quality Checks
@@ -915,6 +945,7 @@ jobs:
 Ensure documentation completeness:
 
 **Documentation Coverage**
+
 ```python
 class DocCoverage:
     def check_coverage(self, codebase_path):
@@ -930,10 +961,10 @@ class DocCoverage:
             'documented_modules': 0,
             'missing_docs': []
         }
-        
+
         for file_path in glob.glob(f"{codebase_path}/**/*.py", recursive=True):
             module = ast.parse(open(file_path).read())
-            
+
             # Check module docstring
             if ast.get_docstring(module):
                 results['documented_modules'] += 1
@@ -943,7 +974,7 @@ class DocCoverage:
                     'file': file_path
                 })
             results['total_modules'] += 1
-            
+
             # Check functions and classes
             for node in ast.walk(module):
                 if isinstance(node, ast.FunctionDef):
@@ -957,7 +988,7 @@ class DocCoverage:
                             'file': file_path,
                             'line': node.lineno
                         })
-                        
+
                 elif isinstance(node, ast.ClassDef):
                     results['total_classes'] += 1
                     if ast.get_docstring(node):
@@ -969,7 +1000,7 @@ class DocCoverage:
                             'file': file_path,
                             'line': node.lineno
                         })
-        
+
         # Calculate coverage
         results['function_coverage'] = (
             results['documented_functions'] / results['total_functions'] * 100
@@ -979,7 +1010,7 @@ class DocCoverage:
             results['documented_classes'] / results['total_classes'] * 100
             if results['total_classes'] > 0 else 100
         )
-        
+
         return results
 ```
 
@@ -993,4 +1024,5 @@ class DocCoverage:
 6. **Reference Documentation**: Complete API reference with examples
 7. **Documentation Site**: Deployed static site with search functionality
 
-Focus on creating documentation that is accurate, comprehensive, and easy to maintain alongside code changes.
+Focus on creating documentation that is accurate, comprehensive, and easy to
+maintain alongside code changes.

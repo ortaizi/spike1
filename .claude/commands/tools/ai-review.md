@@ -64,4 +64,6 @@ Conduct comprehensive review focusing on:
    - Edge case handling
    - Mocked LLM responses
 
-Provide specific recommendations with severity levels (Critical/High/Medium/Low). Include code examples for improvements and links to relevant best practices.
+Provide specific recommendations with severity levels
+(Critical/High/Medium/Low). Include code examples for improvements and links to
+relevant best practices.
