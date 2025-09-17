@@ -1,20 +1,19 @@
+import { v4 as uuidv4 } from 'uuid';
 import { DatabaseManager } from '../config/database';
-import { EventBus } from './event-bus';
 import { logger } from '../config/logging';
 import {
-  SyncJob,
-  SyncJobType,
-  SyncJobStatus,
-  JobPriority,
-  SyncJobConfig,
-  SyncJobResult,
   CreateSyncJobRequest,
-  JobCreatedEvent,
-  JobStartedEvent,
   JobCompletedEvent,
-  JobFailedEvent
+  JobCreatedEvent,
+  JobFailedEvent,
+  JobPriority,
+  JobStartedEvent,
+  SyncJob,
+  SyncJobResult,
+  SyncJobStatus,
+  SyncJobType,
 } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { EventBus } from './event-bus';
 
 export class JobManager {
   private static instance: JobManager;
@@ -52,7 +51,7 @@ export class JobManager {
       retryCount: 0,
       maxRetries: this.getMaxRetries(request.type),
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     // Store job in database
@@ -77,7 +76,7 @@ export class JobManager {
       job.retryCount,
       job.maxRetries,
       job.createdAt,
-      job.updatedAt
+      job.updatedAt,
     ];
 
     await this.dbManager.executeQuery(tenantId, query, values);
@@ -90,7 +89,7 @@ export class JobManager {
       tenantId,
       data: { job },
       timestamp: new Date(),
-      correlationId
+      correlationId,
     };
 
     await this.eventBus.publish('sync.job.created', event);
@@ -100,7 +99,7 @@ export class JobManager {
       type: job.type,
       tenantId,
       userId,
-      correlationId
+      correlationId,
     });
 
     return job;
@@ -168,7 +167,7 @@ export class JobManager {
         tenantId: updatedJob.tenantId,
         data: { job: updatedJob, workerId: process.env.WORKER_ID || 'unknown' },
         timestamp: now,
-        correlationId
+        correlationId,
       };
       await this.eventBus.publish('sync.job.started', event);
     } else if (status === SyncJobStatus.COMPLETED) {
@@ -179,7 +178,7 @@ export class JobManager {
         tenantId: updatedJob.tenantId,
         data: { job: updatedJob, result: result! },
         timestamp: now,
-        correlationId
+        correlationId,
       };
       await this.eventBus.publish('sync.job.completed', event);
     } else if (status === SyncJobStatus.FAILED) {
@@ -191,10 +190,10 @@ export class JobManager {
         data: {
           job: updatedJob,
           error: error || 'Unknown error',
-          retryScheduled: updatedJob.retryCount < updatedJob.maxRetries
+          retryScheduled: updatedJob.retryCount < updatedJob.maxRetries,
         },
         timestamp: now,
-        correlationId
+        correlationId,
       };
       await this.eventBus.publish('sync.job.failed', event);
     }
@@ -271,7 +270,7 @@ export class JobManager {
     const result = await this.dbManager.executeQuery('default', query, [
       SyncJobStatus.PENDING,
       SyncJobStatus.RETRYING,
-      limit
+      limit,
     ]);
 
     return result.rows.map((row: any) => this.mapRowToJob(row));
@@ -303,7 +302,7 @@ export class JobManager {
       jobId,
       SyncJobStatus.PENDING,
       SyncJobStatus.QUEUED,
-      SyncJobStatus.RETRYING
+      SyncJobStatus.RETRYING,
     ]);
 
     return result.rows.length > 0;
@@ -322,12 +321,12 @@ export class JobManager {
       SyncJobStatus.COMPLETED,
       SyncJobStatus.FAILED,
       SyncJobStatus.CANCELLED,
-      cutoffDate
+      cutoffDate,
     ]);
 
     logger.info(`Cleaned up ${result.rowCount} old sync jobs`, {
       cutoffDate: cutoffDate.toISOString(),
-      deletedCount: result.rowCount
+      deletedCount: result.rowCount,
     });
 
     return result.rowCount || 0;
@@ -353,7 +352,7 @@ export class JobManager {
       result: row.result ? JSON.parse(row.result) : undefined,
       error: row.error,
       createdAt: row.created_at,
-      updatedAt: row.updated_at
+      updatedAt: row.updated_at,
     };
   }
 

@@ -1,19 +1,19 @@
-import express from 'express';
 import cors from 'cors';
+import express from 'express';
 import helmet from 'helmet';
-import { setupTracing } from './config/tracing';
-import { setupLogging } from './config/logging';
 import { DatabaseManager } from './config/database';
-import { EventBus } from './services/event-bus';
-import { tenantMiddleware } from './middleware/tenant';
+import { setupLogging } from './config/logging';
+import { setupTracing } from './config/tracing';
+import { assignmentRoutes } from './controllers/assignments';
+import { courseRoutes } from './controllers/courses';
+import { enrollmentRoutes } from './controllers/enrollments';
+import { gradeRoutes } from './controllers/grades';
+import { teamRoutes } from './controllers/teams';
 import { authMiddleware } from './middleware/auth';
 import { correlationMiddleware } from './middleware/correlation';
 import { errorMiddleware } from './middleware/error';
-import { courseRoutes } from './controllers/courses';
-import { assignmentRoutes } from './controllers/assignments';
-import { gradeRoutes } from './controllers/grades';
-import { enrollmentRoutes } from './controllers/enrollments';
-import { teamRoutes } from './controllers/teams';
+import { tenantMiddleware } from './middleware/tenant';
+import { EventBus } from './services/event-bus';
 
 // Initialize tracing before any imports
 setupTracing('academic-service');
@@ -24,10 +24,12 @@ const logger = setupLogging();
 
 // Security middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+    credentials: true,
+  })
+);
 
 // Request parsing
 app.use(express.json({ limit: '10mb' }));
@@ -44,7 +46,7 @@ app.get('/health', (req, res) => {
     status: 'healthy',
     service: 'academic-service',
     timestamp: new Date().toISOString(),
-    version: process.env.SERVICE_VERSION || '1.0.0'
+    version: process.env.SERVICE_VERSION || '1.0.0',
   });
 });
 
@@ -85,7 +87,6 @@ async function startServer() {
 
       process.exit(0);
     });
-
   } catch (error) {
     logger.error('Failed to start academic service:', error);
     process.exit(1);

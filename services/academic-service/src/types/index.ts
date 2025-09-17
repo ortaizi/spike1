@@ -94,31 +94,31 @@ export enum AssignmentStatus {
   DRAFT = 'draft',
   PUBLISHED = 'published',
   CLOSED = 'closed',
-  GRADED = 'graded'
+  GRADED = 'graded',
 }
 
 export enum EnrollmentRole {
   STUDENT = 'student',
   TA = 'ta',
-  INSTRUCTOR = 'instructor'
+  INSTRUCTOR = 'instructor',
 }
 
 export enum EnrollmentStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
-  DROPPED = 'dropped'
+  DROPPED = 'dropped',
 }
 
 export enum TeamStatus {
   FORMING = 'forming',
   ACTIVE = 'active',
   COMPLETED = 'completed',
-  DISBANDED = 'disbanded'
+  DISBANDED = 'disbanded',
 }
 
 export enum TeamRole {
   MEMBER = 'member',
-  LEADER = 'leader'
+  LEADER = 'leader',
 }
 
 // Event types for Event Sourcing

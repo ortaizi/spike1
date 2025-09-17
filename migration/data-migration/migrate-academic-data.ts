@@ -6,9 +6,10 @@
  * Usage: tsx migrate-academic-data.ts --tenant=bgu --dry-run
  */
 
-import { Pool } from 'pg';
 import { createHash } from 'crypto';
+import { Pool } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
+import { createSafeSchema } from '../../services/academic-service/src/utils/sql-builder';
 
 interface MigrationConfig {
   tenant: string;
@@ -53,7 +54,7 @@ class AcademicDataMigration {
       assignments: { migrated: 0, errors: 0 },
       grades: { migrated: 0, errors: 0 },
       enrollments: { migrated: 0, errors: 0 },
-      duration: 0
+      duration: 0,
     };
   }
 
@@ -83,7 +84,6 @@ class AcademicDataMigration {
 
       console.log('✅ Migration completed successfully');
       this.printStats();
-
     } catch (error) {
       console.error('❌ Migration failed:', error);
       throw error;
@@ -114,8 +114,9 @@ class AcademicDataMigration {
     const client = await this.targetPool.connect();
     try {
       // Create schema if it doesn't exist
-      await client.query(`CREATE SCHEMA IF NOT EXISTS academic_${this.config.tenant}`);
-      console.log(`✅ Schema academic_${this.config.tenant} ready`);
+      const safeSchemaName = createSafeSchema(this.config.tenant);
+      await client.query(`CREATE SCHEMA IF NOT EXISTS ${safeSchemaName}`);
+      console.log(`✅ Schema ${safeSchemaName} ready`);
     } finally {
       client.release();
     }
@@ -129,11 +130,14 @@ class AcademicDataMigration {
 
     try {
       // Count total courses
-      const countResult = await sourceClient.query(`
+      const countResult = await sourceClient.query(
+        `
         SELECT COUNT(*) as total
         FROM courses
         WHERE tenant_id = $1
-      `, [this.config.tenant]);
+      `,
+        [this.config.tenant]
+      );
 
       const totalCourses = parseInt(countResult.rows[0].total);
       console.log(`📊 Found ${totalCourses} courses to migrate`);
@@ -141,7 +145,8 @@ class AcademicDataMigration {
       let offset = 0;
       while (offset < totalCourses) {
         // Fetch batch of courses
-        const coursesResult = await sourceClient.query(`
+        const coursesResult = await sourceClient.query(
+          `
           SELECT
             id, code, name, faculty, academic_year, semester,
             credits, instructor, description, metadata,
@@ -150,7 +155,9 @@ class AcademicDataMigration {
           WHERE tenant_id = $1
           ORDER BY created_at
           LIMIT $2 OFFSET $3
-        `, [this.config.tenant, this.config.batchSize, offset]);
+        `,
+          [this.config.tenant, this.config.batchSize, offset]
+        );
 
         const courses = coursesResult.rows;
 
@@ -158,7 +165,8 @@ class AcademicDataMigration {
           try {
             if (!this.config.dryRun) {
               // Insert course into target database
-              await targetClient.query(`
+              await targetClient.query(
+                `
                 INSERT INTO academic_${this.config.tenant}.courses (
                   id, code, name, faculty, academic_year, semester,
                   credits, instructor, description, metadata, tenant_id,
@@ -167,21 +175,23 @@ class AcademicDataMigration {
                 ON CONFLICT (id) DO UPDATE SET
                   name = EXCLUDED.name,
                   updated_at = EXCLUDED.updated_at
-              `, [
-                course.id,
-                course.code,
-                course.name,
-                course.faculty,
-                course.academic_year,
-                course.semester,
-                course.credits,
-                course.instructor,
-                course.description,
-                JSON.stringify(course.metadata || {}),
-                this.config.tenant,
-                course.created_at,
-                course.updated_at
-              ]);
+              `,
+                [
+                  course.id,
+                  course.code,
+                  course.name,
+                  course.faculty,
+                  course.academic_year,
+                  course.semester,
+                  course.credits,
+                  course.instructor,
+                  course.description,
+                  JSON.stringify(course.metadata || {}),
+                  this.config.tenant,
+                  course.created_at,
+                  course.updated_at,
+                ]
+              );
 
               // Create domain event for course creation
               await this.createCourseEvent(targetClient, course);
@@ -196,11 +206,14 @@ class AcademicDataMigration {
 
         offset += this.config.batchSize;
         const progress = Math.round((offset / totalCourses) * 100);
-        console.log(`📈 Courses progress: ${progress}% (${Math.min(offset, totalCourses)}/${totalCourses})`);
+        console.log(
+          `📈 Courses progress: ${progress}% (${Math.min(offset, totalCourses)}/${totalCourses})`
+        );
       }
 
-      console.log(`✅ Courses migration completed: ${this.stats.courses.migrated} migrated, ${this.stats.courses.errors} errors`);
-
+      console.log(
+        `✅ Courses migration completed: ${this.stats.courses.migrated} migrated, ${this.stats.courses.errors} errors`
+      );
     } finally {
       sourceClient.release();
       targetClient.release();
@@ -214,19 +227,23 @@ class AcademicDataMigration {
     const targetClient = await this.targetPool.connect();
 
     try {
-      const countResult = await sourceClient.query(`
+      const countResult = await sourceClient.query(
+        `
         SELECT COUNT(*) as total
         FROM assignments a
         JOIN courses c ON a.course_id = c.id
         WHERE c.tenant_id = $1
-      `, [this.config.tenant]);
+      `,
+        [this.config.tenant]
+      );
 
       const totalAssignments = parseInt(countResult.rows[0].total);
       console.log(`📊 Found ${totalAssignments} assignments to migrate`);
 
       let offset = 0;
       while (offset < totalAssignments) {
-        const assignmentsResult = await sourceClient.query(`
+        const assignmentsResult = await sourceClient.query(
+          `
           SELECT
             a.id, a.course_id, a.title, a.description, a.due_date,
             a.status, a.weight, a.max_grade, a.metadata,
@@ -236,14 +253,17 @@ class AcademicDataMigration {
           WHERE c.tenant_id = $1
           ORDER BY a.created_at
           LIMIT $2 OFFSET $3
-        `, [this.config.tenant, this.config.batchSize, offset]);
+        `,
+          [this.config.tenant, this.config.batchSize, offset]
+        );
 
         const assignments = assignmentsResult.rows;
 
         for (const assignment of assignments) {
           try {
             if (!this.config.dryRun) {
-              await targetClient.query(`
+              await targetClient.query(
+                `
                 INSERT INTO academic_${this.config.tenant}.assignments (
                   id, course_id, title, description, due_date,
                   status, weight, max_grade, metadata, tenant_id,
@@ -252,20 +272,22 @@ class AcademicDataMigration {
                 ON CONFLICT (id) DO UPDATE SET
                   title = EXCLUDED.title,
                   updated_at = EXCLUDED.updated_at
-              `, [
-                assignment.id,
-                assignment.course_id,
-                assignment.title,
-                assignment.description,
-                assignment.due_date,
-                assignment.status,
-                assignment.weight,
-                assignment.max_grade,
-                JSON.stringify(assignment.metadata || {}),
-                this.config.tenant,
-                assignment.created_at,
-                assignment.updated_at
-              ]);
+              `,
+                [
+                  assignment.id,
+                  assignment.course_id,
+                  assignment.title,
+                  assignment.description,
+                  assignment.due_date,
+                  assignment.status,
+                  assignment.weight,
+                  assignment.max_grade,
+                  JSON.stringify(assignment.metadata || {}),
+                  this.config.tenant,
+                  assignment.created_at,
+                  assignment.updated_at,
+                ]
+              );
 
               await this.createAssignmentEvent(targetClient, assignment);
             }
@@ -279,11 +301,14 @@ class AcademicDataMigration {
 
         offset += this.config.batchSize;
         const progress = Math.round((offset / totalAssignments) * 100);
-        console.log(`📈 Assignments progress: ${progress}% (${Math.min(offset, totalAssignments)}/${totalAssignments})`);
+        console.log(
+          `📈 Assignments progress: ${progress}% (${Math.min(offset, totalAssignments)}/${totalAssignments})`
+        );
       }
 
-      console.log(`✅ Assignments migration completed: ${this.stats.assignments.migrated} migrated, ${this.stats.assignments.errors} errors`);
-
+      console.log(
+        `✅ Assignments migration completed: ${this.stats.assignments.migrated} migrated, ${this.stats.assignments.errors} errors`
+      );
     } finally {
       sourceClient.release();
       targetClient.release();
@@ -297,19 +322,23 @@ class AcademicDataMigration {
     const targetClient = await this.targetPool.connect();
 
     try {
-      const countResult = await sourceClient.query(`
+      const countResult = await sourceClient.query(
+        `
         SELECT COUNT(*) as total
         FROM enrollments e
         JOIN courses c ON e.course_id = c.id
         WHERE c.tenant_id = $1
-      `, [this.config.tenant]);
+      `,
+        [this.config.tenant]
+      );
 
       const totalEnrollments = parseInt(countResult.rows[0].total);
       console.log(`📊 Found ${totalEnrollments} enrollments to migrate`);
 
       let offset = 0;
       while (offset < totalEnrollments) {
-        const enrollmentsResult = await sourceClient.query(`
+        const enrollmentsResult = await sourceClient.query(
+          `
           SELECT
             e.id, e.user_id, e.course_id, e.role, e.status,
             e.enrolled_at, e.metadata
@@ -318,29 +347,34 @@ class AcademicDataMigration {
           WHERE c.tenant_id = $1
           ORDER BY e.enrolled_at
           LIMIT $2 OFFSET $3
-        `, [this.config.tenant, this.config.batchSize, offset]);
+        `,
+          [this.config.tenant, this.config.batchSize, offset]
+        );
 
         const enrollments = enrollmentsResult.rows;
 
         for (const enrollment of enrollments) {
           try {
             if (!this.config.dryRun) {
-              await targetClient.query(`
+              await targetClient.query(
+                `
                 INSERT INTO academic_${this.config.tenant}.enrollments (
                   id, user_id, course_id, role, status,
                   enrolled_at, tenant_id
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7)
                 ON CONFLICT (id) DO UPDATE SET
                   status = EXCLUDED.status
-              `, [
-                enrollment.id,
-                enrollment.user_id,
-                enrollment.course_id,
-                enrollment.role,
-                enrollment.status,
-                enrollment.enrolled_at,
-                this.config.tenant
-              ]);
+              `,
+                [
+                  enrollment.id,
+                  enrollment.user_id,
+                  enrollment.course_id,
+                  enrollment.role,
+                  enrollment.status,
+                  enrollment.enrolled_at,
+                  this.config.tenant,
+                ]
+              );
 
               await this.createEnrollmentEvent(targetClient, enrollment);
             }
@@ -354,11 +388,14 @@ class AcademicDataMigration {
 
         offset += this.config.batchSize;
         const progress = Math.round((offset / totalEnrollments) * 100);
-        console.log(`📈 Enrollments progress: ${progress}% (${Math.min(offset, totalEnrollments)}/${totalEnrollments})`);
+        console.log(
+          `📈 Enrollments progress: ${progress}% (${Math.min(offset, totalEnrollments)}/${totalEnrollments})`
+        );
       }
 
-      console.log(`✅ Enrollments migration completed: ${this.stats.enrollments.migrated} migrated, ${this.stats.enrollments.errors} errors`);
-
+      console.log(
+        `✅ Enrollments migration completed: ${this.stats.enrollments.migrated} migrated, ${this.stats.enrollments.errors} errors`
+      );
     } finally {
       sourceClient.release();
       targetClient.release();
@@ -372,20 +409,24 @@ class AcademicDataMigration {
     const targetClient = await this.targetPool.connect();
 
     try {
-      const countResult = await sourceClient.query(`
+      const countResult = await sourceClient.query(
+        `
         SELECT COUNT(*) as total
         FROM grades g
         JOIN assignments a ON g.assignment_id = a.id
         JOIN courses c ON a.course_id = c.id
         WHERE c.tenant_id = $1
-      `, [this.config.tenant]);
+      `,
+        [this.config.tenant]
+      );
 
       const totalGrades = parseInt(countResult.rows[0].total);
       console.log(`📊 Found ${totalGrades} grades to migrate`);
 
       let offset = 0;
       while (offset < totalGrades) {
-        const gradesResult = await sourceClient.query(`
+        const gradesResult = await sourceClient.query(
+          `
           SELECT
             g.id, g.user_id, g.assignment_id, a.course_id,
             g.score, g.max_score, g.letter_grade, g.feedback,
@@ -396,14 +437,17 @@ class AcademicDataMigration {
           WHERE c.tenant_id = $1
           ORDER BY g.graded_at
           LIMIT $2 OFFSET $3
-        `, [this.config.tenant, this.config.batchSize, offset]);
+        `,
+          [this.config.tenant, this.config.batchSize, offset]
+        );
 
         const grades = gradesResult.rows;
 
         for (const grade of grades) {
           try {
             if (!this.config.dryRun) {
-              await targetClient.query(`
+              await targetClient.query(
+                `
                 INSERT INTO academic_${this.config.tenant}.grades (
                   id, user_id, assignment_id, course_id,
                   score, max_score, letter_grade, feedback,
@@ -413,18 +457,20 @@ class AcademicDataMigration {
                   score = EXCLUDED.score,
                   letter_grade = EXCLUDED.letter_grade,
                   feedback = EXCLUDED.feedback
-              `, [
-                grade.id,
-                grade.user_id,
-                grade.assignment_id,
-                grade.course_id,
-                grade.score,
-                grade.max_score,
-                grade.letter_grade,
-                grade.feedback,
-                grade.graded_at,
-                this.config.tenant
-              ]);
+              `,
+                [
+                  grade.id,
+                  grade.user_id,
+                  grade.assignment_id,
+                  grade.course_id,
+                  grade.score,
+                  grade.max_score,
+                  grade.letter_grade,
+                  grade.feedback,
+                  grade.graded_at,
+                  this.config.tenant,
+                ]
+              );
 
               await this.createGradeEvent(targetClient, grade);
             }
@@ -438,11 +484,14 @@ class AcademicDataMigration {
 
         offset += this.config.batchSize;
         const progress = Math.round((offset / totalGrades) * 100);
-        console.log(`📈 Grades progress: ${progress}% (${Math.min(offset, totalGrades)}/${totalGrades})`);
+        console.log(
+          `📈 Grades progress: ${progress}% (${Math.min(offset, totalGrades)}/${totalGrades})`
+        );
       }
 
-      console.log(`✅ Grades migration completed: ${this.stats.grades.migrated} migrated, ${this.stats.grades.errors} errors`);
-
+      console.log(
+        `✅ Grades migration completed: ${this.stats.grades.migrated} migrated, ${this.stats.grades.errors} errors`
+      );
     } finally {
       sourceClient.release();
       targetClient.release();
@@ -459,31 +508,36 @@ class AcademicDataMigration {
           id: course.id,
           code: course.code,
           name: course.name,
-          faculty: course.faculty
+          faculty: course.faculty,
         },
-        migrationId: createHash('md5').update(course.id + 'migration').digest('hex')
+        migrationId: createHash('md5')
+          .update(course.id + 'migration')
+          .digest('hex'),
       }),
       event_time: new Date(),
       tenant_id: this.config.tenant,
       correlation_id: uuidv4(),
-      version: 1
+      version: 1,
     };
 
-    await client.query(`
+    await client.query(
+      `
       INSERT INTO academic_${this.config.tenant}.events (
         id, aggregate_id, event_type, event_data, event_time,
         tenant_id, correlation_id, version
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    `, [
-      event.id,
-      event.aggregate_id,
-      event.event_type,
-      event.event_data,
-      event.event_time,
-      event.tenant_id,
-      event.correlation_id,
-      event.version
-    ]);
+    `,
+      [
+        event.id,
+        event.aggregate_id,
+        event.event_type,
+        event.event_data,
+        event.event_time,
+        event.tenant_id,
+        event.correlation_id,
+        event.version,
+      ]
+    );
   }
 
   private async createAssignmentEvent(client: any, assignment: any): Promise<void> {
@@ -495,31 +549,36 @@ class AcademicDataMigration {
         assignment: {
           id: assignment.id,
           courseId: assignment.course_id,
-          title: assignment.title
+          title: assignment.title,
         },
-        migrationId: createHash('md5').update(assignment.id + 'migration').digest('hex')
+        migrationId: createHash('md5')
+          .update(assignment.id + 'migration')
+          .digest('hex'),
       }),
       event_time: new Date(),
       tenant_id: this.config.tenant,
       correlation_id: uuidv4(),
-      version: 1
+      version: 1,
     };
 
-    await client.query(`
+    await client.query(
+      `
       INSERT INTO academic_${this.config.tenant}.events (
         id, aggregate_id, event_type, event_data, event_time,
         tenant_id, correlation_id, version
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    `, [
-      event.id,
-      event.aggregate_id,
-      event.event_type,
-      event.event_data,
-      event.event_time,
-      event.tenant_id,
-      event.correlation_id,
-      event.version
-    ]);
+    `,
+      [
+        event.id,
+        event.aggregate_id,
+        event.event_type,
+        event.event_data,
+        event.event_time,
+        event.tenant_id,
+        event.correlation_id,
+        event.version,
+      ]
+    );
   }
 
   private async createEnrollmentEvent(client: any, enrollment: any): Promise<void> {
@@ -532,33 +591,38 @@ class AcademicDataMigration {
           id: enrollment.id,
           userId: enrollment.user_id,
           courseId: enrollment.course_id,
-          role: enrollment.role
+          role: enrollment.role,
         },
-        migrationId: createHash('md5').update(enrollment.id + 'migration').digest('hex')
+        migrationId: createHash('md5')
+          .update(enrollment.id + 'migration')
+          .digest('hex'),
       }),
       event_time: new Date(),
       tenant_id: this.config.tenant,
       correlation_id: uuidv4(),
       user_id: enrollment.user_id,
-      version: 1
+      version: 1,
     };
 
-    await client.query(`
+    await client.query(
+      `
       INSERT INTO academic_${this.config.tenant}.events (
         id, aggregate_id, event_type, event_data, event_time,
         tenant_id, correlation_id, user_id, version
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `, [
-      event.id,
-      event.aggregate_id,
-      event.event_type,
-      event.event_data,
-      event.event_time,
-      event.tenant_id,
-      event.correlation_id,
-      event.user_id,
-      event.version
-    ]);
+    `,
+      [
+        event.id,
+        event.aggregate_id,
+        event.event_type,
+        event.event_data,
+        event.event_time,
+        event.tenant_id,
+        event.correlation_id,
+        event.user_id,
+        event.version,
+      ]
+    );
   }
 
   private async createGradeEvent(client: any, grade: any): Promise<void> {
@@ -572,43 +636,56 @@ class AcademicDataMigration {
           userId: grade.user_id,
           assignmentId: grade.assignment_id,
           score: grade.score,
-          maxScore: grade.max_score
+          maxScore: grade.max_score,
         },
-        migrationId: createHash('md5').update(grade.id + 'migration').digest('hex')
+        migrationId: createHash('md5')
+          .update(grade.id + 'migration')
+          .digest('hex'),
       }),
       event_time: new Date(),
       tenant_id: this.config.tenant,
       correlation_id: uuidv4(),
       user_id: grade.user_id,
-      version: 1
+      version: 1,
     };
 
-    await client.query(`
+    await client.query(
+      `
       INSERT INTO academic_${this.config.tenant}.events (
         id, aggregate_id, event_type, event_data, event_time,
         tenant_id, correlation_id, user_id, version
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `, [
-      event.id,
-      event.aggregate_id,
-      event.event_type,
-      event.event_data,
-      event.event_time,
-      event.tenant_id,
-      event.correlation_id,
-      event.user_id,
-      event.version
-    ]);
+    `,
+      [
+        event.id,
+        event.aggregate_id,
+        event.event_type,
+        event.event_data,
+        event.event_time,
+        event.tenant_id,
+        event.correlation_id,
+        event.user_id,
+        event.version,
+      ]
+    );
   }
 
   private printStats(): void {
     console.log('\n📊 Migration Statistics:');
     console.log('='.repeat(50));
     console.log(`🕒 Duration: ${Math.round(this.stats.duration / 1000)}s`);
-    console.log(`📚 Courses: ${this.stats.courses.migrated} migrated, ${this.stats.courses.errors} errors`);
-    console.log(`📝 Assignments: ${this.stats.assignments.migrated} migrated, ${this.stats.assignments.errors} errors`);
-    console.log(`👥 Enrollments: ${this.stats.enrollments.migrated} migrated, ${this.stats.enrollments.errors} errors`);
-    console.log(`📊 Grades: ${this.stats.grades.migrated} migrated, ${this.stats.grades.errors} errors`);
+    console.log(
+      `📚 Courses: ${this.stats.courses.migrated} migrated, ${this.stats.courses.errors} errors`
+    );
+    console.log(
+      `📝 Assignments: ${this.stats.assignments.migrated} migrated, ${this.stats.assignments.errors} errors`
+    );
+    console.log(
+      `👥 Enrollments: ${this.stats.enrollments.migrated} migrated, ${this.stats.enrollments.errors} errors`
+    );
+    console.log(
+      `📊 Grades: ${this.stats.grades.migrated} migrated, ${this.stats.grades.errors} errors`
+    );
     console.log('='.repeat(50));
   }
 
@@ -622,9 +699,11 @@ class AcademicDataMigration {
 // CLI Interface
 async function main() {
   const args = process.argv.slice(2);
-  const tenant = args.find(arg => arg.startsWith('--tenant='))?.split('=')[1];
+  const tenant = args.find((arg) => arg.startsWith('--tenant='))?.split('=')[1];
   const dryRun = args.includes('--dry-run');
-  const batchSize = parseInt(args.find(arg => arg.startsWith('--batch-size='))?.split('=')[1] || '1000');
+  const batchSize = parseInt(
+    args.find((arg) => arg.startsWith('--batch-size='))?.split('=')[1] || '1000'
+  );
 
   if (!tenant) {
     console.error('❌ Tenant is required. Usage: tsx migrate-academic-data.ts --tenant=bgu');
@@ -648,7 +727,7 @@ async function main() {
       database: `spike_${tenant}`,
       user: process.env.TARGET_DB_USER || 'postgres',
       password: process.env.TARGET_DB_PASSWORD || 'postgres',
-    }
+    },
   };
 
   const migration = new AcademicDataMigration(config);

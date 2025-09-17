@@ -72,4 +72,5 @@ Create comprehensive deployment artifacts:
    - [ ] Customer communication
    - [ ] Metrics baseline
 
-Include environment-specific configurations (dev, staging, prod) and disaster recovery procedures.
+Include environment-specific configurations (dev, staging, prod) and disaster
+recovery procedures.

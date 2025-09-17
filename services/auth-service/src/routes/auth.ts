@@ -1,12 +1,12 @@
-import { Router, Request, Response } from 'express';
+import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import { DatabaseConnection } from '../database/connection';
 import { RedisConnection } from '../cache/redis';
-import { logger } from '../utils/logger';
+import { DatabaseConnection } from '../database/connection';
 import { createAuditLog, extractTenantFromEmail } from '../utils/auth-helpers';
+import { logger } from '../utils/logger';
 import { CredentialVault } from '../vault/credential-vault';
 
 const router = Router();
@@ -20,13 +20,13 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // Validation rules
 const googleCallbackValidation = [
   body('token').notEmpty().withMessage('Google token is required'),
-  body('tenantId').optional().isAlpha().withMessage('Invalid tenant ID format')
+  body('tenantId').optional().isAlpha().withMessage('Invalid tenant ID format'),
 ];
 
 const credentialValidation = [
   body('username').notEmpty().withMessage('Username is required'),
   body('password').notEmpty().withMessage('Password is required'),
-  body('universityId').isIn(['bgu', 'tau', 'huji']).withMessage('Invalid university ID')
+  body('universityId').isIn(['bgu', 'tau', 'huji']).withMessage('Invalid university ID'),
 ];
 
 // Google OAuth callback endpoint
@@ -36,12 +36,12 @@ router.post('/google/callback', googleCallbackValidation, async (req: Request, r
     if (!errors.isEmpty()) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: errors.array()
+        details: errors.array(),
       });
     }
 
     const { token, tenantId: requestedTenantId } = req.body;
-    const correlationId = req.headers['x-correlation-id'] as string || uuidv4();
+    const correlationId = (req.headers['x-correlation-id'] as string) || uuidv4();
 
     // Verify Google token
     const ticket = await googleClient.verifyIdToken({
@@ -67,7 +67,7 @@ router.post('/google/callback', googleCallbackValidation, async (req: Request, r
     const tenantId = requestedTenantId || extractTenantFromEmail(email);
     if (!tenantId) {
       return res.status(400).json({
-        error: 'Cannot determine university from email. Please select your university.'
+        error: 'Cannot determine university from email. Please select your university.',
       });
     }
 
@@ -86,21 +86,27 @@ router.post('/google/callback', googleCallbackValidation, async (req: Request, r
         const existingUser = userResult.rows[0];
         userId = existingUser.id;
 
-        await client.query(`
+        await client.query(
+          `
           UPDATE auth.users
           SET google_id = $1, name = $2, email_verified = $3, last_login = NOW()
           WHERE id = $4
-        `, [googleId, name, emailVerified, userId]);
+        `,
+          [googleId, name, emailVerified, userId]
+        );
 
         logger.info(`User updated: ${email}`, { userId, tenantId, correlationId });
       } else {
         // Create new user
         userId = uuidv4();
 
-        await client.query(`
+        await client.query(
+          `
           INSERT INTO auth.users (id, email, google_id, name, email_verified, last_login)
           VALUES ($1, $2, $3, $4, $5, NOW())
-        `, [userId, email, googleId, name, emailVerified]);
+        `,
+          [userId, email, googleId, name, emailVerified]
+        );
 
         logger.info(`New user created: ${email}`, { userId, tenantId, correlationId });
       }
@@ -121,25 +127,21 @@ router.post('/google/callback', googleCallbackValidation, async (req: Request, r
       name: user.name,
       tenantId,
       emailVerified: user.email_verified,
-      iat: Math.floor(Date.now() / 1000)
+      iat: Math.floor(Date.now() / 1000),
     };
 
-    const accessToken = jwt.sign(
-      jwtPayload,
-      process.env.JWT_SECRET!,
-      {
-        expiresIn: process.env.JWT_ACCESS_EXPIRE || '1h',
-        issuer: 'spike-auth-service',
-        audience: `tenant-${tenantId}`
-      }
-    );
+    const accessToken = jwt.sign(jwtPayload, process.env.JWT_SECRET!, {
+      expiresIn: process.env.JWT_ACCESS_EXPIRE || '1h',
+      issuer: 'spike-auth-service',
+      audience: `tenant-${tenantId}`,
+    });
 
     const refreshToken = jwt.sign(
       { userId: user.id, tenantId, type: 'refresh' },
       process.env.JWT_REFRESH_SECRET!,
       {
         expiresIn: process.env.JWT_REFRESH_EXPIRE || '7d',
-        issuer: 'spike-auth-service'
+        issuer: 'spike-auth-service',
       }
     );
 
@@ -150,20 +152,27 @@ router.post('/google/callback', googleCallbackValidation, async (req: Request, r
       .update(refreshToken)
       .digest('hex');
 
-    await db.query(`
+    await db.query(
+      `
       INSERT INTO auth.refresh_tokens (id, user_id, token_hash, expires_at, tenant_id)
       VALUES ($1, $2, $3, NOW() + INTERVAL '7 days', $4)
-    `, [refreshTokenId, user.id, refreshTokenHash, tenantId]);
+    `,
+      [refreshTokenId, user.id, refreshTokenHash, tenantId]
+    );
 
     // Store session in Redis for quick access
     const sessionKey = `session:${tenantId}:${user.id}`;
-    await redis.setex(sessionKey, 3600, JSON.stringify({
-      userId: user.id,
-      email: user.email,
-      tenantId,
-      loginTime: new Date().toISOString(),
-      lastAccess: new Date().toISOString()
-    }));
+    await redis.setex(
+      sessionKey,
+      3600,
+      JSON.stringify({
+        userId: user.id,
+        email: user.email,
+        tenantId,
+        loginTime: new Date().toISOString(),
+        lastAccess: new Date().toISOString(),
+      })
+    );
 
     // Create audit log
     await createAuditLog({
@@ -173,7 +182,7 @@ router.post('/google/callback', googleCallbackValidation, async (req: Request, r
       eventData: { method: 'google_oauth', email: user.email },
       ipAddress: req.ip,
       userAgent: req.get('User-Agent'),
-      correlationId
+      correlationId,
     });
 
     res.json({
@@ -183,20 +192,19 @@ router.post('/google/callback', googleCallbackValidation, async (req: Request, r
         email: user.email,
         name: user.name,
         emailVerified: user.email_verified,
-        tenantId
+        tenantId,
       },
       tokens: {
         accessToken,
         refreshToken,
-        expiresIn: 3600
-      }
+        expiresIn: 3600,
+      },
     });
-
   } catch (error) {
     logger.error('Google OAuth callback error:', error);
     res.status(500).json({
       error: 'Authentication failed',
-      details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
   }
 });
@@ -208,26 +216,23 @@ router.post('/credentials/validate', credentialValidation, async (req: Request, 
     if (!errors.isEmpty()) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: errors.array()
+        details: errors.array(),
       });
     }
 
     const { username, password, universityId } = req.body;
     const userId = req.headers['x-user-id'] as string;
     const tenantId = req.headers['x-tenant-id'] as string;
-    const correlationId = req.headers['x-correlation-id'] as string || uuidv4();
+    const correlationId = (req.headers['x-correlation-id'] as string) || uuidv4();
 
     if (!userId || !tenantId) {
       return res.status(401).json({
-        error: 'User authentication required'
+        error: 'User authentication required',
       });
     }
 
     // Verify user exists and belongs to tenant
-    const userResult = await db.query(
-      'SELECT id, email FROM auth.users WHERE id = $1',
-      [userId]
-    );
+    const userResult = await db.query('SELECT id, email FROM auth.users WHERE id = $1', [userId]);
 
     if (userResult.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -238,14 +243,14 @@ router.post('/credentials/validate', credentialValidation, async (req: Request, 
       await vault.storeCredentials(userId, tenantId, {
         username,
         password,
-        universityId
+        universityId,
       });
 
       logger.info('University credentials stored successfully', {
         userId,
         universityId,
         tenantId,
-        correlationId
+        correlationId,
       });
 
       // Create audit log
@@ -256,26 +261,24 @@ router.post('/credentials/validate', credentialValidation, async (req: Request, 
         eventData: { universityId, username },
         ipAddress: req.ip,
         userAgent: req.get('User-Agent'),
-        correlationId
+        correlationId,
       });
 
       res.json({
         success: true,
-        message: 'Credentials validated and stored securely'
+        message: 'Credentials validated and stored securely',
       });
-
     } catch (vaultError) {
       logger.error('Failed to store credentials in vault:', vaultError);
       res.status(500).json({
-        error: 'Failed to store credentials securely'
+        error: 'Failed to store credentials securely',
       });
     }
-
   } catch (error) {
     logger.error('Credential validation error:', error);
     res.status(500).json({
       error: 'Credential validation failed',
-      details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
   }
 });
@@ -297,17 +300,17 @@ router.post('/token/refresh', async (req: Request, res: Response) => {
     }
 
     // Check if refresh token exists in database
-    const tokenHash = require('crypto')
-      .createHash('sha256')
-      .update(refreshToken)
-      .digest('hex');
+    const tokenHash = require('crypto').createHash('sha256').update(refreshToken).digest('hex');
 
-    const tokenResult = await db.query(`
+    const tokenResult = await db.query(
+      `
       SELECT rt.*, u.email, u.name
       FROM auth.refresh_tokens rt
       JOIN auth.users u ON rt.user_id = u.id
       WHERE rt.token_hash = $1 AND rt.is_revoked = false AND rt.expires_at > NOW()
-    `, [tokenHash]);
+    `,
+      [tokenHash]
+    );
 
     if (tokenResult.length === 0) {
       return res.status(401).json({ error: 'Invalid or expired refresh token' });
@@ -322,22 +325,21 @@ router.post('/token/refresh', async (req: Request, res: Response) => {
         email: tokenData.email,
         name: tokenData.name,
         tenantId: tokenData.tenant_id,
-        iat: Math.floor(Date.now() / 1000)
+        iat: Math.floor(Date.now() / 1000),
       },
       process.env.JWT_SECRET!,
       {
         expiresIn: process.env.JWT_ACCESS_EXPIRE || '1h',
         issuer: 'spike-auth-service',
-        audience: `tenant-${tokenData.tenant_id}`
+        audience: `tenant-${tokenData.tenant_id}`,
       }
     );
 
     res.json({
       success: true,
       accessToken: newAccessToken,
-      expiresIn: 3600
+      expiresIn: 3600,
     });
-
   } catch (error) {
     logger.error('Token refresh error:', error);
     res.status(401).json({ error: 'Invalid refresh token' });
@@ -350,20 +352,20 @@ router.post('/logout', async (req: Request, res: Response) => {
     const { refreshToken } = req.body;
     const userId = req.headers['x-user-id'] as string;
     const tenantId = req.headers['x-tenant-id'] as string;
-    const correlationId = req.headers['x-correlation-id'] as string || uuidv4();
+    const correlationId = (req.headers['x-correlation-id'] as string) || uuidv4();
 
     if (refreshToken) {
       // Revoke refresh token
-      const tokenHash = require('crypto')
-        .createHash('sha256')
-        .update(refreshToken)
-        .digest('hex');
+      const tokenHash = require('crypto').createHash('sha256').update(refreshToken).digest('hex');
 
-      await db.query(`
+      await db.query(
+        `
         UPDATE auth.refresh_tokens
         SET is_revoked = true, revoked_at = NOW()
         WHERE token_hash = $1
-      `, [tokenHash]);
+      `,
+        [tokenHash]
+      );
     }
 
     if (userId && tenantId) {
@@ -379,12 +381,11 @@ router.post('/logout', async (req: Request, res: Response) => {
         eventData: {},
         ipAddress: req.ip,
         userAgent: req.get('User-Agent'),
-        correlationId
+        correlationId,
       });
     }
 
     res.json({ success: true, message: 'Logged out successfully' });
-
   } catch (error) {
     logger.error('Logout error:', error);
     res.status(500).json({ error: 'Logout failed' });

@@ -78,10 +78,10 @@ const courses = await db.course.findMany({
   include: {
     students: {
       include: {
-        user: true
-      }
-    }
-  }
+        user: true,
+      },
+    },
+  },
 });
 ```
 
@@ -98,4 +98,4 @@ const courses = await db.course.findMany({
 - **Row Level Security**: Implemented for multi-tenant access
 - **Input Validation**: All inputs validated with Zod
 - **SQL Injection Protection**: Parameterized queries via Prisma
-- **Audit Trail**: Created/updated timestamps on all entities 
+- **Audit Trail**: Created/updated timestamps on all entities

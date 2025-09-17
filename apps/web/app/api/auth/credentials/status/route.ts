@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 import { authOptions } from '../../../../../lib/auth/server-auth';
 import { supabase } from '../../../../../lib/db';
 
@@ -8,21 +8,18 @@ import { supabase } from '../../../../../lib/db';
  * בדיקת סטטוס פרטי התחברות קיימים למשתמש
  * מחזיר מידע על האם למשתמש יש כבר פרטי התחברות שמורים ותקפים
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // בדיקת אימות משתמש
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'נדרש אימות Google קודם' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'נדרש אימות Google קודם' }, { status: 401 });
     }
 
     // חילוץ מזהה אוניברסיטה מהמייל
     const email = session.user.email;
     const domain = email.split('@')[1];
-    
+
     let universityId = '';
     if (domain.includes('post.bgu.ac.il')) {
       universityId = 'bgu';
@@ -43,24 +40,22 @@ export async function GET(request: NextRequest) {
 
     // קריאה לפונקציה בדטהבייס לבדיקת סטטוס הפרטים עם fallback
     let data, error;
-    
+
     try {
       // נסה קודם את הפונקציה העובדת
-      const result = await supabase
-        .rpc('get_user_university_credentials', {
-          user_email_param: email,
-          university_id_param: universityId
-        });
+      const result = await supabase.rpc('get_user_university_credentials', {
+        user_email_param: email,
+        university_id_param: universityId,
+      });
       data = result.data;
       error = result.error;
     } catch (funcError) {
       console.log('🔄 Fallback to alternative function');
       try {
-        const result = await supabase
-          .rpc('get_user_credential_status', {
-            user_email_param: email,
-            university_id_param: universityId
-          });
+        const result = await supabase.rpc('get_user_credential_status', {
+          user_email_param: email,
+          university_id_param: universityId,
+        });
         data = result.data;
         error = result.error;
       } catch (fallbackError) {
@@ -76,8 +71,8 @@ export async function GET(request: NextRequest) {
             lastValidation: null,
             needsRevalidation: true,
             username: null,
-            authenticationFlow: 'new_user'
-          }
+            authenticationFlow: 'new_user',
+          },
         });
       }
     }
@@ -95,13 +90,13 @@ export async function GET(request: NextRequest) {
           lastValidation: null,
           needsRevalidation: true,
           username: null,
-          authenticationFlow: 'new_user'
-        }
+          authenticationFlow: 'new_user',
+        },
       });
     }
 
     const credentialStatus = data?.[0] || data;
-    
+
     if (!credentialStatus) {
       // Return default response instead of error
       return NextResponse.json({
@@ -114,8 +109,8 @@ export async function GET(request: NextRequest) {
           lastValidation: null,
           needsRevalidation: true,
           username: null,
-          authenticationFlow: 'new_user'
-        }
+          authenticationFlow: 'new_user',
+        },
       });
     }
 
@@ -127,22 +122,18 @@ export async function GET(request: NextRequest) {
       lastValidation: credentialStatus.last_validation,
       needsRevalidation: credentialStatus.needs_revalidation,
       username: credentialStatus.username,
-      authenticationFlow: determineAuthenticationFlow(credentialStatus)
+      authenticationFlow: determineAuthenticationFlow(credentialStatus),
     };
 
     console.log(`✅ Credential status for ${email}:`, response);
 
     return NextResponse.json({
       success: true,
-      data: response
+      data: response,
     });
-
   } catch (error) {
     console.error('Error checking credential status:', error);
-    return NextResponse.json(
-      { error: 'שגיאה פנימית בשרת' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'שגיאה פנימית בשרת' }, { status: 500 });
   }
 }
 
@@ -153,14 +144,14 @@ function determineAuthenticationFlow(credentialStatus: any): string {
   if (!credentialStatus.has_credentials) {
     return 'new_user'; // משתמש חדש - נדרש הזנת פרטים
   }
-  
+
   if (credentialStatus.credentials_valid && !credentialStatus.needs_revalidation) {
     return 'existing_user_auto'; // משתמש קיים עם פרטים תקפים - התחברות אוטומטית
   }
-  
+
   if (credentialStatus.has_credentials && credentialStatus.needs_revalidation) {
     return 'existing_user_revalidate'; // משתמש קיים אך נדרש אימות מחדש
   }
-  
+
   return 'existing_user_manual'; // משתמש קיים אך נדרש הזנה ידנית
 }

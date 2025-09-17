@@ -57,4 +57,5 @@ Create a production-ready data pipeline including:
    - Query optimization
    - Cost management
 
-Include monitoring, alerting, and data governance considerations. Make it cloud-agnostic with specific implementation examples for AWS/GCP/Azure.
+Include monitoring, alerting, and data governance considerations. Make it
+cloud-agnostic with specific implementation examples for AWS/GCP/Azure.

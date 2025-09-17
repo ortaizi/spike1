@@ -1,7 +1,8 @@
 import { supabase } from '../db';
 
 // Create service role client for admin operations
-const supabaseService = supabase.auth.admin;
+// Reserved for future use
+// const supabaseService = supabase.auth.admin;
 
 export interface SyncJob {
   id: string;

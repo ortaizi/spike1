@@ -1,13 +1,15 @@
+import cron from 'node-cron';
 import { DatabaseManager } from '../config/database';
 import { logger } from '../config/logging';
+import { SafeSqlBuilder, createSafeSchema } from '../utils/sql-builder';
+import { validateTenantId } from '../utils/tenant-validation';
 import {
-  DASHBOARD_QUERY_VIEW,
   COURSE_QUERY_VIEW,
-  STUDENT_PROGRESS_VIEW,
+  DASHBOARD_QUERY_VIEW,
   REFRESH_QUERIES,
-  UPDATE_TRIGGERS
+  STUDENT_PROGRESS_VIEW,
+  UPDATE_TRIGGERS,
 } from './query-models';
-import cron from 'node-cron';
 
 export class ViewManager {
   private static instance: ViewManager;
@@ -49,9 +51,10 @@ export class ViewManager {
       await client.query('BEGIN');
 
       // Create dashboard summary view
-      const dashboardView = DASHBOARD_QUERY_VIEW
-        .replace(/\{tenant_id\}/g, tenantId)
-        .replace('$1', `'${this.getCurrentSemester()}'`);
+      const dashboardView = DASHBOARD_QUERY_VIEW.replace(/\{tenant_id\}/g, tenantId).replace(
+        '$1',
+        `'${this.getCurrentSemester()}'`
+      );
 
       await client.query(dashboardView);
 
@@ -96,7 +99,7 @@ export class ViewManager {
     } catch (error) {
       await client.query('ROLLBACK');
       logger.error(`Failed to create views for tenant ${tenantId}:`, {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     } finally {
@@ -108,7 +111,7 @@ export class ViewManager {
     const viewsToRefresh = viewNames || ['dashboard', 'courses', 'studentProgress'];
 
     logger.info(`Refreshing materialized views for tenant: ${tenantId}`, {
-      views: viewsToRefresh
+      views: viewsToRefresh,
     });
 
     const client = await this.dbManager.getConnection(tenantId);
@@ -122,7 +125,7 @@ export class ViewManager {
             logger.debug(`Refreshed ${viewName} view for tenant ${tenantId}`);
           } catch (error) {
             logger.error(`Failed to refresh ${viewName} view for tenant ${tenantId}:`, {
-              error: error instanceof Error ? error.message : 'Unknown error'
+              error: error instanceof Error ? error.message : 'Unknown error',
             });
           }
         }
@@ -133,7 +136,7 @@ export class ViewManager {
       logger.info(`Views refreshed successfully for tenant: ${tenantId}`);
     } catch (error) {
       logger.error(`Failed to refresh views for tenant ${tenantId}:`, {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     } finally {
@@ -148,10 +151,10 @@ export class ViewManager {
       // Get list of tenant schemas
       const tenants = await this.getTenantList();
 
-      const refreshPromises = tenants.map(tenantId =>
-        this.refreshViewsForTenant(tenantId).catch(error => {
+      const refreshPromises = tenants.map((tenantId) =>
+        this.refreshViewsForTenant(tenantId).catch((error) => {
           logger.error(`Failed to refresh views for tenant ${tenantId}:`, {
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
         })
       );
@@ -161,7 +164,7 @@ export class ViewManager {
       logger.info(`Refreshed views for ${tenants.length} tenants`);
     } catch (error) {
       logger.error('Failed to refresh all tenant views:', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -178,17 +181,17 @@ export class ViewManager {
       const stats = await Promise.all([
         this.getViewStats(client, `academic_${tenantId}.dashboard_summary`),
         this.getViewStats(client, `academic_${tenantId}.course_summary`),
-        this.getViewStats(client, `academic_${tenantId}.student_progress`)
+        this.getViewStats(client, `academic_${tenantId}.student_progress`),
       ]);
 
       return {
         dashboard: stats[0],
         courses: stats[1],
-        studentProgress: stats[2]
+        studentProgress: stats[2],
       };
     } catch (error) {
       logger.error(`Failed to get view statistics for tenant ${tenantId}:`, {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     } finally {
@@ -205,20 +208,56 @@ export class ViewManager {
       await client.query('BEGIN');
 
       // Drop triggers first
-      await client.query(`DROP TRIGGER IF EXISTS refresh_on_grade_change_${tenantId} ON academic_${tenantId}.grades CASCADE`);
-      await client.query(`DROP TRIGGER IF EXISTS refresh_on_enrollment_change_${tenantId} ON academic_${tenantId}.enrollments CASCADE`);
-      await client.query(`DROP TRIGGER IF EXISTS refresh_on_assignment_change_${tenantId} ON academic_${tenantId}.assignments CASCADE`);
+      const safeTenantId = validateTenantId(tenantId);
+      const safeSchema = createSafeSchema(safeTenantId);
+      const gradeTrigger = SafeSqlBuilder.quoteIdentifier(
+        SafeSqlBuilder.createTriggerName('refresh_on_grade_change', safeTenantId)
+      );
+      const enrollmentTrigger = SafeSqlBuilder.quoteIdentifier(
+        SafeSqlBuilder.createTriggerName('refresh_on_enrollment_change', safeTenantId)
+      );
+      const assignmentTrigger = SafeSqlBuilder.quoteIdentifier(
+        SafeSqlBuilder.createTriggerName('refresh_on_assignment_change', safeTenantId)
+      );
+
+      await client.query(`DROP TRIGGER IF EXISTS ${gradeTrigger} ON ${safeSchema}.grades CASCADE`);
+      await client.query(
+        `DROP TRIGGER IF EXISTS ${enrollmentTrigger} ON ${safeSchema}.enrollments CASCADE`
+      );
+      await client.query(
+        `DROP TRIGGER IF EXISTS ${assignmentTrigger} ON ${safeSchema}.assignments CASCADE`
+      );
 
       // Drop function
-      await client.query(`DROP FUNCTION IF EXISTS refresh_query_models_${tenantId}() CASCADE`);
+      const safeFunction = SafeSqlBuilder.quoteIdentifier(
+        SafeSqlBuilder.createFunctionName('refresh_query_models', safeTenantId)
+      );
+      await client.query(`DROP FUNCTION IF EXISTS ${safeFunction}() CASCADE`);
 
       // Drop materialized views
-      await client.query(`DROP MATERIALIZED VIEW IF EXISTS academic_${tenantId}.dashboard_summary CASCADE`);
-      await client.query(`DROP MATERIALIZED VIEW IF EXISTS academic_${tenantId}.course_summary CASCADE`);
-      await client.query(`DROP MATERIALIZED VIEW IF EXISTS academic_${tenantId}.student_progress CASCADE`);
+      const dashboardView = SafeSqlBuilder.createQualifiedTableName(
+        SafeSqlBuilder.createSchemaName(safeTenantId),
+        'dashboard_summary'
+      );
+      const courseView = SafeSqlBuilder.createQualifiedTableName(
+        SafeSqlBuilder.createSchemaName(safeTenantId),
+        'course_summary'
+      );
+      const progressView = SafeSqlBuilder.createQualifiedTableName(
+        SafeSqlBuilder.createSchemaName(safeTenantId),
+        'student_progress'
+      );
+
+      await client.query(`DROP MATERIALIZED VIEW IF EXISTS ${dashboardView} CASCADE`);
+      await client.query(`DROP MATERIALIZED VIEW IF EXISTS ${courseView} CASCADE`);
+      await client.query(`DROP MATERIALIZED VIEW IF EXISTS ${progressView} CASCADE`);
 
       // Drop snapshots table
-      await client.query(`DROP TABLE IF EXISTS academic_${tenantId}.snapshots CASCADE`);
+      const snapshotsTable = SafeSqlBuilder.createQualifiedTableName(
+        SafeSqlBuilder.createSchemaName(safeTenantId),
+        'snapshots'
+      );
+      await client.query(`DROP TABLE IF EXISTS ${snapshotsTable} CASCADE`);
 
       await client.query('COMMIT');
 
@@ -226,7 +265,7 @@ export class ViewManager {
     } catch (error) {
       await client.query('ROLLBACK');
       logger.error(`Failed to drop views for tenant ${tenantId}:`, {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     } finally {
@@ -251,42 +290,50 @@ export class ViewManager {
 
   private scheduleRefreshTasks(): void {
     // Schedule global refresh every hour
-    const globalRefreshTask = cron.schedule('0 * * * *', async () => {
-      try {
-        await this.refreshAllTenantViews();
-      } catch (error) {
-        logger.error('Scheduled global refresh failed:', {
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
+    const globalRefreshTask = cron.schedule(
+      '0 * * * *',
+      async () => {
+        try {
+          await this.refreshAllTenantViews();
+        } catch (error) {
+          logger.error('Scheduled global refresh failed:', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      },
+      {
+        scheduled: false,
       }
-    }, {
-      scheduled: false
-    });
+    );
 
     globalRefreshTask.start();
     this.refreshTasks.set('global', globalRefreshTask);
 
     // Schedule frequent dashboard refresh (every 15 minutes)
-    const dashboardRefreshTask = cron.schedule('*/15 * * * *', async () => {
-      try {
-        const tenants = await this.getTenantList();
-        await Promise.all(
-          tenants.map(tenantId =>
-            this.refreshViewsForTenant(tenantId, ['dashboard']).catch(error => {
-              logger.error(`Dashboard refresh failed for tenant ${tenantId}:`, {
-                error: error instanceof Error ? error.message : 'Unknown error'
-              });
-            })
-          )
-        );
-      } catch (error) {
-        logger.error('Scheduled dashboard refresh failed:', {
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
+    const dashboardRefreshTask = cron.schedule(
+      '*/15 * * * *',
+      async () => {
+        try {
+          const tenants = await this.getTenantList();
+          await Promise.all(
+            tenants.map((tenantId) =>
+              this.refreshViewsForTenant(tenantId, ['dashboard']).catch((error) => {
+                logger.error(`Dashboard refresh failed for tenant ${tenantId}:`, {
+                  error: error instanceof Error ? error.message : 'Unknown error',
+                });
+              })
+            )
+          );
+        } catch (error) {
+          logger.error('Scheduled dashboard refresh failed:', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      },
+      {
+        scheduled: false,
       }
-    }, {
-      scheduled: false
-    });
+    );
 
     dashboardRefreshTask.start();
     this.refreshTasks.set('dashboard', dashboardRefreshTask);
@@ -314,7 +361,7 @@ export class ViewManager {
       `CREATE INDEX IF NOT EXISTS idx_student_progress_course_${tenantId}
        ON academic_${tenantId}.student_progress(course_id)`,
       `CREATE INDEX IF NOT EXISTS idx_student_progress_grade_${tenantId}
-       ON academic_${tenantId}.student_progress(current_grade)`
+       ON academic_${tenantId}.student_progress(current_grade)`,
     ];
 
     for (const indexQuery of indexes) {
@@ -323,7 +370,7 @@ export class ViewManager {
       } catch (error) {
         logger.warn(`Failed to create index for tenant ${tenantId}:`, {
           query: indexQuery,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
@@ -341,12 +388,10 @@ export class ViewManager {
         WHERE schema_name LIKE 'academic_%'
       `);
 
-      return result.rows.map((row: any) =>
-        row.schema_name.replace('academic_', '')
-      );
+      return result.rows.map((row: any) => row.schema_name.replace('academic_', ''));
     } catch (error) {
       logger.error('Failed to get tenant list:', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       return [];
     } finally {
@@ -354,14 +399,19 @@ export class ViewManager {
     }
   }
 
-  private async getViewStats(client: any, viewName: string): Promise<{ rows: number; lastRefresh: Date }> {
+  private async getViewStats(
+    client: any,
+    viewName: string
+  ): Promise<{ rows: number; lastRefresh: Date }> {
     try {
       // Get row count
-      const countResult = await client.query(`SELECT COUNT(*) as rows FROM ${viewName}`);
+      const safeViewName = SafeSqlBuilder.quoteIdentifier(viewName);
+      const countResult = await client.query(`SELECT COUNT(*) as rows FROM ${safeViewName}`);
       const rows = parseInt(countResult.rows[0].rows) || 0;
 
       // Get last refresh time (materialized views don't have this built-in, so we approximate)
-      const statsResult = await client.query(`
+      const statsResult = await client.query(
+        `
         SELECT
           schemaname,
           matviewname,
@@ -369,14 +419,16 @@ export class ViewManager {
           ispopulated
         FROM pg_matviews
         WHERE matviewname = $1
-      `, [viewName.split('.')[1]]);
+      `,
+        [viewName.split('.')[1]]
+      );
 
       const lastRefresh = new Date(); // Approximation - would need custom tracking for exact times
 
       return { rows, lastRefresh };
     } catch (error) {
       logger.error(`Failed to get stats for view ${viewName}:`, {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       return { rows: 0, lastRefresh: new Date() };
     }

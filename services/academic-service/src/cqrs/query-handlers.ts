@@ -1,13 +1,12 @@
 import { DatabaseManager } from '../config/database';
 import { logger } from '../config/logging';
 import {
-  DashboardQueryModel,
-  CourseQueryModel,
   AssignmentQueryModel,
-  StudentProgressQueryModel,
+  CourseQueryModel,
+  DashboardQueryModel,
   GradeAnalyticsQueryModel,
+  StudentProgressQueryModel,
   TeacherDashboardQueryModel,
-  FacultyAnalyticsQueryModel
 } from './query-models';
 
 export class QueryHandlers {
@@ -19,10 +18,7 @@ export class QueryHandlers {
 
   // Dashboard Queries
 
-  async getDashboardSummary(
-    userId: string,
-    tenantId: string
-  ): Promise<DashboardQueryModel | null> {
+  async getDashboardSummary(userId: string, tenantId: string): Promise<DashboardQueryModel | null> {
     try {
       const query = `
         SELECT * FROM academic_${tenantId}.dashboard_summary
@@ -48,13 +44,13 @@ export class QueryHandlers {
         totalCredits: parseInt(row.total_credits) || 0,
         gpaScore: parseFloat(row.gpa_score) || 0,
         lastSyncAt: row.last_sync_at || new Date(),
-        updatedAt: row.updated_at
+        updatedAt: row.updated_at,
       };
     } catch (error) {
       logger.error('Failed to get dashboard summary', {
         userId,
         tenantId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -124,12 +120,13 @@ export class QueryHandlers {
         LIMIT 10
       `;
 
-      const [overviewResult, workloadResult, courseStatsResult, recentGradesResult] = await Promise.all([
-        this.dbManager.executeQuery(tenantId, courseOverviewQuery, [userId]),
-        this.dbManager.executeQuery(tenantId, workloadQuery, [userId]),
-        this.dbManager.executeQuery(tenantId, courseStatsQuery, [userId]),
-        this.dbManager.executeQuery(tenantId, recentGradesQuery, [userId])
-      ]);
+      const [overviewResult, workloadResult, courseStatsResult, recentGradesResult] =
+        await Promise.all([
+          this.dbManager.executeQuery(tenantId, courseOverviewQuery, [userId]),
+          this.dbManager.executeQuery(tenantId, workloadQuery, [userId]),
+          this.dbManager.executeQuery(tenantId, courseStatsQuery, [userId]),
+          this.dbManager.executeQuery(tenantId, recentGradesQuery, [userId]),
+        ]);
 
       const overview = overviewResult.rows[0] || {};
       const workload = workloadResult.rows[0] || {};
@@ -146,29 +143,29 @@ export class QueryHandlers {
         averageClassPerformance: 0, // Calculate if needed
         strugglingStudents: 0, // Calculate if needed
         topPerformers: 0, // Calculate if needed
-        courses: courseStatsResult.rows.map(row => ({
+        courses: courseStatsResult.rows.map((row) => ({
           id: row.id,
           code: row.code,
           name: row.name,
           studentCount: parseInt(row.student_count) || 0,
           averageGrade: parseFloat(row.average_grade) || 0,
           pendingGrading: parseInt(row.pending_grading) || 0,
-          lastActivity: row.last_activity || new Date()
+          lastActivity: row.last_activity || new Date(),
         })),
-        recentGrades: recentGradesResult.rows.map(row => ({
+        recentGrades: recentGradesResult.rows.map((row) => ({
           studentName: row.student_name || 'Anonymous',
           courseCode: row.course_code,
           assignmentTitle: row.assignment_title,
           grade: parseFloat(row.grade) || 0,
-          gradedAt: row.graded_at
+          gradedAt: row.graded_at,
         })),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
     } catch (error) {
       logger.error('Failed to get teacher dashboard', {
         userId,
         tenantId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -195,7 +192,7 @@ export class QueryHandlers {
       logger.error('Failed to get course by id', {
         courseId,
         tenantId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -254,14 +251,14 @@ export class QueryHandlers {
       values.push(limit, offset);
 
       const coursesResult = await this.dbManager.executeQuery(tenantId, coursesQuery, values);
-      const courses = coursesResult.rows.map(row => this.mapRowToCourse(row));
+      const courses = coursesResult.rows.map((row) => this.mapRowToCourse(row));
 
       return { courses, total };
     } catch (error) {
       logger.error('Failed to get courses by user', {
         userId,
         tenantId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -344,7 +341,7 @@ export class QueryHandlers {
 
       const result = await this.dbManager.executeQuery(tenantId, query, values);
 
-      const assignments: AssignmentQueryModel[] = result.rows.map(row => ({
+      const assignments: AssignmentQueryModel[] = result.rows.map((row) => ({
         id: row.id,
         courseId: row.course_id,
         courseCode: row.course_code,
@@ -362,7 +359,7 @@ export class QueryHandlers {
         gradingProgress: 0,
         tenantId: row.tenant_id,
         createdAt: row.created_at,
-        updatedAt: row.updated_at
+        updatedAt: row.updated_at,
       }));
 
       return { assignments, total: assignments.length };
@@ -370,7 +367,7 @@ export class QueryHandlers {
       logger.error('Failed to get assignments by user', {
         userId,
         tenantId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -399,7 +396,7 @@ export class QueryHandlers {
 
       const result = await this.dbManager.executeQuery(tenantId, query, values);
 
-      return result.rows.map(row => ({
+      return result.rows.map((row) => ({
         id: row.id,
         userId: row.user_id,
         courseId: row.course_id,
@@ -419,14 +416,14 @@ export class QueryHandlers {
         gradesTrend: row.grades_trend || 'stable',
         recentPerformance: parseFloat(row.recent_performance) || 0,
         tenantId: row.tenant_id,
-        updatedAt: row.updated_at
+        updatedAt: row.updated_at,
       }));
     } catch (error) {
       logger.error('Failed to get student progress', {
         userId,
         tenantId,
         courseId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -498,7 +495,7 @@ export class QueryHandlers {
 
       const result = await this.dbManager.executeQuery(tenantId, query, values);
 
-      return result.rows.map(row => ({
+      return result.rows.map((row) => ({
         id: row.id,
         courseId: row.course_id,
         assignmentId: row.assignment_id,
@@ -519,13 +516,13 @@ export class QueryHandlers {
         percentileRank: parseFloat(row.percentile_rank) || 0,
         performanceLevel: this.calculatePerformanceLevel(parseFloat(row.percentage)),
         improvementNeeded: parseFloat(row.percentage) < 70,
-        tenantId: row.tenant_id
+        tenantId: row.tenant_id,
       }));
     } catch (error) {
       logger.error('Failed to get grade analytics', {
         userId,
         tenantId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -558,21 +555,28 @@ export class QueryHandlers {
       lastGradeEntered: row.last_grade_entered,
       tenantId: row.tenant_id,
       createdAt: row.created_at,
-      updatedAt: row.updated_at
+      updatedAt: row.updated_at,
     };
   }
 
   private calculateGpaPoints(letterGrade: string): number {
     switch (letterGrade?.toUpperCase()) {
-      case 'A': return 4.0;
-      case 'B': return 3.0;
-      case 'C': return 2.0;
-      case 'D': return 1.0;
-      default: return 0.0;
+      case 'A':
+        return 4.0;
+      case 'B':
+        return 3.0;
+      case 'C':
+        return 2.0;
+      case 'D':
+        return 1.0;
+      default:
+        return 0.0;
     }
   }
 
-  private calculatePerformanceLevel(percentage: number): 'excellent' | 'good' | 'average' | 'below_average' | 'poor' {
+  private calculatePerformanceLevel(
+    percentage: number
+  ): 'excellent' | 'good' | 'average' | 'below_average' | 'poor' {
     if (percentage >= 90) return 'excellent';
     if (percentage >= 80) return 'good';
     if (percentage >= 70) return 'average';

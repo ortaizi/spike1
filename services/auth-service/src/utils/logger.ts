@@ -6,13 +6,13 @@ const logLevels = {
   warn: 1,
   info: 2,
   debug: 3,
-  trace: 4
+  trace: 4,
 };
 
 // Custom format for structured logging
 const logFormat = winston.format.combine(
   winston.format.timestamp({
-    format: 'YYYY-MM-DD HH:mm:ss.SSS'
+    format: 'YYYY-MM-DD HH:mm:ss.SSS',
   }),
   winston.format.errors({ stack: true }),
   winston.format.json(),
@@ -22,7 +22,7 @@ const logFormat = winston.format.combine(
       level: level.toUpperCase(),
       service: 'auth-service',
       message,
-      ...meta
+      ...meta,
     };
 
     return JSON.stringify(logEntry);
@@ -37,7 +37,7 @@ export const logger = winston.createLogger({
   defaultMeta: {
     service: 'auth-service',
     version: process.env.SERVICE_VERSION || '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
   },
   transports: [
     // Console transport for development
@@ -45,36 +45,38 @@ export const logger = winston.createLogger({
       format: winston.format.combine(
         winston.format.colorize(),
         winston.format.simple(),
-        winston.format.printf(({ timestamp, level, message, correlationId, userId, tenantId, ...meta }) => {
-          let logString = `[${timestamp}] ${level}: ${message}`;
+        winston.format.printf(
+          ({ timestamp, level, message, correlationId, userId, tenantId, ...meta }) => {
+            let logString = `[${timestamp}] ${level}: ${message}`;
 
-          // Add correlation tracking
-          if (correlationId) {
-            logString += ` [correlationId: ${correlationId}]`;
+            // Add correlation tracking
+            if (correlationId) {
+              logString += ` [correlationId: ${correlationId}]`;
+            }
+
+            // Add user context
+            if (userId) {
+              logString += ` [userId: ${userId}]`;
+            }
+
+            // Add tenant context
+            if (tenantId) {
+              logString += ` [tenant: ${tenantId}]`;
+            }
+
+            // Add other metadata
+            const metaKeys = Object.keys(meta);
+            if (metaKeys.length > 0) {
+              const metaString = metaKeys
+                .map((key) => `${key}: ${JSON.stringify(meta[key])}`)
+                .join(', ');
+              logString += ` [${metaString}]`;
+            }
+
+            return logString;
           }
-
-          // Add user context
-          if (userId) {
-            logString += ` [userId: ${userId}]`;
-          }
-
-          // Add tenant context
-          if (tenantId) {
-            logString += ` [tenant: ${tenantId}]`;
-          }
-
-          // Add other metadata
-          const metaKeys = Object.keys(meta);
-          if (metaKeys.length > 0) {
-            const metaString = metaKeys
-              .map(key => `${key}: ${JSON.stringify(meta[key])}`)
-              .join(', ');
-            logString += ` [${metaString}]`;
-          }
-
-          return logString;
-        })
-      )
+        )
+      ),
     }),
 
     // File transport for production
@@ -83,42 +85,44 @@ export const logger = winston.createLogger({
       level: 'error',
       maxsize: 10 * 1024 * 1024, // 10MB
       maxFiles: 5,
-      tailable: true
+      tailable: true,
     }),
 
     new winston.transports.File({
       filename: process.env.LOG_FILE_COMBINED || 'logs/auth-service.log',
       maxsize: 50 * 1024 * 1024, // 50MB
       maxFiles: 10,
-      tailable: true
-    })
+      tailable: true,
+    }),
   ],
 
   // Handle uncaught exceptions and rejections
   exceptionHandlers: [
     new winston.transports.File({
-      filename: 'logs/auth-service-exceptions.log'
-    })
+      filename: 'logs/auth-service-exceptions.log',
+    }),
   ],
 
   rejectionHandlers: [
     new winston.transports.File({
-      filename: 'logs/auth-service-rejections.log'
-    })
+      filename: 'logs/auth-service-rejections.log',
+    }),
   ],
 
   // Exit on error
-  exitOnError: false
+  exitOnError: false,
 });
 
 // Add HTTP transport for centralized logging in production
 if (process.env.NODE_ENV === 'production' && process.env.LOG_ENDPOINT) {
-  logger.add(new winston.transports.Http({
-    host: process.env.LOG_HOST || 'elasticsearch',
-    port: parseInt(process.env.LOG_PORT || '9200'),
-    path: process.env.LOG_ENDPOINT || '/logs/_doc',
-    ssl: process.env.LOG_SSL === 'true'
-  }));
+  logger.add(
+    new winston.transports.Http({
+      host: process.env.LOG_HOST || 'elasticsearch',
+      port: parseInt(process.env.LOG_PORT || '9200'),
+      path: process.env.LOG_ENDPOINT || '/logs/_doc',
+      ssl: process.env.LOG_SSL === 'true',
+    })
+  );
 }
 
 // Create child logger with correlation ID
@@ -126,13 +130,18 @@ export function createCorrelatedLogger(correlationId: string, userId?: string, t
   return logger.child({
     correlationId,
     userId,
-    tenantId
+    tenantId,
   });
 }
 
 // Security event logging
 export function logSecurityEvent(event: {
-  type: 'AUTH_FAILURE' | 'CREDENTIAL_ACCESS' | 'SESSION_HIJACK' | 'RATE_LIMIT_EXCEEDED' | 'SUSPICIOUS_ACTIVITY';
+  type:
+    | 'AUTH_FAILURE'
+    | 'CREDENTIAL_ACCESS'
+    | 'SESSION_HIJACK'
+    | 'RATE_LIMIT_EXCEEDED'
+    | 'SUSPICIOUS_ACTIVITY';
   userId?: string;
   tenantId?: string;
   ipAddress?: string;
@@ -148,7 +157,7 @@ export function logSecurityEvent(event: {
     userAgent: event.userAgent,
     details: event.details,
     correlationId: event.correlationId,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -166,7 +175,7 @@ export function logPerformanceMetric(metric: {
     success: metric.success,
     metadata: metric.metadata,
     correlationId: metric.correlationId,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -183,7 +192,7 @@ export function logDatabaseQuery(query: {
     paramCount: query.params?.length || 0,
     duration: query.duration,
     rowCount: query.rowCount,
-    correlationId: query.correlationId
+    correlationId: query.correlationId,
   });
 }
 
@@ -206,7 +215,7 @@ export function createRequestLogger() {
       url: req.url,
       userAgent: req.get('User-Agent'),
       ipAddress: req.ip,
-      contentLength: req.get('Content-Length')
+      contentLength: req.get('Content-Length'),
     });
 
     // Log response
@@ -218,7 +227,7 @@ export function createRequestLogger() {
         url: req.url,
         statusCode: res.statusCode,
         duration,
-        contentLength: res.get('Content-Length')
+        contentLength: res.get('Content-Length'),
       });
     });
 
@@ -228,7 +237,6 @@ export function createRequestLogger() {
 
 // Ensure log directory exists
 import fs from 'fs';
-import path from 'path';
 
 const logDir = 'logs';
 if (!fs.existsSync(logDir)) {

@@ -3,6 +3,7 @@
 ## ⚡ 5-Minute Setup
 
 ### 1. Environment Setup
+
 ```bash
 # Copy environment template
 cp env.example .env.local
@@ -12,6 +13,7 @@ nano .env.local
 ```
 
 ### 2. Install & Generate
+
 ```bash
 # Install dependencies
 npm install
@@ -21,6 +23,7 @@ npm run db:generate
 ```
 
 ### 3. Database Setup
+
 ```bash
 # Push schema to CockroachDB
 npm run db:push
@@ -30,6 +33,7 @@ npm run db:seed
 ```
 
 ### 4. Start Development
+
 ```bash
 # Start the server
 npm run dev
@@ -38,6 +42,7 @@ npm run dev
 ## 🔗 Your Connection String Format
 
 Replace in `.env.local`:
+
 ```env
 DATABASE_URL="postgresql://spike-ad:YOUR_PASSWORD@YOUR_CLUSTER.cockroachlabs.cloud:26257/defaultdb?sslmode=require&sslrootcert=~/.postgresql/root.crt"
 DIRECT_URL="postgresql://spike-ad:YOUR_PASSWORD@YOUR_CLUSTER.cockroachlabs.cloud:26257/defaultdb?sslmode=require&sslrootcert=~/.postgresql/root.crt"
@@ -67,4 +72,4 @@ npm run dev            # Start development
 
 ---
 
-**Need help?** See `COCKROACHDB_SETUP.md` for detailed instructions. 
+**Need help?** See `COCKROACHDB_SETUP.md` for detailed instructions.

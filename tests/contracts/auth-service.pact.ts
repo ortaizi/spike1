@@ -12,7 +12,7 @@ describe('Auth Service Contract Tests', () => {
     port: 1234,
     log: './tests/contracts/logs/pact.log',
     dir: './tests/contracts/pacts',
-    logLevel: 'INFO'
+    logLevel: 'INFO',
   });
 
   beforeAll(() => provider.setup());
@@ -30,16 +30,16 @@ describe('Auth Service Contract Tests', () => {
           headers: {
             'Content-Type': 'application/json',
             'X-Tenant-ID': 'bgu',
-            'X-Correlation-ID': like('correlation-123')
+            'X-Correlation-ID': like('correlation-123'),
           },
           body: {
-            token: like('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.valid.token')
-          }
+            token: like('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.valid.token'),
+          },
         },
         willRespondWith: {
           status: 200,
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
           body: {
             valid: true,
@@ -48,21 +48,25 @@ describe('Auth Service Contract Tests', () => {
             tenantId: 'bgu',
             expiresAt: term({
               generate: '2024-12-31T23:59:59Z',
-              matcher: '\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z'
-            })
-          }
-        }
+              matcher: '\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z',
+            }),
+          },
+        },
       });
 
-      const response = await axios.post('http://localhost:1234/auth/token/validate', {
-        token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.valid.token'
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tenant-ID': 'bgu',
-          'X-Correlation-ID': 'correlation-123'
+      const response = await axios.post(
+        'http://localhost:1234/auth/token/validate',
+        {
+          token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.valid.token',
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Tenant-ID': 'bgu',
+            'X-Correlation-ID': 'correlation-123',
+          },
         }
-      });
+      );
 
       expect(response.status).toBe(200);
       expect(response.data.valid).toBe(true);
@@ -79,33 +83,37 @@ describe('Auth Service Contract Tests', () => {
           path: '/auth/token/validate',
           headers: {
             'Content-Type': 'application/json',
-            'X-Tenant-ID': 'bgu'
+            'X-Tenant-ID': 'bgu',
           },
           body: {
-            token: 'invalid.jwt.token'
-          }
+            token: 'invalid.jwt.token',
+          },
         },
         willRespondWith: {
           status: 401,
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
           body: {
             valid: false,
-            error: 'Invalid token'
-          }
-        }
+            error: 'Invalid token',
+          },
+        },
       });
 
       try {
-        await axios.post('http://localhost:1234/auth/token/validate', {
-          token: 'invalid.jwt.token'
-        }, {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Tenant-ID': 'bgu'
+        await axios.post(
+          'http://localhost:1234/auth/token/validate',
+          {
+            token: 'invalid.jwt.token',
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Tenant-ID': 'bgu',
+            },
           }
-        });
+        );
       } catch (error) {
         expect(error.response.status).toBe(401);
         expect(error.response.data.valid).toBe(false);
@@ -123,17 +131,17 @@ describe('Auth Service Contract Tests', () => {
           path: '/auth/google/callback',
           headers: {
             'Content-Type': 'application/json',
-            'X-Tenant-ID': 'bgu'
+            'X-Tenant-ID': 'bgu',
           },
           body: {
             token: like('google.oauth.token.here'),
-            tenantId: 'bgu'
-          }
+            tenantId: 'bgu',
+          },
         },
         willRespondWith: {
           status: 200,
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
           body: {
             success: true,
@@ -142,26 +150,30 @@ describe('Auth Service Contract Tests', () => {
               email: like('student@post.bgu.ac.il'),
               name: like('Test Student'),
               emailVerified: true,
-              tenantId: 'bgu'
+              tenantId: 'bgu',
             },
             tokens: {
               accessToken: like('jwt.access.token'),
               refreshToken: like('jwt.refresh.token'),
-              expiresIn: 3600
-            }
-          }
-        }
+              expiresIn: 3600,
+            },
+          },
+        },
       });
 
-      const response = await axios.post('http://localhost:1234/auth/google/callback', {
-        token: 'google.oauth.token.here',
-        tenantId: 'bgu'
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tenant-ID': 'bgu'
+      const response = await axios.post(
+        'http://localhost:1234/auth/google/callback',
+        {
+          token: 'google.oauth.token.here',
+          tenantId: 'bgu',
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Tenant-ID': 'bgu',
+          },
         }
-      });
+      );
 
       expect(response.status).toBe(200);
       expect(response.data.success).toBe(true);
@@ -179,14 +191,14 @@ describe('Auth Service Contract Tests', () => {
           method: 'GET',
           path: '/auth/session/validate',
           headers: {
-            'Authorization': like('Bearer jwt.token.here'),
-            'X-Tenant-ID': 'bgu'
-          }
+            Authorization: like('Bearer jwt.token.here'),
+            'X-Tenant-ID': 'bgu',
+          },
         },
         willRespondWith: {
           status: 200,
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
           body: {
             valid: true,
@@ -195,22 +207,22 @@ describe('Auth Service Contract Tests', () => {
               tenantId: 'bgu',
               expiresAt: term({
                 generate: '2024-12-31T23:59:59Z',
-                matcher: '\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z'
+                matcher: '\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z',
               }),
               lastAccess: term({
                 generate: '2024-01-15T10:30:00Z',
-                matcher: '\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z'
-              })
-            }
-          }
-        }
+                matcher: '\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z',
+              }),
+            },
+          },
+        },
       });
 
       const response = await axios.get('http://localhost:1234/auth/session/validate', {
         headers: {
-          'Authorization': 'Bearer jwt.token.here',
-          'X-Tenant-ID': 'bgu'
-        }
+          Authorization: 'Bearer jwt.token.here',
+          'X-Tenant-ID': 'bgu',
+        },
       });
 
       expect(response.status).toBe(200);
@@ -229,40 +241,44 @@ describe('Auth Service Contract Tests', () => {
           path: '/auth/credentials/validate',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': like('Bearer jwt.token.here'),
+            Authorization: like('Bearer jwt.token.here'),
             'X-User-ID': like('user-123'),
-            'X-Tenant-ID': 'bgu'
+            'X-Tenant-ID': 'bgu',
           },
           body: {
             username: like('123456789'),
             password: like('student-password'),
-            universityId: 'bgu'
-          }
+            universityId: 'bgu',
+          },
         },
         willRespondWith: {
           status: 200,
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
           body: {
             success: true,
-            message: 'Credentials validated and stored securely'
-          }
-        }
+            message: 'Credentials validated and stored securely',
+          },
+        },
       });
 
-      const response = await axios.post('http://localhost:1234/auth/credentials/validate', {
-        username: '123456789',
-        password: 'student-password',
-        universityId: 'bgu'
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer jwt.token.here',
-          'X-User-ID': 'user-123',
-          'X-Tenant-ID': 'bgu'
+      const response = await axios.post(
+        'http://localhost:1234/auth/credentials/validate',
+        {
+          username: '123456789',
+          password: 'student-password',
+          universityId: 'bgu',
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer jwt.token.here',
+            'X-User-ID': 'user-123',
+            'X-Tenant-ID': 'bgu',
+          },
         }
-      });
+      );
 
       expect(response.status).toBe(200);
       expect(response.data.success).toBe(true);
@@ -276,12 +292,12 @@ describe('Auth Service Contract Tests', () => {
         uponReceiving: 'a health check request',
         withRequest: {
           method: 'GET',
-          path: '/health'
+          path: '/health',
         },
         willRespondWith: {
           status: 200,
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
           body: {
             status: 'healthy',
@@ -289,14 +305,14 @@ describe('Auth Service Contract Tests', () => {
             version: like('1.0.0'),
             timestamp: term({
               generate: '2024-01-15T10:30:00Z',
-              matcher: '\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z'
+              matcher: '\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z',
             }),
             dependencies: {
               database: 'healthy',
-              redis: 'healthy'
-            }
-          }
-        }
+              redis: 'healthy',
+            },
+          },
+        },
       });
 
       const response = await axios.get('http://localhost:1234/health');
@@ -316,37 +332,37 @@ describe('Auth Service Contract Tests', () => {
           method: 'GET',
           path: '/auth/user/profile',
           headers: {
-            'Authorization': like('Bearer bgu.jwt.token'),
+            Authorization: like('Bearer bgu.jwt.token'),
             'X-Tenant-ID': 'bgu',
-            'X-User-ID': like('bgu-user-123')
-          }
+            'X-User-ID': like('bgu-user-123'),
+          },
         },
         willRespondWith: {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
-            'X-Tenant-ID': 'bgu'
+            'X-Tenant-ID': 'bgu',
           },
           body: {
             user: {
               id: like('bgu-user-123'),
               email: term({
                 generate: 'student@post.bgu.ac.il',
-                matcher: '.*@.*\\.bgu\\.ac\\.il'
+                matcher: '.*@.*\\.bgu\\.ac\\.il',
               }),
               tenantId: 'bgu',
-              university: 'Ben-Gurion University of the Negev'
-            }
-          }
-        }
+              university: 'Ben-Gurion University of the Negev',
+            },
+          },
+        },
       });
 
       const response = await axios.get('http://localhost:1234/auth/user/profile', {
         headers: {
-          'Authorization': 'Bearer bgu.jwt.token',
+          Authorization: 'Bearer bgu.jwt.token',
           'X-Tenant-ID': 'bgu',
-          'X-User-ID': 'bgu-user-123'
-        }
+          'X-User-ID': 'bgu-user-123',
+        },
       });
 
       expect(response.status).toBe(200);
@@ -364,32 +380,36 @@ describe('Auth Service Contract Tests', () => {
           method: 'POST',
           path: '/auth/token/validate',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
           body: {
-            token: like('some.jwt.token')
-          }
+            token: like('some.jwt.token'),
+          },
         },
         willRespondWith: {
           status: 400,
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
           body: {
             error: 'Tenant identification required',
-            code: 'MISSING_TENANT_ID'
-          }
-        }
+            code: 'MISSING_TENANT_ID',
+          },
+        },
       });
 
       try {
-        await axios.post('http://localhost:1234/auth/token/validate', {
-          token: 'some.jwt.token'
-        }, {
-          headers: {
-            'Content-Type': 'application/json'
+        await axios.post(
+          'http://localhost:1234/auth/token/validate',
+          {
+            token: 'some.jwt.token',
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
           }
-        });
+        );
       } catch (error) {
         expect(error.response.status).toBe(400);
         expect(error.response.data.code).toBe('MISSING_TENANT_ID');
@@ -437,8 +457,8 @@ describe('Auth Service Provider Verification', () => {
         'request without tenant ID': () => {
           // No setup needed for error condition
           return Promise.resolve();
-        }
-      }
+        },
+      },
     };
 
     // This would be run as part of the provider's test suite

@@ -26,7 +26,7 @@ export enum SyncJobType {
   COURSE_SYNC = 'course_sync',
   ASSIGNMENT_SYNC = 'assignment_sync',
   GRADE_SYNC = 'grade_sync',
-  BULK_USER_SYNC = 'bulk_user_sync'
+  BULK_USER_SYNC = 'bulk_user_sync',
 }
 
 export enum SyncJobStatus {
@@ -36,14 +36,14 @@ export enum SyncJobStatus {
   COMPLETED = 'completed',
   FAILED = 'failed',
   CANCELLED = 'cancelled',
-  RETRYING = 'retrying'
+  RETRYING = 'retrying',
 }
 
 export enum JobPriority {
   LOW = 1,
   NORMAL = 5,
   HIGH = 10,
-  CRITICAL = 15
+  CRITICAL = 15,
 }
 
 export interface SyncJobConfig {

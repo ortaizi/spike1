@@ -88,7 +88,7 @@ export const SPIKE_EVENT_PATTERNS = {
   TENANT_CREATED: 'system.tenant.created',
   TENANT_UPDATED: 'system.tenant.updated',
   SERVICE_HEALTH_CHECK: 'system.service.health_check',
-  SYSTEM_ALERT: 'system.alert'
+  SYSTEM_ALERT: 'system.alert',
 };
 
 // Default event bus configuration for Spike platform
@@ -100,20 +100,20 @@ export const DEFAULT_EVENT_BUS_CONFIG: EventBusConfig = {
         name: 'spike.events',
         type: 'topic',
         durable: true,
-        autoDelete: false
+        autoDelete: false,
       },
       {
         name: 'spike.events.dlx',
         type: 'topic',
         durable: true,
-        autoDelete: false
+        autoDelete: false,
       },
       {
         name: 'spike.notifications',
         type: 'direct',
         durable: true,
-        autoDelete: false
-      }
+        autoDelete: false,
+      },
     ],
     queues: [
       // Academic service queues
@@ -127,8 +127,8 @@ export const DEFAULT_EVENT_BUS_CONFIG: EventBusConfig = {
         arguments: {
           'x-dead-letter-exchange': 'spike.events.dlx',
           'x-message-ttl': 24 * 60 * 60 * 1000, // 24 hours
-          'x-max-retries': 3
-        }
+          'x-max-retries': 3,
+        },
       },
       {
         name: 'academic-service.grade-events',
@@ -139,8 +139,8 @@ export const DEFAULT_EVENT_BUS_CONFIG: EventBusConfig = {
         autoDelete: false,
         arguments: {
           'x-dead-letter-exchange': 'spike.events.dlx',
-          'x-message-ttl': 24 * 60 * 60 * 1000
-        }
+          'x-message-ttl': 24 * 60 * 60 * 1000,
+        },
       },
 
       // Sync orchestrator queues
@@ -153,8 +153,8 @@ export const DEFAULT_EVENT_BUS_CONFIG: EventBusConfig = {
         autoDelete: false,
         arguments: {
           'x-dead-letter-exchange': 'spike.events.dlx',
-          'x-message-ttl': 48 * 60 * 60 * 1000 // 48 hours for job events
-        }
+          'x-message-ttl': 48 * 60 * 60 * 1000, // 48 hours for job events
+        },
       },
 
       // Auth service queues
@@ -167,8 +167,8 @@ export const DEFAULT_EVENT_BUS_CONFIG: EventBusConfig = {
         autoDelete: false,
         arguments: {
           'x-dead-letter-exchange': 'spike.events.dlx',
-          'x-message-ttl': 12 * 60 * 60 * 1000 // 12 hours for auth events
-        }
+          'x-message-ttl': 12 * 60 * 60 * 1000, // 12 hours for auth events
+        },
       },
 
       // Notification service queues
@@ -180,8 +180,8 @@ export const DEFAULT_EVENT_BUS_CONFIG: EventBusConfig = {
         exclusive: false,
         autoDelete: false,
         arguments: {
-          'x-dead-letter-exchange': 'spike.events.dlx'
-        }
+          'x-dead-letter-exchange': 'spike.events.dlx',
+        },
       },
       {
         name: 'notification-service.urgent',
@@ -191,8 +191,8 @@ export const DEFAULT_EVENT_BUS_CONFIG: EventBusConfig = {
         exclusive: false,
         autoDelete: false,
         arguments: {
-          'x-message-ttl': 60 * 60 * 1000 // 1 hour for urgent notifications
-        }
+          'x-message-ttl': 60 * 60 * 1000, // 1 hour for urgent notifications
+        },
       },
 
       // Dead letter queue
@@ -202,26 +202,26 @@ export const DEFAULT_EVENT_BUS_CONFIG: EventBusConfig = {
         routingKey: '#',
         durable: true,
         exclusive: false,
-        autoDelete: false
-      }
+        autoDelete: false,
+      },
     ],
-    deadLetterExchange: 'spike.events.dlx'
+    deadLetterExchange: 'spike.events.dlx',
   },
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
     password: process.env.REDIS_PASSWORD,
-    db: parseInt(process.env.REDIS_EVENTS_DB || '2')
+    db: parseInt(process.env.REDIS_EVENTS_DB || '2'),
   },
   retries: {
     maxAttempts: 3,
     backoffDelay: 1000, // 1 second
-    maxDelay: 30000     // 30 seconds
+    maxDelay: 30000, // 30 seconds
   },
   monitoring: {
     enableMetrics: process.env.NODE_ENV === 'production',
-    metricsInterval: 60000 // 1 minute
-  }
+    metricsInterval: 60000, // 1 minute
+  },
 };
 
 // Event message structure for Spike platform
@@ -313,20 +313,20 @@ export class EventRouter {
       'auth.user.logged_out',
       'auth.session.expired',
       'system.alert',
-      'sync.job.failed'
+      'sync.job.failed',
     ];
 
     const lowPriorityPatterns = [
       'system.service.health_check',
       'notification.sent',
-      'sync.job.progress'
+      'sync.job.progress',
     ];
 
-    if (highPriorityPatterns.some(pattern => eventType.match(pattern))) {
+    if (highPriorityPatterns.some((pattern) => eventType.match(pattern))) {
       return 'high';
     }
 
-    if (lowPriorityPatterns.some(pattern => eventType.match(pattern))) {
+    if (lowPriorityPatterns.some((pattern) => eventType.match(pattern))) {
       return 'low';
     }
 
@@ -362,7 +362,7 @@ export class EventPublisher {
       version: options.version || 1,
       source,
       data,
-      metadata: options.metadata
+      metadata: options.metadata,
     } as T;
   }
 
@@ -427,8 +427,8 @@ export const SPIKE_EVENT_SUBSCRIPTIONS: EventSubscription[] = [
       queueName: 'academic-service.sync-updates',
       durable: true,
       prefetch: 5,
-      retries: 3
-    }
+      retries: 3,
+    },
   },
 
   // Sync orchestrator subscriptions
@@ -440,8 +440,8 @@ export const SPIKE_EVENT_SUBSCRIPTIONS: EventSubscription[] = [
       queueName: 'sync-orchestrator.credential-updates',
       durable: true,
       prefetch: 10,
-      retries: 2
-    }
+      retries: 2,
+    },
   },
 
   // Notification service subscriptions
@@ -451,15 +451,15 @@ export const SPIKE_EVENT_SUBSCRIPTIONS: EventSubscription[] = [
       'academic.assignment.created',
       'academic.grade.updated',
       'sync.job.completed',
-      'sync.job.failed'
+      'sync.job.failed',
     ],
     handler: 'NotificationEventHandler',
     options: {
       queueName: 'notification-service.academic-notifications',
       durable: true,
       prefetch: 20,
-      retries: 3
-    }
+      retries: 3,
+    },
   },
 
   // Auth service subscriptions
@@ -471,9 +471,9 @@ export const SPIKE_EVENT_SUBSCRIPTIONS: EventSubscription[] = [
       queueName: 'auth-service.system-events',
       durable: true,
       prefetch: 5,
-      retries: 2
-    }
-  }
+      retries: 2,
+    },
+  },
 ];
 
 export default DEFAULT_EVENT_BUS_CONFIG;

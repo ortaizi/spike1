@@ -1,20 +1,41 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+// import { getCsrfToken } from 'next-auth/react'; // TODO: Use when implementing CSRF tokens
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckCircle,
+  GraduationCap,
+  Lock,
+  Mail,
+  User,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '../../components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { CheckCircle, User, Mail, GraduationCap, ArrowRight, Lock, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
-import { validateUniversityEmail, getHebrewErrorMessage, FORM_VALIDATION_HE } from '../../lib/auth/hebrew-auth-errors';
+import { useCsrfToken } from '../../hooks/use-csrf-token';
+import {
+  FORM_VALIDATION_HE,
+  getHebrewErrorMessage,
+  validateUniversityEmail,
+} from '../../lib/auth/hebrew-auth-errors';
 
 export default function OnboardingPage() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const { secureFetch } = useCsrfToken();
+  const [isLoading, _setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [universityPassword, setUniversityPassword] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
@@ -28,7 +49,7 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (!mounted) return;
     if (status === 'loading') return;
-    
+
     if (!session) {
       router.push('/');
       return;
@@ -37,7 +58,7 @@ export default function OnboardingPage() {
     // Check if onboarding is already completed
     const checkOnboardingStatus = async () => {
       try {
-        const response = await fetch('/api/user/onboarding');
+        const response = await secureFetch('/api/user/onboarding');
         if (response.ok) {
           const data = await response.json();
           if (data.onboardingCompleted) {
@@ -52,16 +73,16 @@ export default function OnboardingPage() {
     };
 
     checkOnboardingStatus();
-  }, [session, status, router, mounted]);
+  }, [session, status, router, mounted, secureFetch]);
 
   // Extract user info from email
   const extractUserInfoFromEmail = (email: string) => {
     const [username, domain] = email.split('@');
-    
+
     // Identify university by domain
     let university = '';
     let universityName = '';
-    
+
     if (domain.includes('post.bgu.ac.il')) {
       university = 'bgu';
       universityName = 'אוניברסיטת בן-גוריון בנגב';
@@ -78,7 +99,7 @@ export default function OnboardingPage() {
       university = 'unknown';
       universityName = 'אוניברסיטה לא מוכרת';
     }
-    
+
     return { username, university, universityName };
   };
 
@@ -99,7 +120,7 @@ export default function OnboardingPage() {
 
     try {
       const userInfo = extractUserInfoFromEmail(session?.user?.email || '');
-      
+
       // Validate email domain first
       const emailValidation = validateUniversityEmail(session?.user?.email || '');
       if (!emailValidation.isValid) {
@@ -107,10 +128,10 @@ export default function OnboardingPage() {
         toast.error(emailValidation.error || 'כתובת מייל לא תקפה');
         return false;
       }
-      
+
       console.log(`🔐 Testing connection for ${userInfo.username}`);
-      
-      const response = await fetch('/api/moodle/validate', {
+
+      const response = await secureFetch('/api/moodle/validate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -126,26 +147,26 @@ export default function OnboardingPage() {
         setConnectionStatus('success');
         setIsRedirecting(true);
         toast.success('התחברות למערכת האוניברסיטה הצליחה! מעביר לדשבורד...');
-        
+
         // Force session update to refresh the JWT token with new dual-stage status
         try {
           console.log('🔄 Forcing session update after successful authentication...');
           await update(); // This should trigger JWT callback with trigger='update'
-          
+
           // Additional delay to ensure session update is processed
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
           console.log('✅ Session updated with dual-stage completion');
         } catch (updateError) {
           console.error('❌ Error updating session:', updateError);
         }
-        
+
         // Redirect to dashboard immediately after successful authentication
         setTimeout(() => {
           console.log('🚀 Redirecting to dashboard after successful authentication');
           router.push('/dashboard');
         }, 1000); // Quick redirect to dashboard
-        
+
         return true;
       } else {
         setConnectionStatus('error');
@@ -169,7 +190,7 @@ export default function OnboardingPage() {
 
     // Test university connection first
     const isConnectionSuccessful = await testUniversityConnection();
-    
+
     if (!isConnectionSuccessful) {
       return; // Don't proceed if connection failed
     }
@@ -182,10 +203,10 @@ export default function OnboardingPage() {
   // Show loading state while session is loading or component is not mounted
   if (status === 'loading' || !mounted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">טוען נתונים...</p>
+      <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100'>
+        <div className='text-center'>
+          <div className='mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600'></div>
+          <p className='text-gray-600'>טוען נתונים...</p>
         </div>
       </div>
     );
@@ -199,151 +220,156 @@ export default function OnboardingPage() {
   const userInfo = extractUserInfoFromEmail(session.user.email || '');
 
   return (
-    <div dir="rtl" className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div
+      dir='rtl'
+      className='flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4'
+    >
+      <div className='w-full max-w-md'>
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            ברוכים הבאים ל-Spike
-          </h1>
-          <p className="text-gray-600">
-            פלטפורמת ניהול אקדמי חכמה לסטודנטים ישראלים
-          </p>
+        <div className='mb-8 text-center'>
+          <h1 className='mb-2 text-3xl font-bold text-gray-900'>ברוכים הבאים ל-Spike</h1>
+          <p className='text-gray-600'>פלטפורמת ניהול אקדמי חכמה לסטודנטים ישראלים</p>
         </div>
 
         {/* Main Card */}
-        <Card className="w-full shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="text-center pb-6">
-            <CardTitle className="text-xl font-semibold text-gray-900">
-              פרטי החשבון שלך
-            </CardTitle>
-            <CardDescription className="text-gray-600">
+        <Card className='w-full border-0 bg-white/80 shadow-xl backdrop-blur-sm'>
+          <CardHeader className='pb-6 text-center'>
+            <CardTitle className='text-xl font-semibold text-gray-900'>פרטי החשבון שלך</CardTitle>
+            <CardDescription className='text-gray-600'>
               המידע הבא זוהה אוטומטית מהמייל שלך
             </CardDescription>
           </CardHeader>
-          
-          <CardContent className="space-y-6">
+
+          <CardContent className='space-y-6'>
             {/* Username */}
-            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-blue-600" />
+            <div className='flex items-center gap-4 rounded-lg bg-gray-50 p-4'>
+              <div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-100'>
+                <User className='h-5 w-5 text-blue-600' />
               </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-600 mb-1">שם משתמש</p>
-                <p className="font-semibold text-gray-900">{userInfo.username}</p>
+              <div className='flex-1'>
+                <p className='mb-1 text-sm text-gray-600'>שם משתמש</p>
+                <p className='font-semibold text-gray-900'>{userInfo.username}</p>
               </div>
-              <CheckCircle className="w-5 h-5 text-green-500" />
+              <CheckCircle className='h-5 w-5 text-green-500' />
             </div>
 
             {/* Email */}
-            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <Mail className="w-5 h-5 text-green-600" />
+            <div className='flex items-center gap-4 rounded-lg bg-gray-50 p-4'>
+              <div className='flex h-10 w-10 items-center justify-center rounded-full bg-green-100'>
+                <Mail className='h-5 w-5 text-green-600' />
               </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-600 mb-1">כתובת מייל</p>
-                <p className="font-semibold text-gray-900 text-sm">{session.user.email}</p>
+              <div className='flex-1'>
+                <p className='mb-1 text-sm text-gray-600'>כתובת מייל</p>
+                <p className='text-sm font-semibold text-gray-900'>{session.user.email}</p>
               </div>
-              <CheckCircle className="w-5 h-5 text-green-500" />
+              <CheckCircle className='h-5 w-5 text-green-500' />
             </div>
 
             {/* University */}
-            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                <GraduationCap className="w-5 h-5 text-purple-600" />
+            <div className='flex items-center gap-4 rounded-lg bg-gray-50 p-4'>
+              <div className='flex h-10 w-10 items-center justify-center rounded-full bg-purple-100'>
+                <GraduationCap className='h-5 w-5 text-purple-600' />
               </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-600 mb-1">מוסד לימודים</p>
-                <p className="font-semibold text-gray-900">{userInfo.universityName}</p>
+              <div className='flex-1'>
+                <p className='mb-1 text-sm text-gray-600'>מוסד לימודים</p>
+                <p className='font-semibold text-gray-900'>{userInfo.universityName}</p>
               </div>
-              <CheckCircle className="w-5 h-5 text-green-500" />
+              <CheckCircle className='h-5 w-5 text-green-500' />
             </div>
 
             {/* Password Field */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                  <Lock className="w-5 h-5 text-orange-600" />
+            <div className='space-y-3'>
+              <div className='flex items-center gap-3'>
+                <div className='flex h-10 w-10 items-center justify-center rounded-full bg-orange-100'>
+                  <Lock className='h-5 w-5 text-orange-600' />
                 </div>
-                <div className="flex-1">
-                  <Label htmlFor="university-password" className="text-sm text-gray-600">
+                <div className='flex-1'>
+                  <Label htmlFor='university-password' className='text-sm text-gray-600'>
                     סיסמת מערכת האוניברסיטה
                   </Label>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className='mt-1 text-xs text-gray-500'>
                     נדרשת להתחברות למודל ומערכות האוניברסיטה
                   </p>
                 </div>
               </div>
-              
+
               <Input
-                id="university-password"
-                type="password"
-                placeholder="הזן את הסיסמה שלך למערכת האוניברסיטה"
+                id='university-password'
+                type='password'
+                placeholder='הזן את הסיסמה שלך למערכת האוניברסיטה'
                 value={universityPassword}
                 onChange={(e) => setUniversityPassword(e.target.value)}
                 disabled={isConnecting}
-                className="w-full text-right"
-                dir="rtl"
+                className='w-full text-right'
+                dir='rtl'
               />
 
               {/* Connection Status */}
               {connectionStatus === 'success' && (
-                <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span className="text-sm text-green-800">
-                    {isRedirecting ? 'התחברות הצליחה! מעביר לדשבורד...' : 'התחברות למערכת האוניברסיטה הצליחה!'}
+                <div className='flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3'>
+                  <CheckCircle className='h-4 w-4 text-green-600' />
+                  <span className='text-sm text-green-800'>
+                    {isRedirecting
+                      ? 'התחברות הצליחה! מעביר לדשבורד...'
+                      : 'התחברות למערכת האוניברסיטה הצליחה!'}
                   </span>
                 </div>
               )}
 
               {connectionStatus === 'error' && (
-                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <AlertCircle className="w-4 h-4 text-red-600" />
-                  <span className="text-sm text-red-800">שגיאה בהתחברות. אנא בדוק את הסיסמה ונסה שוב.</span>
+                <div className='flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3'>
+                  <AlertCircle className='h-4 w-4 text-red-600' />
+                  <span className='text-sm text-red-800'>
+                    שגיאה בהתחברות. אנא בדוק את הסיסמה ונסה שוב.
+                  </span>
                 </div>
               )}
 
               {/* Security Info */}
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-xs text-blue-800">
-                  🔒 הסיסמה שלך נשמרת באופן מאובטח ואיננה נשמרת במערכת שלנו. 
-                  היא משמשת רק להתחברות למערכות האוניברסיטה שלך.
+              <div className='rounded-lg border border-blue-200 bg-blue-50 p-3'>
+                <p className='text-xs text-blue-800'>
+                  🔒 הסיסמה שלך נשמרת באופן מאובטח ואיננה נשמרת במערכת שלנו. היא משמשת רק להתחברות
+                  למערכות האוניברסיטה שלך.
                 </p>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="space-y-3 pt-4">
-              <Button 
+            <div className='space-y-3 pt-4'>
+              <Button
                 onClick={handleComplete}
                 disabled={isLoading || isConnecting || isRedirecting || !universityPassword.trim()}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-base font-medium rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className='w-full rounded-lg bg-blue-600 py-3 text-base font-medium text-white shadow-lg hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50'
               >
                 {isLoading || isConnecting || isRedirecting ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white me-2"></div>
-                    {isRedirecting ? 'מעביר לדשבורד...' : isConnecting ? 'בודק התחברות...' : 'טוען...'}
+                  <div className='flex items-center justify-center'>
+                    <div className='me-2 h-5 w-5 animate-spin rounded-full border-b-2 border-white'></div>
+                    {isRedirecting
+                      ? 'מעביר לדשבורד...'
+                      : isConnecting
+                        ? 'בודק התחברות...'
+                        : 'טוען...'}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center" dir="rtl">
+                  <div className='flex items-center justify-center' dir='rtl'>
                     התחל להשתמש ב-Spike
-                    <ArrowRight className="w-4 h-4 ms-2 transform scale-x-[-1]" />
+                    <ArrowRight className='ms-2 h-4 w-4 scale-x-[-1] transform' />
                   </div>
                 )}
               </Button>
-              
-              <Button 
-                variant="outline"
+
+              <Button
+                variant='outline'
                 onClick={() => router.push('/')}
-                className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 py-3 text-base font-medium rounded-lg"
+                className='w-full rounded-lg border-gray-300 py-3 text-base font-medium text-gray-700 hover:bg-gray-50'
               >
                 אעשה זאת מאוחר יותר
               </Button>
             </div>
 
             {/* Info Text */}
-            <div className="text-center pt-4">
-              <p className="text-xs text-gray-500">
+            <div className='pt-4 text-center'>
+              <p className='text-xs text-gray-500'>
                 על ידי המשך, אתה מסכים לתנאי השימוש ומדיניות הפרטיות שלנו
               </p>
             </div>
@@ -352,4 +378,4 @@ export default function OnboardingPage() {
       </div>
     </div>
   );
-} 
+}

@@ -81,24 +81,24 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-heebo), 'Assistant', 'Inter', system-ui, sans-serif;
+    font-family: var(--font-heebo), "Assistant", "Inter", system-ui, sans-serif;
     line-height: 1.6;
   }
 }
 
 /* Poppins Font Class */
 .font-poppins {
-  font-family: var(--font-poppins), 'Poppins', system-ui, sans-serif;
+  font-family: var(--font-poppins), "Poppins", system-ui, sans-serif;
   font-weight: 600;
 }
 
 /* RTL Support */
 [dir="rtl"] {
-  font-family: var(--font-heebo), 'Assistant', system-ui, sans-serif;
+  font-family: var(--font-heebo), "Assistant", system-ui, sans-serif;
 }
 
 [dir="ltr"] {
-  font-family: var(--font-heebo), 'Inter', 'Assistant', system-ui, sans-serif;
+  font-family: var(--font-heebo), "Inter", "Assistant", system-ui, sans-serif;
 }
 
 /* Infinite Scroll Animation */
@@ -113,4 +113,4 @@
 
 .infinite-scroll {
   animation: scroll 30s linear infinite;
-} 
+}

@@ -4,13 +4,17 @@ model: sonnet
 
 Implement minimal code to make failing tests pass in TDD green phase:
 
-[Extended thinking: This tool uses the test-automator agent to implement the minimal code necessary to make tests pass. It focuses on simplicity, avoiding over-engineering while ensuring all tests become green.]
+[Extended thinking: This tool uses the test-automator agent to implement the
+minimal code necessary to make tests pass. It focuses on simplicity, avoiding
+over-engineering while ensuring all tests become green.]
 
 ## Implementation Process
 
-Use Task tool with subagent_type="test-automator" to implement minimal passing code.
+Use Task tool with subagent_type="test-automator" to implement minimal passing
+code.
 
-Prompt: "Implement MINIMAL code to make these failing tests pass: $ARGUMENTS. Follow TDD green phase principles:
+Prompt: "Implement MINIMAL code to make these failing tests pass: $ARGUMENTS.
+Follow TDD green phase principles:
 
 1. **Pre-Implementation Analysis**
    - Review all failing tests and their error messages
@@ -58,13 +62,10 @@ Prompt: "Implement MINIMAL code to make these failing tests pass: $ARGUMENTS. Fo
    - In-memory storage before database integration
    - Synchronous before asynchronous implementation
 
-7. **Success Criteria**
-   ✓ All tests pass (green)
-   ✓ No extra functionality beyond test requirements
-   ✓ Code is readable even if not optimal
-   ✓ No broken existing functionality
-   ✓ Implementation time is minimized
-   ✓ Clear path to refactoring identified
+7. **Success Criteria** ✓ All tests pass (green) ✓ No extra functionality beyond
+   test requirements ✓ Code is readable even if not optimal ✓ No broken existing
+   functionality ✓ Implementation time is minimized ✓ Clear path to refactoring
+   identified
 
 8. **Anti-Patterns to Avoid**
    - Gold plating or adding unrequested features
@@ -90,6 +91,7 @@ Prompt: "Implement MINIMAL code to make these failing tests pass: $ARGUMENTS. Fo
     - Prepare notes for refactoring phase
 
 Output should include:
+
 - Complete implementation code
 - Test execution results showing all green
 - List of shortcuts taken for later refactoring
@@ -100,6 +102,7 @@ Output should include:
 ## Post-Implementation Checks
 
 After implementation:
+
 1. Run full test suite to confirm all tests pass
 2. Verify no existing tests were broken
 3. Document areas needing refactoring
@@ -109,6 +112,7 @@ After implementation:
 ## Recovery Process
 
 If tests still fail:
+
 - Review test requirements carefully
 - Check for misunderstood assertions
 - Add minimal code to address specific failures

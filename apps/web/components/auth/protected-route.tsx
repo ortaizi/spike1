@@ -1,10 +1,9 @@
 'use client';
 
-import { useAuth } from '../../lib/auth/auth-context';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../../lib/auth/auth-context';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -12,11 +11,7 @@ interface ProtectedRouteProps {
   requireAuth?: boolean;
 }
 
-export function ProtectedRoute({ 
-  children, 
-  fallback,
-  requireAuth = true 
-}: ProtectedRouteProps) {
+export function ProtectedRoute({ children, fallback: _fallback, requireAuth = true }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading } = useAuth();
   const { data: session } = useSession();
   const router = useRouter();
@@ -30,10 +25,10 @@ export function ProtectedRoute({
   // Show loading state while auth is being determined
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-[#0066CC] mx-auto mb-4" />
-          <p className="text-gray-600">בודק הרשאות...</p>
+      <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100'>
+        <div className='text-center'>
+          <Loader2 className='mx-auto mb-4 h-8 w-8 animate-spin text-[#0066CC]' />
+          <p className='text-gray-600'>בודק הרשאות...</p>
         </div>
       </div>
     );
@@ -44,16 +39,16 @@ export function ProtectedRoute({
     console.log('🚫 ProtectedRoute: Access denied - not authenticated');
     console.log('🔍 Session:', session ? 'exists' : 'none');
     console.log('🔍 isAuthenticated:', isAuthenticated);
-    
+
     // Redirect to onboarding if user has Google session but no BGU auth
     if (session && session.user) {
       console.log('🔄 Has Google session, redirecting to onboarding');
       router.push('/onboarding');
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin text-[#0066CC] mx-auto mb-4" />
-            <p className="text-gray-600">מעביר לעמוד ההרשמה...</p>
+        <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100'>
+          <div className='text-center'>
+            <Loader2 className='mx-auto mb-4 h-8 w-8 animate-spin text-[#0066CC]' />
+            <p className='text-gray-600'>מעביר לעמוד ההרשמה...</p>
           </div>
         </div>
       );
@@ -61,10 +56,10 @@ export function ProtectedRoute({
       console.log('🔄 No session, redirecting to landing page');
       router.push('/');
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin text-[#0066CC] mx-auto mb-4" />
-            <p className="text-gray-600">מעביר לעמוד הכניסה...</p>
+        <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100'>
+          <div className='text-center'>
+            <Loader2 className='mx-auto mb-4 h-8 w-8 animate-spin text-[#0066CC]' />
+            <p className='text-gray-600'>מעביר לעמוד הכניסה...</p>
           </div>
         </div>
       );
@@ -73,4 +68,4 @@ export function ProtectedRoute({
 
   console.log('✅ ProtectedRoute: Access granted');
   return <>{children}</>;
-} 
+}

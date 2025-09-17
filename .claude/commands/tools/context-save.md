@@ -4,11 +4,14 @@ model: sonnet
 
 Save current project context for future agent coordination:
 
-[Extended thinking: This tool uses the context-manager agent to capture and preserve project state, decisions, and patterns. This enables better continuity across sessions and improved agent coordination.]
+[Extended thinking: This tool uses the context-manager agent to capture and
+preserve project state, decisions, and patterns. This enables better continuity
+across sessions and improved agent coordination.]
 
 ## Context Capture Process
 
-Use Task tool with subagent_type="context-manager" to save comprehensive project context.
+Use Task tool with subagent_type="context-manager" to save comprehensive project
+context.
 
 Prompt: "Save comprehensive project context for: $ARGUMENTS. Capture:
 
@@ -48,11 +51,13 @@ Prompt: "Save comprehensive project context for: $ARGUMENTS. Capture:
    - Technical debt to address
    - Performance optimization opportunities
 
-Save this context in a structured format that can be easily restored and used by future agent invocations."
+Save this context in a structured format that can be easily restored and used by
+future agent invocations."
 
 ## Context Storage
 
 The context will be saved to `.claude/context/` with:
+
 - Timestamp-based versioning
 - Structured JSON/Markdown format
 - Easy restoration capabilities
@@ -61,6 +66,7 @@ The context will be saved to `.claude/context/` with:
 ## Usage Scenarios
 
 This saved context enables:
+
 - Resuming work after breaks
 - Onboarding new team members
 - Maintaining consistency across agent invocations

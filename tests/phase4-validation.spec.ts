@@ -3,16 +3,25 @@
  * Comprehensive end-to-end tests to validate complete migration success
  */
 
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { APIRequestContext } from 'playwright';
 
 // Test configuration
 const API_BASE_URL = process.env.API_BASE_URL || 'https://api.spike-platform.com';
 const TENANTS = ['bgu', 'tau', 'huji'];
 const TEST_USERS = {
-  bgu: { email: 'test@bgu.ac.il', password: 'test123' },
-  tau: { email: 'test@tau.ac.il', password: 'test123' },
-  huji: { email: 'test@huji.ac.il', password: 'test123' }
+  bgu: {
+    email: process.env.TEST_BGU_EMAIL || 'test@bgu.ac.il',
+    password: process.env.TEST_BGU_PASSWORD || 'fallback-test123',
+  },
+  tau: {
+    email: process.env.TEST_TAU_EMAIL || 'test@tau.ac.il',
+    password: process.env.TEST_TAU_PASSWORD || 'fallback-test123',
+  },
+  huji: {
+    email: process.env.TEST_HUJI_EMAIL || 'test@huji.ac.il',
+    password: process.env.TEST_HUJI_PASSWORD || 'fallback-test123',
+  },
 };
 
 // Helper function to create authenticated API context
@@ -20,9 +29,9 @@ async function createAuthenticatedAPIContext(request: APIRequestContext, tenant:
   const loginResponse = await request.post(`${API_BASE_URL}/auth/login`, {
     headers: {
       'Content-Type': 'application/json',
-      'X-Tenant-ID': tenant
+      'X-Tenant-ID': tenant,
     },
-    data: TEST_USERS[tenant as keyof typeof TEST_USERS]
+    data: TEST_USERS[tenant as keyof typeof TEST_USERS],
   });
 
   expect(loginResponse.status()).toBe(200);
@@ -31,17 +40,15 @@ async function createAuthenticatedAPIContext(request: APIRequestContext, tenant:
   return {
     token: loginData.token,
     headers: {
-      'Authorization': `Bearer ${loginData.token}`,
+      Authorization: `Bearer ${loginData.token}`,
       'Content-Type': 'application/json',
-      'X-Tenant-ID': tenant
-    }
+      'X-Tenant-ID': tenant,
+    },
   };
 }
 
 test.describe('Phase 4: Complete Migration Validation', () => {
-
   test.describe('Multi-Service Health Validation', () => {
-
     test('all microservices are healthy and responding', async ({ request }) => {
       const services = [
         'auth-service',
@@ -50,7 +57,7 @@ test.describe('Phase 4: Complete Migration Validation', () => {
         'analytics-service',
         'university-integration',
         'sync-orchestrator',
-        'tenant-service'
+        'tenant-service',
       ];
 
       for (const service of services) {
@@ -72,7 +79,7 @@ test.describe('Phase 4: Complete Migration Validation', () => {
         { path: '/academic/health', expectedService: 'academic-service' },
         { path: '/analytics/health', expectedService: 'analytics-service' },
         { path: '/notifications/health', expectedService: 'notification-service' },
-        { path: '/sync/health', expectedService: 'sync-orchestrator' }
+        { path: '/sync/health', expectedService: 'sync-orchestrator' },
       ];
 
       for (const route of routes) {
@@ -88,7 +95,6 @@ test.describe('Phase 4: Complete Migration Validation', () => {
   });
 
   test.describe('Multi-Tenant Data Isolation Validation', () => {
-
     for (const tenant of TENANTS) {
       test(`${tenant} tenant isolation is working correctly`, async ({ request }) => {
         const auth = await createAuthenticatedAPIContext(request, tenant);
@@ -99,8 +105,8 @@ test.describe('Phase 4: Complete Migration Validation', () => {
           data: {
             name: `${tenant.toUpperCase()} Test Course`,
             code: `${tenant.toUpperCase()}-TEST-001`,
-            faculty: 'Computer Science'
-          }
+            faculty: 'Computer Science',
+          },
         });
 
         expect(courseResponse.status()).toBe(201);
@@ -108,7 +114,7 @@ test.describe('Phase 4: Complete Migration Validation', () => {
 
         // Verify data appears in correct tenant
         const coursesResponse = await request.get(`${API_BASE_URL}/academic/courses`, {
-          headers: auth.headers
+          headers: auth.headers,
         });
 
         expect(coursesResponse.status()).toBe(200);
@@ -125,13 +131,13 @@ test.describe('Phase 4: Complete Migration Validation', () => {
         const auth = await createAuthenticatedAPIContext(request, tenant);
 
         // Try to access data with different tenant header
-        const otherTenant = TENANTS.find(t => t !== tenant)!;
+        const otherTenant = TENANTS.find((t) => t !== tenant)!;
 
         const unauthorizedResponse = await request.get(`${API_BASE_URL}/academic/courses`, {
           headers: {
             ...auth.headers,
-            'X-Tenant-ID': otherTenant
-          }
+            'X-Tenant-ID': otherTenant,
+          },
         });
 
         // Should either return 403 or empty data set for security
@@ -148,7 +154,6 @@ test.describe('Phase 4: Complete Migration Validation', () => {
   });
 
   test.describe('End-to-End User Journey Validation', () => {
-
     test('complete student workflow across all services', async ({ page, request }) => {
       const tenant = 'bgu';
 
@@ -189,10 +194,10 @@ test.describe('Phase 4: Complete Migration Validation', () => {
       // Check Hebrew text rendering in various components
       const hebrewTexts = [
         'לוח בקרה', // Dashboard
-        'קורסים',   // Courses
-        'מטלות',    // Assignments
-        'ציונים',   // Grades
-        'התראות'    // Notifications
+        'קורסים', // Courses
+        'מטלות', // Assignments
+        'ציונים', // Grades
+        'התראות', // Notifications
       ];
 
       for (const text of hebrewTexts) {
@@ -204,14 +209,13 @@ test.describe('Phase 4: Complete Migration Validation', () => {
   });
 
   test.describe('Performance Validation', () => {
-
     test('API response times meet SLA requirements', async ({ request }) => {
       const endpoints = [
         '/auth/health',
         '/academic/courses',
         '/analytics/dashboard',
         '/notifications/count',
-        '/sync/status'
+        '/sync/status',
       ];
 
       for (const endpoint of endpoints) {
@@ -239,23 +243,23 @@ test.describe('Phase 4: Complete Migration Validation', () => {
         const response = await request.post(`${API_BASE_URL}/auth/login`, {
           headers: {
             'Content-Type': 'application/json',
-            'X-Tenant-ID': tenant
+            'X-Tenant-ID': tenant,
           },
-          data: TEST_USERS[tenant]
+          data: TEST_USERS[tenant],
         });
 
         const responseTime = Date.now() - startTime;
 
         return {
           status: response.status(),
-          responseTime
+          responseTime,
         };
       });
 
       const results = await Promise.all(promises);
 
       // Verify all requests succeeded
-      const successCount = results.filter(r => r.status === 200).length;
+      const successCount = results.filter((r) => r.status === 200).length;
       expect(successCount).toBeGreaterThanOrEqual(concurrentRequests * 0.95); // 95% success rate
 
       // Verify average response time is acceptable
@@ -268,7 +272,6 @@ test.describe('Phase 4: Complete Migration Validation', () => {
   });
 
   test.describe('Data Consistency Validation', () => {
-
     test('data synchronization between services', async ({ request }) => {
       const tenant = 'bgu';
       const auth = await createAuthenticatedAPIContext(request, tenant);
@@ -277,22 +280,22 @@ test.describe('Phase 4: Complete Migration Validation', () => {
       const courseData = {
         name: 'Data Consistency Test Course',
         code: 'DCTC-001',
-        faculty: 'Engineering'
+        faculty: 'Engineering',
       };
 
       const createResponse = await request.post(`${API_BASE_URL}/academic/courses`, {
         headers: auth.headers,
-        data: courseData
+        data: courseData,
       });
 
       expect(createResponse.status()).toBe(201);
       const course = await createResponse.json();
 
       // Verify course appears in Analytics Service
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for event propagation
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for event propagation
 
       const analyticsResponse = await request.get(`${API_BASE_URL}/analytics/courses/summary`, {
-        headers: auth.headers
+        headers: auth.headers,
       });
 
       expect(analyticsResponse.status()).toBe(200);
@@ -313,8 +316,8 @@ test.describe('Phase 4: Complete Migration Validation', () => {
         headers: auth.headers,
         data: {
           type: 'full_sync',
-          university: 'bgu'
-        }
+          university: 'bgu',
+        },
       });
 
       expect(syncResponse.status()).toBe(202); // Accepted
@@ -326,10 +329,10 @@ test.describe('Phase 4: Complete Migration Validation', () => {
       const maxAttempts = 30;
 
       while (jobStatus === 'running' && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
 
         const statusResponse = await request.get(`${API_BASE_URL}/sync/jobs/${syncJob.id}/status`, {
-          headers: auth.headers
+          headers: auth.headers,
         });
 
         const statusData = await statusResponse.json();
@@ -341,7 +344,7 @@ test.describe('Phase 4: Complete Migration Validation', () => {
 
       // Verify events were published and consumed
       const eventsResponse = await request.get(`${API_BASE_URL}/analytics/events?jobId=${syncJob.id}`, {
-        headers: auth.headers
+        headers: auth.headers,
       });
 
       expect(eventsResponse.status()).toBe(200);
@@ -353,7 +356,6 @@ test.describe('Phase 4: Complete Migration Validation', () => {
   });
 
   test.describe('Security and Compliance Validation', () => {
-
     test('JWT token validation across all services', async ({ request }) => {
       const tenant = 'bgu';
       const auth = await createAuthenticatedAPIContext(request, tenant);
@@ -362,7 +364,7 @@ test.describe('Phase 4: Complete Migration Validation', () => {
 
       for (const service of services) {
         const response = await request.get(`${API_BASE_URL}/${service}/protected-endpoint`, {
-          headers: auth.headers
+          headers: auth.headers,
         });
 
         expect([200, 201, 404].includes(response.status())).toBeTruthy(); // Not 401/403
@@ -370,9 +372,9 @@ test.describe('Phase 4: Complete Migration Validation', () => {
         // Test with invalid token
         const invalidResponse = await request.get(`${API_BASE_URL}/${service}/protected-endpoint`, {
           headers: {
-            'Authorization': 'Bearer invalid-token',
-            'X-Tenant-ID': tenant
-          }
+            Authorization: 'Bearer invalid-token',
+            'X-Tenant-ID': tenant,
+          },
         });
 
         expect(invalidResponse.status()).toBe(401);
@@ -388,12 +390,12 @@ test.describe('Phase 4: Complete Migration Validation', () => {
       // Make rapid requests to trigger rate limiting
       const rapidRequests = Array.from({ length: 100 }, () =>
         request.get(`${API_BASE_URL}/academic/courses`, {
-          headers: auth.headers
+          headers: auth.headers,
         })
       );
 
       const responses = await Promise.all(rapidRequests);
-      const rateLimitedResponses = responses.filter(r => r.status() === 429);
+      const rateLimitedResponses = responses.filter((r) => r.status() === 429);
 
       expect(rateLimitedResponses.length).toBeGreaterThan(0);
       console.log(`✓ Rate limiting triggered for ${rateLimitedResponses.length} requests`);
@@ -409,15 +411,15 @@ test.describe('Phase 4: Complete Migration Validation', () => {
         data: {
           university: 'bgu',
           username: 'testuser',
-          password: 'testpass123'
-        }
+          password: 'testpass123',
+        },
       });
 
       expect(credentialsResponse.status()).toBe(201);
 
       // Verify credentials are encrypted in storage (check that raw password is not returned)
       const storedResponse = await request.get(`${API_BASE_URL}/auth/credentials/bgu`, {
-        headers: auth.headers
+        headers: auth.headers,
       });
 
       expect(storedResponse.status()).toBe(200);
@@ -432,14 +434,8 @@ test.describe('Phase 4: Complete Migration Validation', () => {
   });
 
   test.describe('Migration Completeness Validation', () => {
-
     test('no monolith endpoints are accessible', async ({ request }) => {
-      const monolithEndpoints = [
-        '/api/old-auth',
-        '/api/courses',
-        '/api/sync',
-        '/legacy/dashboard'
-      ];
+      const monolithEndpoints = ['/api/old-auth', '/api/courses', '/api/sync', '/legacy/dashboard'];
 
       for (const endpoint of monolithEndpoints) {
         const response = await request.get(`${API_BASE_URL}${endpoint}`);
@@ -455,7 +451,7 @@ test.describe('Phase 4: Complete Migration Validation', () => {
         { legacy: '/api/courses/list', modern: '/academic/courses' },
         { legacy: '/api/notifications/send', modern: '/notifications/send' },
         { legacy: '/api/sync/trigger', modern: '/sync/jobs' },
-        { legacy: '/api/analytics/dashboard', modern: '/analytics/dashboard' }
+        { legacy: '/api/analytics/dashboard', modern: '/analytics/dashboard' },
       ];
 
       for (const mapping of featureMappings) {

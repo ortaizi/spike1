@@ -70,12 +70,12 @@ export class DualStageSessionManager {
       }
       
       // Enrich session with dual-stage data from database
-      const userData = await this.fetchUserDualStageData(session.user.id);
-      
+      const userData = await this.fetchUserDualStageData((session.user as any).id);
+
       return {
         user: {
-          ...session.user,
-          googleId: session.user.googleId || session.user.id,
+          ...(session.user as any),
+          googleId: (session.user as any).googleId || (session.user as any).id,
           provider: userData?.isDualStageComplete ? 'dual-stage-complete' : 'google',
           isDualStageComplete: userData?.isDualStageComplete || false,
           universityId: userData?.universityId,
@@ -195,16 +195,16 @@ export class DualStageSessionManager {
       
       try {
         const decrypted = CredentialsEncryption.decryptCredentials(
-          credData.encrypted_username,
-          credData.encrypted_password,
-          credData.auth_tag,
+          credData.encryptedUsername,
+          credData.encryptedPassword,
+          credData.authTag,
           credData.iv
         );
         
         return {
           username: decrypted.username,
           password: decrypted.password,
-          universityId: credData.university_id
+          universityId: (credData as any).university_id
         };
       } catch (decryptionError) {
         console.error('Error decrypting credentials:', decryptionError);
@@ -230,15 +230,17 @@ export class DualStageSessionManager {
    */
   private static async testStoredCredentials(credentials: StoredCredentials): Promise<{success: boolean; message?: string}> {
     try {
-      const university = UNIVERSITIES.find(u => u.id === credentials.universityId);
+      const university = UNIVERSITIES.find((u: any) => u.id === credentials.universityId);
       if (!university) {
         return { success: false, message: 'University not supported' };
       }
       
       const result = await authenticateWithUniversity(
-        credentials.username,
-        credentials.password,
-        credentials.universityId
+        credentials.universityId,
+        {
+          email: credentials.username,
+          password: credentials.password
+        }
       );
       
       // Log authentication attempt
@@ -247,7 +249,7 @@ export class DualStageSessionManager {
         attempt_type: 'credential_test',
         university_id: credentials.universityId,
         success: result.success,
-        error_message: result.success ? null : result.message,
+        error_message: result.success ? null : result.error,
         created_at: new Date().toISOString()
       });
       
@@ -296,7 +298,7 @@ export class DualStageSessionManager {
         isDualStageComplete: hasCredentials && userData.is_setup_complete,
         universityId: credentials?.university_id,
         universityName: UNIVERSITIES.find(
-          u => u.id === credentials?.university_id
+          (u: any) => u.id === credentials?.university_id
         )?.name,
         lastSync: credentials?.last_sync,
         hasValidCredentials: hasCredentials,
@@ -389,7 +391,7 @@ export class DualStageSessionManager {
         return null;
       }
       
-      return UNIVERSITIES.find(u => u.id === credentials.university_id) || null;
+      return UNIVERSITIES.find((u: any) => u.id === credentials.university_id) || null;
     } catch (error) {
       console.error('Error getting user university:', error);
       return null;

@@ -1,6 +1,8 @@
 # Self-Hosted Database Setup for Spike Platform
 
-This document outlines the comprehensive self-hosted PostgreSQL and Redis setup for the Spike academic management platform, following industry best practices for security, performance, and reliability.
+This document outlines the comprehensive self-hosted PostgreSQL and Redis setup
+for the Spike academic management platform, following industry best practices
+for security, performance, and reliability.
 
 ## 🏗️ Architecture Overview
 
@@ -160,19 +162,21 @@ npm run db:seed
 ### Automated Scripts
 
 1. **Backup Script** (`scripts/backup.sh`)
+
    ```bash
    # Manual backup
    ./packages/database/scripts/backup.sh
-   
+
    # Automated daily backup (cron)
    0 2 * * * /path/to/spike/packages/database/scripts/backup.sh
    ```
 
 2. **Monitoring Script** (`scripts/monitor.sh`)
+
    ```bash
    # Health check
    ./packages/database/scripts/monitor.sh
-   
+
    # Continuous monitoring (cron)
    */5 * * * * /path/to/spike/packages/database/scripts/monitor.sh
    ```
@@ -274,28 +278,31 @@ gunzip -t backup_file.sql.gz
 ### Common Issues
 
 1. **Connection Issues**
+
    ```bash
    # Check PostgreSQL status
    docker-compose logs postgres
-   
+
    # Test connection
    psql -h localhost -U postgres -d spike_dev
    ```
 
 2. **Performance Issues**
+
    ```bash
    # Check slow queries
    ./packages/database/scripts/monitor.sh
-   
+
    # Analyze query performance
    EXPLAIN ANALYZE your_query;
    ```
 
 3. **Memory Issues**
+
    ```bash
    # Check Redis memory
    redis-cli -h localhost -a password info memory
-   
+
    # Check PostgreSQL memory
    psql -c "SELECT * FROM pg_stat_bgwriter;"
    ```
@@ -337,7 +344,8 @@ gunzip -t backup_file.sql.gz
 ## 🤝 Support
 
 For issues and questions:
+
 1. Check the troubleshooting section
 2. Review application logs
 3. Consult monitoring dashboards
-4. Contact the development team 
+4. Contact the development team

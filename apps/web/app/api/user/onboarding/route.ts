@@ -1,32 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { unifiedAuthOptions } from '../../../../lib/auth/unified-auth';
 import { supabaseAdmin } from '../../../../lib/database/service-role';
+import { csrfProtection, rateLimit } from '../../../../lib/security/csrf-protection';
 import { extractDataFromEmail } from '../../../../lib/university-utils';
-import { z } from 'zod';
 
 // Validation schema for onboarding data
 const onboardingSchema = z.object({
-  onboardingCompleted: z.boolean().default(true)
+  onboardingCompleted: z.boolean().default(true),
 });
 
 // Validation schema for university credentials update
 const universityCredentialsSchema = z.object({
   universityCredentialsSaved: z.boolean().optional(),
   university: z.string().optional(),
-  lastCredentialsUpdate: z.string().optional()
+  lastCredentialsUpdate: z.string().optional(),
 });
 
 export async function GET() {
   try {
     // Get session using NextAuth
     const session = await getServerSession(unifiedAuthOptions);
-    
+
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'לא מורשה' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'לא מורשה' }, { status: 401 });
     }
 
     console.log(`🔍 Checking onboarding status for: ${session.user.email}`);
@@ -34,15 +32,15 @@ export async function GET() {
 
     // Extract university info from email
     const emailData = await extractDataFromEmail(session.user.email);
-    
+
     if (!emailData.isValidUniversityEmail || !emailData.university) {
       return NextResponse.json({
         onboardingCompleted: false,
         error: 'כתובת האימייל לא שייכת לאוניברסיטה נתמכת',
         userInfo: {
           email: session.user.email,
-          universitySupported: false
-        }
+          universitySupported: false,
+        },
       });
     }
 
@@ -55,67 +53,71 @@ export async function GET() {
 
     if (userError && userError.code !== 'PGRST116') {
       console.error('❌ Error fetching user:', userError);
-      return NextResponse.json(
-        { error: 'שגיאה בטעינת נתוני משתמש' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'שגיאה בטעינת נתוני משתמש' }, { status: 500 });
     }
-    
+
     // If user doesn't exist (PGRST116), create them
     let finalUser = user;
     if (!user && userError?.code === 'PGRST116') {
       console.log('🔧 User not found, creating new user...');
-      
+
       // Create user using the database function
-      const { data: newUserData, error: createError } = await supabaseAdmin.rpc('get_or_create_user_by_google_id', {
-        email_param: session.user.email,
-        google_id_param: session.user.id,
-        name_param: session.user.name || ''
-      });
-      
+      const { data: newUserData, error: createError } = await supabaseAdmin.rpc(
+        'get_or_create_user_by_google_id',
+        {
+          email_param: session.user.email,
+          google_id_param: session.user.id,
+          name_param: session.user.name || '',
+        }
+      );
+
       if (createError) {
         console.error('❌ Error creating user:', createError);
-        return NextResponse.json(
-          { error: 'שגיאה ביצירת משתמש' },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: 'שגיאה ביצירת משתמש' }, { status: 500 });
       }
-      
+
       finalUser = newUserData;
       console.log('✅ User created successfully:', session.user.email);
     }
-    
+
     console.log(`🔍 Debug - Raw user query result:`, JSON.stringify(finalUser, null, 2));
     console.log(`🔍 Debug - User error:`, userError);
 
     // Check credential status in user_university_connections table
     let hasValidCredentials = false;
     let needsRevalidation = true;
-    
+
     if (finalUser) {
       // Check if user has credentials in the user_university_connections table
       const { data: credentials, error: credError } = await supabaseAdmin
         .from('user_university_connections')
-        .select('university_username, encrypted_password, university_id, is_active, is_verified, last_verified_at')
+        .select(
+          'university_username, encrypted_password, university_id, is_active, is_verified, last_verified_at'
+        )
         .eq('user_id', finalUser.id)
         .eq('university_id', emailData.university.id)
         .single();
-      
+
       if (credentials && !credError && credentials.is_active && credentials.is_verified) {
         hasValidCredentials = true;
-        
+
         // Check if credentials need revalidation (older than 30 days)
         if (credentials.last_verified_at) {
           const lastVerified = new Date(credentials.last_verified_at);
           const daysSince = (new Date().getTime() - lastVerified.getTime()) / (1000 * 60 * 60 * 24);
           needsRevalidation = daysSince > 30;
-          
-          console.log(`🔍 Found credentials in user_university_connections table - last verified: ${daysSince.toFixed(1)} days ago`);
+
+          console.log(
+            `🔍 Found credentials in user_university_connections table - last verified: ${daysSince.toFixed(1)} days ago`
+          );
         } else {
           console.log('🔍 Found credentials but no last verification date - needs revalidation');
         }
       } else {
-        console.log('🔍 No credentials found in user_university_connections table:', credError?.message || 'No active credentials');
+        console.log(
+          '🔍 No credentials found in user_university_connections table:',
+          credError?.message || 'No active credentials'
+        );
       }
     }
 
@@ -126,9 +128,13 @@ export async function GET() {
     const onboardingCompleted = finalUser?.is_setup_complete === true;
 
     console.log(`📊 Onboarding status: ${onboardingCompleted ? 'Complete' : 'Incomplete'}`);
-    console.log(`🔍 Debug - setup: ${finalUser?.is_setup_complete}, creds: ${hasValidCredentials}, revalidate: ${needsRevalidation}`);
+    console.log(
+      `🔍 Debug - setup: ${finalUser?.is_setup_complete}, creds: ${hasValidCredentials}, revalidate: ${needsRevalidation}`
+    );
     console.log(`🚀 FIXED LOGIC: Only checking is_setup_complete for onboarding completion`);
-    console.log(`🔧 FINAL RESULT: finalUser.is_setup_complete = ${finalUser?.is_setup_complete}, onboardingCompleted = ${onboardingCompleted}`);
+    console.log(
+      `🔧 FINAL RESULT: finalUser.is_setup_complete = ${finalUser?.is_setup_complete}, onboardingCompleted = ${onboardingCompleted}`
+    );
     console.log(`🔍 Debug - emailData.university.id: ${emailData.university.id}`);
 
     return NextResponse.json({
@@ -142,29 +148,34 @@ export async function GET() {
         universitySupported: true,
         hasValidCredentials,
         needsRevalidation,
-        setupComplete: finalUser?.is_setup_complete || false
-      }
+        setupComplete: finalUser?.is_setup_complete || false,
+      },
     });
-
   } catch (error) {
     console.error('❌ Onboarding status check error:', error);
-    return NextResponse.json(
-      { error: 'שגיאה פנימית בשרת' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'שגיאה פנימית בשרת' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting (20 requests per minute for onboarding)
+    const rateLimitResponse = await rateLimit(20, 60000)(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    // Apply CSRF protection
+    const csrfResponse = await csrfProtection(request);
+    if (csrfResponse) {
+      return csrfResponse;
+    }
+
     // Get session using NextAuth
     const session = await getServerSession(unifiedAuthOptions);
-    
+
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'לא מורשה' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'לא מורשה' }, { status: 401 });
     }
 
     // Parse and validate request body
@@ -175,12 +186,12 @@ export async function POST(request: NextRequest) {
 
     // Extract university info from email
     const emailData = await extractDataFromEmail(session.user.email);
-    
+
     if (!emailData.isValidUniversityEmail || !emailData.university) {
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: 'כתובת האימייל לא שייכת לאוניברסיטה נתמכת' 
+          error: 'כתובת האימייל לא שייכת לאוניברסיטה נתמכת',
         },
         { status: 400 }
       );
@@ -189,14 +200,14 @@ export async function POST(request: NextRequest) {
     // Verify credentials exist and are valid
     const { data: credentialStatus } = await supabaseAdmin.rpc('get_user_credential_status', {
       user_email_param: session.user.email,
-      university_id_param: emailData.university.id
+      university_id_param: emailData.university.id,
     });
 
     if (!credentialStatus?.has_credentials || credentialStatus.needs_revalidation) {
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: 'יש להזין ולאמת את נתוני האוניברסיטה תחילה' 
+          error: 'יש להזין ולאמת את נתוני האוניברסיטה תחילה',
         },
         { status: 400 }
       );
@@ -205,29 +216,32 @@ export async function POST(request: NextRequest) {
     // Update or create user record
     const { data: updatedUser, error } = await supabaseAdmin
       .from('users')
-      .upsert({
-        email: session.user.email,
-        name: session.user.name,
-        google_id: session.user.id,
-        university_id: emailData.university.id,
-        is_setup_complete: validatedData.onboardingCompleted,
-        preferences: {
-          onboardingCompleted: validatedData.onboardingCompleted,
-          universityCredentialsSaved: true,
-          lastCredentialsUpdate: new Date().toISOString()
+      .upsert(
+        {
+          email: session.user.email,
+          name: session.user.name,
+          google_id: session.user.id,
+          university_id: emailData.university.id,
+          is_setup_complete: validatedData.onboardingCompleted,
+          preferences: {
+            onboardingCompleted: validatedData.onboardingCompleted,
+            universityCredentialsSaved: true,
+            lastCredentialsUpdate: new Date().toISOString(),
+          },
+        },
+        {
+          onConflict: 'email',
         }
-      }, {
-        onConflict: 'email'
-      })
+      )
       .select()
       .single();
 
     if (error) {
       console.error('❌ Error updating user:', error);
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: 'שגיאה בעדכון המשתמש' 
+          error: 'שגיאה בעדכון המשתמש',
         },
         { status: 500 }
       );
@@ -246,28 +260,27 @@ export async function POST(request: NextRequest) {
         universityId: emailData.university.id,
         username: emailData.username,
         onboardingCompleted: true,
-        preferences: updatedUser.preferences
-      }
+        preferences: updatedUser.preferences,
+      },
     });
-
   } catch (error) {
     console.error('❌ Onboarding API error:', error);
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { 
+        {
           success: false,
           error: 'נתונים לא תקינים',
-          details: error.errors.map(err => err.message)
+          details: error.errors.map((err) => err.message),
         },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: 'שגיאה פנימית בשרת' 
+        error: 'שגיאה פנימית בשרת',
       },
       { status: 500 }
     );
@@ -276,14 +289,23 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimitResponse = await rateLimit(20, 60000)(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    // Apply CSRF protection
+    const csrfResponse = await csrfProtection(request);
+    if (csrfResponse) {
+      return csrfResponse;
+    }
+
     // Get session using NextAuth
     const session = await getServerSession(unifiedAuthOptions);
-    
+
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'לא מורשה' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'לא מורשה' }, { status: 401 });
     }
 
     // Parse and validate request body
@@ -293,7 +315,7 @@ export async function PATCH(request: NextRequest) {
     // Check if Supabase is available (not using placeholder values)
     const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL'] || '';
     const supabaseKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] || '';
-    
+
     if (supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
       console.log('Using mock university credentials update (Supabase not configured)');
       return NextResponse.json({
@@ -305,22 +327,22 @@ export async function PATCH(request: NextRequest) {
           name: session.user.name,
           universityCredentialsSaved: validatedData.universityCredentialsSaved,
           university: validatedData.university,
-          lastCredentialsUpdate: validatedData.lastCredentialsUpdate
-        }
+          lastCredentialsUpdate: validatedData.lastCredentialsUpdate,
+        },
       });
     }
 
     // Update user's university credentials status
     const updateData: any = {};
-    
+
     if (validatedData.universityCredentialsSaved !== undefined) {
       updateData.university_credentials_saved = validatedData.universityCredentialsSaved;
     }
-    
+
     if (validatedData.university) {
       updateData.university = validatedData.university;
     }
-    
+
     if (validatedData.lastCredentialsUpdate) {
       updateData.last_credentials_update = validatedData.lastCredentialsUpdate;
     }
@@ -334,10 +356,7 @@ export async function PATCH(request: NextRequest) {
 
     if (error) {
       console.error('Error updating user university credentials:', error);
-      return NextResponse.json(
-        { error: 'שגיאה בעדכון פרטי האוניברסיטה' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'שגיאה בעדכון פרטי האוניברסיטה' }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -349,26 +368,22 @@ export async function PATCH(request: NextRequest) {
         name: updatedUser.name,
         universityCredentialsSaved: updatedUser.university_credentials_saved,
         university: updatedUser.university,
-        lastCredentialsUpdate: updatedUser.last_credentials_update
-      }
+        lastCredentialsUpdate: updatedUser.last_credentials_update,
+      },
     });
-
   } catch (error) {
     console.error('University credentials update error:', error);
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { 
+        {
           error: 'נתונים לא תקינים',
-          details: error.errors 
+          details: error.errors,
         },
         { status: 400 }
       );
     }
 
-    return NextResponse.json(
-      { error: 'שגיאה פנימית בשרת' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'שגיאה פנימית בשרת' }, { status: 500 });
   }
-} 
+}

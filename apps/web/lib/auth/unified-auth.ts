@@ -1,10 +1,10 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
-import { supabase } from '../db';
+// import { supabase } from '../db'; // Unused import
 import { supabaseAdmin } from '../database/service-role';
 import { env } from '../env';
-import type { AuthOptions, SessionStrategy } from 'next-auth';
+import type { AuthOptions } from 'next-auth';
 import { UNIVERSITIES, authenticateWithUniversity } from './university-auth';
 import { validateUniversityEmail, formatHebrewError } from './hebrew-auth-errors';
 
@@ -41,15 +41,18 @@ declare module "next-auth" {
   
   interface JWT {
     provider?: string;
+    googleId?: string;
     universityId?: string;
     universityName?: string;
     lastSync?: string;
     isDualStageComplete?: boolean;
+    sub?: string;
+    email?: string;
   }
 }
 
 // Helper function to create or update Google user
-async function createOrUpdateGoogleUser(user: any, account: any) {
+async function createOrUpdateGoogleUser(user: any, _account: any) {
   try {
     console.log('🔄 Creating/updating Google user:', user.email);
     console.log('🔍 User object:', { id: user.id, name: user.name, email: user.email, image: user.image });
@@ -188,7 +191,7 @@ async function verifyGoogleUserExists(googleUserId: string) {
 }
 
 // Helper function to save university credentials (encrypted)
-async function saveUniversityCredentials(userEmail: string, credentials: any) {
+async function saveUniversityCredentials(credentials: any) {
   try {
     // Import encryption utilities
     const { CredentialsEncryption } = await import('./encryption');
@@ -219,14 +222,22 @@ async function saveUniversityCredentials(userEmail: string, credentials: any) {
       throw error;
     }
     
-    // Update user setup status
-    await supabaseAdmin
+    // Update user setup status - find user by email first
+    const { data: userData } = await supabaseAdmin
       .from('users')
-      .update({ 
-        is_setup_complete: true
-        // Note: updated_at will be handled by database trigger
-      })
-      .eq('id', userId);
+      .select('id')
+      .eq('email', credentials.userEmail)
+      .single();
+
+    if (userData) {
+      await supabaseAdmin
+        .from('users')
+        .update({
+          is_setup_complete: true
+          // Note: updated_at will be handled by database trigger
+        })
+        .eq('id', userData.id);
+    }
     
     console.log('✅ University credentials saved successfully');
     
@@ -236,8 +247,41 @@ async function saveUniversityCredentials(userEmail: string, credentials: any) {
   }
 }
 
-// Unified NextAuth configuration
+// Unified NextAuth configuration with enhanced CSRF protection
 export const unifiedAuthOptions: AuthOptions = {
+  // Enhanced CSRF protection configuration
+  cookies: {
+    sessionToken: {
+      name: `__Secure-next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    },
+    callbackUrl: {
+      name: `__Secure-next-auth.callback-url`,
+      options: {
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    },
+    csrfToken: {
+      name: `__Host-next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    }
+  },
+
+  // Use secure headers and CSRF tokens
+  useSecureCookies: process.env.NODE_ENV === 'production',
+
   providers: [
     // Stage 1: Google OAuth (only if credentials are provided)
     ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET ? [
@@ -280,13 +324,15 @@ export const unifiedAuthOptions: AuthOptions = {
           // Authenticate with university
           console.log('🔐 Authenticating with university:', credentials.universityId);
           const authResult = await authenticateWithUniversity(
-            credentials.username,
-            credentials.password, 
-            credentials.universityId
+            credentials.universityId,
+            {
+              email: credentials.username,
+              password: credentials.password
+            }
           );
           
           if (!authResult.success) {
-            console.log('University authentication failed:', authResult.message);
+            console.log('University authentication failed:', authResult.error);
             
             // Log failed attempt
             await supabaseAdmin.from('auth_attempts').insert({
@@ -294,7 +340,7 @@ export const unifiedAuthOptions: AuthOptions = {
               attempt_type: 'moodle',
               university_id: credentials.universityId,
               success: false,
-              error_message: authResult.message,
+              error_message: authResult.error,
               created_at: new Date().toISOString()
             });
             
@@ -302,7 +348,7 @@ export const unifiedAuthOptions: AuthOptions = {
           }
           
           // Save encrypted credentials
-          await saveUniversityCredentials(googleUser.email, {
+          await saveUniversityCredentials({
             ...credentials,
             userEmail: googleUser.email,
             username: credentials.username
@@ -339,7 +385,7 @@ export const unifiedAuthOptions: AuthOptions = {
             googleId: googleUser.google_id,
             provider: 'dual-stage-complete',
             universityId: credentials.universityId,
-            universityName: authResult.university?.name,
+            universityName: authResult.user?.university,
             isDualStageComplete: true
           };
         } catch (error) {
@@ -356,7 +402,7 @@ export const unifiedAuthOptions: AuthOptions = {
   },
   
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       // Minimal logging to prevent callback loops
       console.log('🔐 SignIn callback:', { provider: account?.provider, email: user?.email });
       
@@ -449,7 +495,7 @@ export const unifiedAuthOptions: AuthOptions = {
         trigger, 
         provider: account?.provider, 
         email: token?.email,
-        isDualStageComplete: token?.isDualStageComplete 
+        isDualStageComplete: token?.['isDualStageComplete'] 
       });
       
       if (user && account) {
@@ -458,18 +504,18 @@ export const unifiedAuthOptions: AuthOptions = {
         if (account.provider === 'google') {
           // Store Google user info in JWT
           token.googleId = user.id;
-          token.isDualStageComplete = false;
+          token['isDualStageComplete'] = false;
         } else if (account.provider === 'university-credentials') {
           // Store university info in JWT
-          token.universityId = (user as any).universityId;
-          token.universityName = (user as any).universityName;
-          token.isDualStageComplete = true;
-          token.lastSync = new Date().toISOString();
+          token['universityId'] = (user as any).universityId;
+          token['universityName'] = (user as any).universityName;
+          token['isDualStageComplete'] = true;
+          token['lastSync'] = new Date().toISOString();
         }
       }
       
       // Refresh session data on update or always check for dual-stage completion
-      if ((trigger === 'update' || !token.isDualStageComplete) && token.sub) {
+      if ((trigger === 'update' || !token['isDualStageComplete']) && token.sub) {
         try {
           console.log('🔄 Refreshing JWT session data for:', token.email);
           
@@ -488,20 +534,20 @@ export const unifiedAuthOptions: AuthOptions = {
               .eq('is_active', true)
               .single();
               
-            const wasComplete = token.isDualStageComplete;
-            token.isDualStageComplete = userData.is_setup_complete && !!credentialsData?.is_verified;
-            token.universityId = credentialsData?.university_id;
-            token.lastSync = credentialsData?.last_verified_at;
+            const wasComplete = token['isDualStageComplete'];
+            token['isDualStageComplete'] = userData.is_setup_complete && !!credentialsData?.is_verified;
+            token['universityId'] = credentialsData?.university_id;
+            token['lastSync'] = credentialsData?.last_verified_at;
             
-            if (token.universityId) {
-              const university = UNIVERSITIES.find(u => u.id === token.universityId);
-              token.universityName = university?.name;
+            if (token['universityId']) {
+              const university = UNIVERSITIES.find((u: any) => u.id === token['universityId']);
+              token['universityName'] = university?.name;
             }
             
-            if (wasComplete !== token.isDualStageComplete) {
+            if (wasComplete !== token['isDualStageComplete']) {
               console.log('✅ JWT token dual-stage status updated:', { 
                 from: wasComplete, 
-                to: token.isDualStageComplete,
+                to: token['isDualStageComplete'],
                 userSetupComplete: userData.is_setup_complete,
                 hasCredentials: !!credentialsData?.is_verified
               });
@@ -523,10 +569,10 @@ export const unifiedAuthOptions: AuthOptions = {
         session.user.id = token.sub!;
         session.user.googleId = token.googleId as string;
         session.user.provider = token.provider === 'university-credentials' ? 'dual-stage-complete' : 'google';
-        session.user.universityId = token.universityId as string;
-        session.user.universityName = token.universityName as string;
-        session.user.lastSync = token.lastSync as string;
-        session.user.isDualStageComplete = token.isDualStageComplete as boolean;
+        session.user.universityId = token['universityId'] as string;
+        session.user.universityName = token['universityName'] as string;
+        session.user.lastSync = token['lastSync'] as string;
+        session.user.isDualStageComplete = token['isDualStageComplete'] as boolean;
       }
       
       return session;
@@ -539,7 +585,7 @@ export const unifiedAuthOptions: AuthOptions = {
   },
   
   events: {
-    async signIn({ user, account, profile, isNewUser }) {
+    async signIn({ user, account, isNewUser }) {
       console.log('📊 SignIn event:', { 
         provider: account?.provider, 
         userId: user.id, 

@@ -1,16 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { unifiedAuthOptions } from '../../../../lib/auth/unified-auth';
-import { authenticateWithMoodle } from '../../../../lib/moodle-client';
-import { extractDataFromEmail } from '../../../../lib/university-utils';
-import { supabase } from '../../../../lib/db';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { unifiedAuthOptions } from '../../../../lib/auth/unified-auth';
+import { supabase } from '../../../../lib/db';
+import { authenticateWithMoodle } from '../../../../lib/moodle-client';
+import { csrfProtection, rateLimit } from '../../../../lib/security/csrf-protection';
+import { extractDataFromEmail } from '../../../../lib/university-utils';
 
-// Validation schema for Moodle credentials  
+// Validation schema for Moodle credentials
 const moodleCredentialsSchema = z.object({
   password: z.string().min(1, 'סיסמה נדרשת'),
   universityId: z.string().optional(),
-  username: z.string().optional()
+  username: z.string().optional(),
 });
 
 // Simple encryption for storing credentials (replace with proper encryption in production)
@@ -21,14 +22,26 @@ function encryptPassword(password: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting (5 attempts per minute for credential validation)
+    const rateLimitResponse = await rateLimit(5, 60000)(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    // Apply CSRF protection
+    const csrfResponse = await csrfProtection(request);
+    if (csrfResponse) {
+      return csrfResponse;
+    }
+
     // Get session using NextAuth
     const session = await getServerSession(unifiedAuthOptions);
-    
+
     if (!session?.user?.email) {
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: 'לא מורשה - נדרשת התחברות' 
+          error: 'לא מורשה - נדרשת התחברות',
         },
         { status: 401 }
       );
@@ -36,18 +49,22 @@ export async function POST(request: NextRequest) {
 
     // Parse and validate request body
     const body = await request.json();
-    const { password, universityId: providedUniversityId, username: providedUsername } = moodleCredentialsSchema.parse(body);
+    const {
+      password,
+      universityId: providedUniversityId,
+      username: providedUsername,
+    } = moodleCredentialsSchema.parse(body);
 
     console.log(`🔐 Moodle validation request for user: ${session.user.email}`);
 
     // Extract user data from email
     const emailData = await extractDataFromEmail(session.user.email);
-    
+
     if (!emailData.isValidUniversityEmail || !emailData.university) {
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: 'כתובת האימייל לא שייכת לאוניברסיטה נתמכת' 
+          error: 'כתובת האימייל לא שייכת לאוניברסיטה נתמכת',
         },
         { status: 400 }
       );
@@ -57,30 +74,33 @@ export async function POST(request: NextRequest) {
     const universityId = providedUniversityId || emailData.university?.id;
     const username = providedUsername || emailData.username;
 
-    if (!universityId) {
+    if (!universityId || typeof universityId !== 'string') {
       return NextResponse.json(
         {
           success: false,
-          error: 'לא ניתן לזהות את האוניברסיטה'
+          error: 'לא ניתן לזהות את האוניברסיטה',
         },
         { status: 400 }
       );
     }
 
+    // At this point universityId is guaranteed to be a string
+    const validUniversityId: string = universityId;
+
     // Verify university is active in our database
     const { data: university, error: universityError } = await supabase
       .from('universities')
       .select('*')
-      .eq('id', universityId)
+      .eq('id', validUniversityId)
       .eq('is_active', true)
       .single();
 
     if (universityError || !university) {
       console.error('❌ University not found or inactive:', universityId);
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: 'האוניברסיטה לא נתמכת כרגע' 
+          error: 'האוניברסיטה לא נתמכת כרגע',
         },
         { status: 400 }
       );
@@ -90,10 +110,12 @@ export async function POST(request: NextRequest) {
 
     // Authenticate with real Moodle (preserving existing BGU logic)
     const startTime = Date.now();
-    const authResult = await authenticateWithMoodle(username, password, universityId);
+    const authResult = await authenticateWithMoodle(username || '', password, validUniversityId);
     const responseTime = Date.now() - startTime;
 
-    console.log(`📊 Moodle auth result: ${authResult.success ? 'Success' : 'Failed'} (${responseTime}ms)`);
+    console.log(
+      `📊 Moodle auth result: ${authResult.success ? 'Success' : 'Failed'} (${responseTime}ms)`
+    );
 
     // Log the authentication attempt
     try {
@@ -103,7 +125,7 @@ export async function POST(request: NextRequest) {
         success_param: authResult.success,
         authentication_type_param: 'moodle_validation',
         response_time_ms_param: responseTime,
-        error_message_param: authResult.success ? null : (authResult.error || authResult.message)
+        error_message_param: authResult.success ? null : authResult.error || authResult.message,
       });
 
       if (logError) {
@@ -118,17 +140,17 @@ export async function POST(request: NextRequest) {
       try {
         await supabase.rpc('increment_validation_attempts', {
           user_email_param: session.user.email,
-          university_id_param: universityId
+          university_id_param: universityId,
         });
       } catch (incrementError) {
         console.warn('⚠️ Failed to increment validation attempts:', incrementError);
       }
 
       return NextResponse.json(
-        { 
+        {
           success: false,
           error: authResult.message || 'שגיאה בהתחברות למודל',
-          details: authResult.error
+          details: authResult.error,
         },
         { status: 401 }
       );
@@ -137,41 +159,47 @@ export async function POST(request: NextRequest) {
     // Save credentials using new schema
     try {
       const encryptedPassword = encryptPassword(password);
-      
+
       // First, ensure user exists using the same function as onboarding
-      const { data: userData, error: userError } = await supabase.rpc('get_or_create_user_by_google_id', {
-        email_param: session.user.email,
-        google_id_param: session.user.id,
-        name_param: session.user.name || ''
-      });
-      
+      const { data: _userData, error: userError } = await supabase.rpc(
+        'get_or_create_user_by_google_id',
+        {
+          email_param: session.user.email,
+          google_id_param: session.user.id,
+          name_param: session.user.name || '',
+        }
+      );
+
       if (userError) {
         console.error('❌ Failed to create/get user:', userError);
         return NextResponse.json(
-          { 
+          {
             success: false,
-            error: 'שגיאה ביצירת משתמש' 
+            error: 'שגיאה ביצירת משתמש',
           },
           { status: 500 }
         );
       }
-      
+
       console.log('✅ User ensured before credential save:', session.user.email);
-      
+
       // Save credentials using the new function
-      const { data: credentialResult, error: credentialError } = await supabase.rpc('save_validated_credentials', {
-        user_email_param: session.user.email,
-        university_id_param: universityId,
-        username_param: username,
-        encrypted_password_param: encryptedPassword
-      });
+      const { data: _credentialResult, error: credentialError } = await supabase.rpc(
+        'save_validated_credentials',
+        {
+          user_email_param: session.user.email,
+          university_id_param: universityId,
+          username_param: username,
+          encrypted_password_param: encryptedPassword,
+        }
+      );
 
       if (credentialError) {
         console.error('❌ Failed to save credentials:', credentialError);
         return NextResponse.json(
-          { 
+          {
             success: false,
-            error: 'שגיאה בשמירת הנתונים' 
+            error: 'שגיאה בשמירת הנתונים',
           },
           { status: 500 }
         );
@@ -181,9 +209,9 @@ export async function POST(request: NextRequest) {
     } catch (saveError) {
       console.error('❌ Error saving credentials:', saveError);
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: 'שגיאה בשמירת הנתונים' 
+          error: 'שגיאה בשמירת הנתונים',
         },
         { status: 500 }
       );
@@ -198,41 +226,40 @@ export async function POST(request: NextRequest) {
         university: university.name_he,
         universityId: universityId,
         username: username,
-        onboardingCompleted: true
+        onboardingCompleted: true,
       },
       university: {
         id: university.id,
         name: university.name_he,
         nameEn: university.name_en,
         domain: university.domain,
-        supportedFeatures: university.supported_features
+        supportedFeatures: university.supported_features,
       },
       authInfo: {
         userInfo: authResult.userInfo,
-        validatedAt: new Date().toISOString()
+        validatedAt: new Date().toISOString(),
       },
       // Signal that the client should refresh the session
-      shouldUpdateSession: true
+      shouldUpdateSession: true,
     });
-
   } catch (error) {
     console.error('❌ Moodle validation API error:', error);
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { 
+        {
           success: false,
           error: 'נתונים לא תקינים',
-          details: error.errors.map(err => err.message)
+          details: error.errors.map((err) => err.message),
         },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: 'שגיאה פנימית בשרת' 
+        error: 'שגיאה פנימית בשרת',
       },
       { status: 500 }
     );
@@ -243,12 +270,12 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const session = await getServerSession(unifiedAuthOptions);
-    
+
     if (!session?.user?.email) {
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: 'לא מורשה' 
+          error: 'לא מורשה',
         },
         { status: 401 }
       );
@@ -256,14 +283,12 @@ export async function GET() {
 
     // Extract university info from email
     const emailData = await extractDataFromEmail(session.user.email);
-    
+
     if (!emailData.isValidUniversityEmail || !emailData.university) {
-      return NextResponse.json(
-        { 
-          hasCredentials: false,
-          error: 'כתובת האימייל לא שייכת לאוניברסיטה נתמכת' 
-        }
-      );
+      return NextResponse.json({
+        hasCredentials: false,
+        error: 'כתובת האימייל לא שייכת לאוניברסיטה נתמכת',
+      });
     }
 
     // Get university information from database
@@ -274,26 +299,24 @@ export async function GET() {
       .single();
 
     if (universityError || !university || !university.is_active) {
-      return NextResponse.json(
-        { 
-          hasCredentials: false,
-          error: 'האוניברסיטה לא נתמכת כרגע' 
-        }
-      );
+      return NextResponse.json({
+        hasCredentials: false,
+        error: 'האוניברסיטה לא נתמכת כרגע',
+      });
     }
 
     // Check current credential status using new schema
     const { data: credentialStatus, error } = await supabase.rpc('get_user_credential_status', {
       user_email_param: session.user.email,
-      university_id_param: emailData.university.id
+      university_id_param: emailData.university.id,
     });
 
     if (error) {
       console.error('❌ Error checking credential status:', error);
       return NextResponse.json(
-        { 
+        {
           hasCredentials: false,
-          error: 'שגיאה בבדיקת הנתונים' 
+          error: 'שגיאה בבדיקת הנתונים',
         },
         { status: 500 }
       );
@@ -310,17 +333,16 @@ export async function GET() {
         nameEn: university.name_en,
         domain: university.domain,
         supportedFeatures: university.supported_features,
-        isActive: university.is_active
+        isActive: university.is_active,
       },
-      username: emailData.username
+      username: emailData.username,
     });
-
   } catch (error) {
     console.error('❌ Credential status check error:', error);
     return NextResponse.json(
-      { 
+      {
         hasCredentials: false,
-        error: 'שגיאה פנימית בשרת' 
+        error: 'שגיאה פנימית בשרת',
       },
       { status: 500 }
     );

@@ -6,12 +6,9 @@ export async function GET(_request: NextRequest) {
   try {
     // בדיקת הרשאות משתמש
     const session = await auth();
-    
+
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { success: false, error: 'לא מורשה' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'לא מורשה' }, { status: 401 });
     }
 
     // קבלת job פעיל של המשתמש
@@ -21,7 +18,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({
         success: true,
         hasActiveJob: false,
-        message: 'אין job פעיל'
+        message: 'אין job פעיל',
       });
     }
 
@@ -34,14 +31,10 @@ export async function GET(_request: NextRequest) {
       message: activeJob.message,
       data: activeJob.data,
       createdAt: activeJob.created_at,
-      updatedAt: activeJob.updated_at
+      updatedAt: activeJob.updated_at,
     });
-
   } catch (error) {
     console.error('שגיאה בבדיקת job פעיל:', error);
-    return NextResponse.json(
-      { success: false, error: 'שגיאה פנימית בשרת' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'שגיאה פנימית בשרת' }, { status: 500 });
   }
-} 
+}
