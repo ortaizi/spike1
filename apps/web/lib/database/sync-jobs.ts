@@ -1,8 +1,8 @@
 import { supabase } from '../db';
 
 // Create service role client for admin operations
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const supabaseService = supabase.auth.admin;
+// Reserved for future use
+// const supabaseService = supabase.auth.admin;
 
 export interface SyncJob {
   id: string;

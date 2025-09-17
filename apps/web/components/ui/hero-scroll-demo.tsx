@@ -18,27 +18,7 @@ import {
 import { useEffect, useState } from 'react';
 import { ContainerScroll } from './container-scroll-animation';
 
-interface DashboardCardWithValue {
-  title: string;
-  icon: any;
-  iconColor: string;
-  value: string;
-  subtitle: string;
-}
 
-interface DashboardCardWithItems {
-  title: string;
-  icon: any;
-  iconColor: string;
-  items: Array<{
-    label: string;
-    value: string;
-    urgent?: boolean;
-  }>;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type DashboardCard = DashboardCardWithValue | DashboardCardWithItems;
 
 export function HeroScrollDemo() {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);

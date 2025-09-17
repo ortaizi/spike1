@@ -1,5 +1,7 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import type { JWT } from 'next-auth/jwt';
+import type { Session, Account, User } from 'next-auth';
 import { supabase } from '../db';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 // import bcrypt from 'bcryptjs'; // Unused import
@@ -452,7 +454,7 @@ export const authOptions = {
     }
   },
   callbacks: {
-    async signIn({ user, account: _account, profile: _profile }: { user: any; account: any; profile: any }) {
+    async signIn({ user }: { user: any; account?: any; profile?: any }) {
       console.log('SignIn callback called with user:', user);
       return !!user;
     },
@@ -477,24 +479,24 @@ export const authOptions = {
       console.log('Corrected URL:', correctedUrl);
       return correctedUrl;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }: { token: JWT; user: User | null; account: Account | null }) {
       console.log('JWT callback - token:', token, 'user:', user);
       if (user) {
-        token.studentId = (user as any).studentId;
-        token.universityId = (user as any).universityId;
-        token.universityName = (user as any).universityName;
-        token.moodleData = (user as any).moodleData;
+        token['studentId'] = (user as any).studentId;
+        token['universityId'] = (user as any).universityId;
+        token['universityName'] = (user as any).universityName;
+        token['moodleData'] = (user as any).moodleData;
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       console.log('Session callback - session:', session, 'token:', token);
       if (token) {
         session.user.id = token.sub!;
-        session.user.studentId = token.studentId as string;
-        session.user.universityId = token.universityId as string;
-        session.user.universityName = token.universityName as string;
-        session.user.moodleData = token.moodleData as any;
+        (session.user as any).studentId = token['studentId'] as string;
+        (session.user as any).universityId = token['universityId'] as string;
+        (session.user as any).universityName = token['universityName'] as string;
+        (session.user as any).moodleData = token['moodleData'] as any;
       }
       return session;
     }
@@ -504,7 +506,7 @@ export const authOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: env.AUTH_SECRET,
-  debug: env.AUTH_DEBUG === 'true' ? true : false,
+  debug: env.AUTH_DEBUG === 'true',
   trustHost: true
 };
 

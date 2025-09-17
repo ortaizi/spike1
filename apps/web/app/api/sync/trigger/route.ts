@@ -10,7 +10,6 @@ import { supabase } from '../../../../lib/db';
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting for sync operations - more restrictive
-    const _clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
     // Rate limiting disabled for now
     const rateLimitResult = { allowed: true, remaining: 5, resetTime: Date.now() + 600000 };
 
@@ -179,7 +178,7 @@ export async function POST(request: NextRequest) {
  * GET /api/sync/trigger
  * Get information about sync capabilities and status
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await DualStageSessionManager.getDualStageSession();
     if (!session?.user) {
@@ -199,7 +198,6 @@ export async function GET(request: NextRequest) {
       .single();
 
     // Check rate limits
-    const _clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
     // Rate limiting disabled for now
     const rateLimitResult = { allowed: true, remaining: 50, resetTime: Date.now() + 600000 };
 

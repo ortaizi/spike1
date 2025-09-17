@@ -84,11 +84,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // At this point universityId is guaranteed to be a string
+    const validUniversityId: string = universityId;
+
     // Verify university is active in our database
     const { data: university, error: universityError } = await supabase
       .from('universities')
       .select('*')
-      .eq('id', universityId)
+      .eq('id', validUniversityId)
       .eq('is_active', true)
       .single();
 
@@ -107,7 +110,7 @@ export async function POST(request: NextRequest) {
 
     // Authenticate with real Moodle (preserving existing BGU logic)
     const startTime = Date.now();
-    const authResult = await authenticateWithMoodle(username, password, universityId || '');
+    const authResult = await authenticateWithMoodle(username || '', password, validUniversityId);
     const responseTime = Date.now() - startTime;
 
     console.log(

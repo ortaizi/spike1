@@ -1,12 +1,52 @@
 # CLAUDE.md - Project Constitution & Control Panel
 
-Spike is an academic management platform for Israeli university students,
-focusing on BGU (Ben Gurion University) with Hebrew/RTL first design and Moodle
-integration.
+## 📖 Project Overview
+
+**Spike** is a comprehensive academic management platform designed specifically for Israeli university students, with primary focus on Ben Gurion University (BGU). The platform bridges the gap between traditional university systems and modern student needs through intelligent automation and Hebrew-first design.
+
+### 🎯 Core Mission
+Streamline academic life for Israeli students by providing unified access to:
+- Course management and scheduling
+- Assignment tracking and submissions
+- Exam scheduling and notifications
+- Academic calendar integration
+- Multi-university support (BGU, TAU, HUJI)
+
+### 🏛️ Target Universities
+- **Primary**: Ben Gurion University (BGU) - Full integration
+- **Secondary**: Tel Aviv University (TAU), Hebrew University (HUJI)
+- **Future**: Technion, University of Haifa, Bar-Ilan
+
+### 🔧 Key Features
+- **Multi-stage Authentication**: University selection → Google OAuth → Moodle credentials
+- **Academic Data Sync**: Real-time synchronization with university Moodle systems
+- **Hebrew/RTL Interface**: Native Hebrew support with right-to-left layout optimization
+- **Course Analytics**: AI-powered insights into academic performance
+- **Assignment Management**: Deadline tracking, submission reminders, grade monitoring
+- **Schedule Optimization**: Intelligent calendar management and conflict resolution
+
+### 👥 Target Users
+- **Primary**: Undergraduate and graduate students at Israeli universities
+- **Secondary**: Academic advisors, course coordinators
+- **Future**: Faculty members, administrative staff
+
+### 🎨 Design Philosophy
+- **Hebrew-First**: Native Hebrew interface with proper RTL support
+- **Mobile-Responsive**: Optimized for both desktop and mobile usage
+- **Accessibility**: WCAG 2.1 AA compliance for inclusive access
+- **Performance**: Sub-2 second load times, offline capabilities
+
+### 🔒 Security & Privacy
+- **Data Protection**: GDPR and Israeli privacy law compliance
+- **Secure Authentication**: Multi-factor authentication with university systems
+- **Encrypted Storage**: End-to-end encryption for sensitive academic data
+- **Audit Logging**: Comprehensive security audit trails
 
 **This document serves as the project constitution for Claude to understand the
 codebase context, conventions, and critical instructions.**
-I've analyzed the image you uploaded. Here is the text from the document, which outlines a set of Git workflow requirements.
+
+### 🚨 SECURITY REMINDER
+**ALWAYS use environment variables for API keys and secrets. NEVER hardcode credentials in source code.**
 
 **\*\*STOP! READ THIS FIRST!\*\***
 
@@ -136,6 +176,7 @@ npm run db:push
 - Supabase PostgreSQL + NextAuth.js
 - Tailwind CSS with Hebrew/RTL support
 - Python scraper for BGU Moodle integration
+- Mixpanel Analytics (configured via NEXT_PUBLIC_MIXPANEL_TOKEN)
 
 **Key Directories:**
 
@@ -144,6 +185,7 @@ npm run db:push
 - `apps/web/components/` - Reusable UI components
 - `apps/web/lib/` - Utility functions & core logic
 - `apps/web/lib/auth/` - Authentication system
+- `apps/web/lib/analytics/` - Mixpanel analytics service
 - `apps/web/middleware.ts` - Route protection & redirects
 - `packages/database/` - Supabase schema & migrations
 - `packages/shared/` - Shared types & utilities
@@ -266,6 +308,10 @@ cd apps/web && NODE_OPTIONS='--max-old-space-size=4096' npx next dev --port 3000
 - `lib/utils/cn.ts` - Class name helper
 - `lib/utils/hebrew.ts` - Hebrew text utilities
 - `lib/utils/date.ts` - Date formatting (Hebrew calendar)
+
+**Analytics:**
+- `lib/analytics/mixpanel.ts` - Mixpanel SDK configuration
+- `lib/analytics/index.ts` - AnalyticsService with tracking methods
 
 ## 🚨 Before Commits
 
@@ -495,7 +541,7 @@ npm run deploy:preview
 **Monitoring Tools:**
 
 - Error tracking: Sentry
-- Analytics: Google Analytics 4
+- Analytics: Mixpanel (primary), Google Analytics 4
 - Performance: Vercel Analytics
 - Uptime: Better Uptime
 
@@ -591,3 +637,4 @@ files when making decisions about architecture, implementation, or debugging.
 - Use subagents proactively for specialized tasks
 - Maintain high code quality and test coverage
 - Respect protected areas and known limitations
+- alway add api keys as enverment varibles
