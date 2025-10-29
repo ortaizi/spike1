@@ -10,9 +10,18 @@ import { APIRequestContext } from 'playwright';
 const API_BASE_URL = process.env.API_BASE_URL || 'https://api.spike-platform.com';
 const TENANTS = ['bgu', 'tau', 'huji'];
 const TEST_USERS = {
-  bgu: { email: 'test@bgu.ac.il', password: 'test123' },
-  tau: { email: 'test@tau.ac.il', password: 'test123' },
-  huji: { email: 'test@huji.ac.il', password: 'test123' }
+  bgu: {
+    email: process.env.TEST_BGU_EMAIL || 'test@bgu.ac.il',
+    password: process.env.TEST_BGU_PASSWORD || 'fallback-test123'
+  },
+  tau: {
+    email: process.env.TEST_TAU_EMAIL || 'test@tau.ac.il',
+    password: process.env.TEST_TAU_PASSWORD || 'fallback-test123'
+  },
+  huji: {
+    email: process.env.TEST_HUJI_EMAIL || 'test@huji.ac.il',
+    password: process.env.TEST_HUJI_PASSWORD || 'fallback-test123'
+  }
 };
 
 // Helper function to create authenticated API context
